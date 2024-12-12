@@ -1,0 +1,154 @@
+@url = http://localhost:3000
+###
+# Test connection
+POST {{url}}
+Content-Type: application/json
+
+{
+  "type": "std:test-connection",
+  "input": {},
+  "config": {{config}}
+}
+
+HTTP/1.1 200  - OK
+x-powered-by: Express
+content-type: application/x-ndjson
+date: Sat, 30 Nov 2024 16:05:17 GMT
+connection: close
+transfer-encoding: chunked
+###
+# Discover schema
+POST {{url}}
+Content-Type: application/json
+
+{
+  "type": "std:account:discover-schema",
+  "input": {},
+  "config": {{config}}
+}
+
+HTTP/1.1 200  - OK
+x-powered-by: Express
+content-type: application/x-ndjson
+date: Thu, 12 Dec 2024 12:44:15 GMT
+connection: close
+transfer-encoding: chunked
+###
+# Account list
+POST {{url}}
+Content-Type: application/json
+
+{
+  "type": "std:account:list",
+  "input": {"schema": {{schema}}},
+  "config": {{config}}
+}
+
+HTTP/1.1 200  - OK
+x-powered-by: Express
+content-type: application/x-ndjson
+date: Mon, 02 Dec 2024 08:18:50 GMT
+connection: close
+content-length: 0
+###
+# Account read
+POST {{url}}
+Content-Type: application/json
+
+{
+  "type": "std:account:read",
+  "input": {
+    "identity": "f1838af6-f7c6-48ac-8197-e020ca0820f3"
+  },
+  "config": {{config}}
+}
+
+HTTP/1.1 500  - Internal Server Error
+x-powered-by: Express
+content-type: application/x-ndjson
+date: Fri, 29 Nov 2024 12:48:17 GMT
+connection: close
+transfer-encoding: chunked
+###
+# Entitlement list
+POST {{url}}
+Content-Type: application/json
+
+{
+  "type": "std:entitlement:list",
+  "input": {
+        "type": "role"
+    },
+  "config": {{config}}
+}
+
+HTTP/1.1 200  - OK
+x-powered-by: Express
+content-type: application/x-ndjson
+date: Thu, 12 Dec 2024 13:56:46 GMT
+connection: close
+transfer-encoding: chunked
+###
+# Entitlement read
+POST {{url}}
+Content-Type: application/json
+
+{
+  "type": "std:entitlement:read",
+  "input": {
+        "identity": "fc16aee3-0359-4d46-b746-b36459211660"
+    },
+  "config": {{config}}
+}
+###
+# Account disable
+POST {{url}}
+Content-Type: application/json
+
+{
+  "type": "std:account:disable",
+  "input": {
+    "identity": "993",
+    "key": { "simple": { "id": "993" } }
+  },
+"config": {{config}}
+}
+###
+# Account enable
+POST {{url}}
+Content-Type: application/json
+
+{
+  "type": "std:account:enable",
+  "input": {
+    "identity": "993"
+  },
+  "config": {{config}}
+}
+###
+# Account update
+POST {{url}}
+Content-Type: application/json
+
+{
+  "type": "std:account:update",
+  "input": {"changes":[{"attribute":"types","op":"Add","value":"NeprofileUser"}], "identity": "62673d32-c512-4613-8f1c-243cc0cd1bf3"},
+  "config": {{config}}
+}
+###
+# Account create
+POST {{url}}
+Content-Type: application/json
+
+{
+  "type": "std:account:create",
+  "input": {"attributes":{"email":"sunrise.approvals@sailpoint.com","first_name":"Sunrise","last_name":"Approvals","name":"Sunrise Approvals","types":"Profile", "person_id":"6456", "status": "Active"}},
+  "config": {{config}}
+}
+
+HTTP/1.1 200  - OK
+x-powered-by: Express
+content-type: application/x-ndjson
+date: Wed, 04 Dec 2024 11:50:24 GMT
+connection: close
+transfer-encoding: chunked
