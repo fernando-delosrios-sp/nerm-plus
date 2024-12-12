@@ -1,0 +1,664 @@
+{
+    "name": "Non-Employee Risk Management+",
+    "supportsCustomSchemas": true,
+    "showDebugLoggingOption": true,
+    "sourceConfigInitialValues": {
+        "nerm_admin": "System User"
+    },
+    "commands": [
+        "std:test-connection",
+        "std:account:list",
+        "std:account:read",
+        "std:account:enable",
+        "std:account:disable",
+        "std:account:create",
+        "std:account:update",
+        "std:entitlement:list",
+        "std:account:discover-schema"
+    ],
+    "sourceConfig": [
+        {
+            "type": "menu",
+            "label": "ISC connection details",
+            "items": [
+                {
+                    "type": "section",
+                    "sectionTitle": "Identity Security Cloud connection configuration",
+                    "sectionHelpMessage": "Connection details for Identity Security Cloud Tenant",
+                    "items": [
+                        {
+                            "key": "isc_baseurl",
+                            "label": "Identity Security Cloud API URL",
+                            "type": "url",
+                            "required": true
+                        },
+                        {
+                            "key": "isc_clientId",
+                            "label": "Personal Access Token ID",
+                            "type": "text",
+                            "required": true
+                        },
+                        {
+                            "key": "isc_clientSecret",
+                            "label": "Personal Access Token secret",
+                            "type": "secret",
+                            "required": true
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "menu",
+            "label": "NERM connection details",
+            "items": [
+                {
+                    "type": "section",
+                    "sectionTitle": "Non-Employee Risk Management connection configuration",
+                    "sectionHelpMessage": "Connection details for Non-Employee Risk Management Tenant",
+                    "items": [
+                        {
+                            "key": "nerm_baseurl",
+                            "label": "Non-Employee Risk Management API URL",
+                            "type": "url",
+                            "required": true
+                        },
+                        {
+                            "key": "nerm_token",
+                            "label": "Access token",
+                            "type": "secret",
+                            "required": true
+                        },
+                        {
+                            "key": "nerm_admin",
+                            "label": "Admin username",
+                            "type": "text",
+                            "required": true
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "menu",
+            "label": "Configuration",
+            "items": [
+                {
+                    "type": "section",
+                    "sectionTitle": "Accounts",
+                    "sectionHelpMessage": "Account management configuration",
+                    "items": [
+                        {
+                            "key": "account_type",
+                            "label": "Account type",
+                            "type": "radio",
+                            "required": true,
+                            "options": [
+                                {
+                                    "label": "User",
+                                    "value": "NeprofileUser"
+                                },
+
+                                {
+                                    "label": "Portal user",
+                                    "value": "NeaccessUser"
+                                },
+                                {
+                                    "label": "Profile",
+                                    "value": "Profile"
+                                }
+                            ]
+                        },
+                        {
+                            "key": "profile_name",
+                            "label": "Profile type name",
+                            "type": "text",
+                            "required": true,
+                            "parentKey": "account_type",
+                            "parentValue": "Profile"
+                        },
+                        {
+                            "key": "login_attribute",
+                            "label": "Login attribute",
+                            "type": "text",
+                            "helpKey": "Profile attribute to get user login from if needed",
+                            "required": false,
+                            "parentKey": "account_type",
+                            "parentValue": "Profile"
+                        },
+                        {
+                            "key": "operations",
+                            "label": "Workflows",
+                            "titleKey": "operation",
+                            "subtitleKey": "name",
+                            "dragNDropEnabled": true,
+                            "deleteButton": true,
+                            "editButton": true,
+                            "addButton": true,
+                            "copyButton": true,
+                            "buttonLabel": "Add operation configuration",
+                            "type": "cardList",
+                            "parentKey": "account_type",
+                            "parentValue": "Profile",
+                            "helpKey": "Enable workflows to be run after an account operation",
+                            "subMenus": [
+                                {
+                                    "label": "Workflow configuration",
+                                    "items": [
+                                        {
+                                            "key": "name",
+                                            "label": "Workflow name",
+                                            "type": "text",
+                                            "required": false,
+                                            "helpKey": "Workflow name, for reference only"
+                                        },
+                                        {
+                                            "key": "operation",
+                                            "label": "Account operation",
+                                            "helpKey": "Account operation that triggers the workflow",
+                                            "type": "select",
+                                            "required": true,
+                                            "options": [
+                                                {
+                                                    "label": "Create",
+                                                    "value": "create"
+                                                },
+                                                {
+                                                    "label": "Update",
+                                                    "value": "update"
+                                                },
+                                                {
+                                                    "label": "Enable",
+                                                    "value": "enable"
+                                                },
+                                                {
+                                                    "label": "Disable",
+                                                    "value": "disable"
+                                                },
+                                                {
+                                                    "label": "Delete",
+                                                    "value": "delete"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "key": "workflow",
+                                            "label": "Workflow ID",
+                                            "type": "text",
+                                            "required": true,
+                                            "helpKey": "NERM workflow ID"
+                                        },
+                                        {
+                                            "key": "requester_id",
+                                            "label": "Requester",
+                                            "helpKey": "User running the workflow",
+                                            "type": "select",
+                                            "required": true,
+                                            "options": [
+                                                {
+                                                    "label": "Admin",
+                                                    "value": "admin"
+                                                },
+                                                {
+                                                    "label": "User",
+                                                    "value": "user_id"
+                                                },
+                                                {
+                                                    "label": "Sponsor",
+                                                    "value": "sponsor_user_id"
+                                                },
+                                                {
+                                                    "label": "Approver",
+                                                    "value": "approver_user_id"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "key": "wait",
+                                            "label": "Wait for workflow to finish",
+                                            "helpKey": "Wait for workflow to finish before returning the account",
+                                            "type": "checkbox",
+                                            "required": false
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "section",
+                    "sectionTitle": "Entitlements configuration",
+                    "sectionHelpMessage": "Configure object mapping for entitlement schema discovery",
+                    "items": [
+                        {
+                            "key": "workflows",
+                            "label": "Workflows",
+                            "titleKey": "entitlement",
+                            "subtitleKey": "workflow",
+                            "dragNDropEnabled": true,
+                            "deleteButton": true,
+                            "editButton": true,
+                            "addButton": true,
+                            "copyButton": true,
+                            "buttonLabel": "Add workflow mapping",
+                            "type": "cardList",
+                            "helpKey": "Workflow mapping configuration for entitlement schema discovery",
+                            "subMenus": [
+                                {
+                                    "label": "Workflow configuration",
+                                    "items": [
+                                        {
+                                            "key": "entitlement",
+                                            "label": "Entitlement name",
+                                            "type": "text",
+                                            "required": true,
+                                            "helpKey": "Entitlement display name"
+                                        },
+                                        {
+                                            "key": "workflow",
+                                            "label": "Workflow ID",
+                                            "type": "text",
+                                            "required": true,
+                                            "helpKey": "NERM workflow ID"
+                                        },
+                                        {
+                                            "key": "requester_id",
+                                            "label": "Requester",
+                                            "helpKey": "User running the workflow",
+                                            "type": "select",
+                                            "required": true,
+                                            "options": [
+                                                {
+                                                    "label": "Admin",
+                                                    "value": "admin"
+                                                },
+                                                {
+                                                    "label": "User",
+                                                    "value": "user_id"
+                                                },
+                                                {
+                                                    "label": "Sponsor",
+                                                    "value": "sponsor_user_id"
+                                                },
+                                                {
+                                                    "label": "Approver",
+                                                    "value": "approver_user_id"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "key": "profiles",
+                            "label": "Profile types",
+                            "titleKey": "name",
+                            "subtitleKey": "attribute",
+                            "dragNDropEnabled": true,
+                            "deleteButton": true,
+                            "editButton": true,
+                            "addButton": true,
+                            "copyButton": true,
+                            "buttonLabel": "Add profile type mapping",
+                            "helpKey": "Profile mapping configuration for entitlement schema discovery",
+                            "type": "cardList",
+                            "subMenus": [
+                                {
+                                    "label": "Profile mapping",
+                                    "items": [
+                                        {
+                                            "key": "name",
+                                            "label": "Profile name",
+                                            "helpKey": "NERM profile name",
+                                            "type": "text",
+                                            "required": true
+                                        },
+                                        {
+                                            "key": "attribute",
+                                            "label": "Account attribute name",
+                                            "helpKey": "Account attribute name",
+                                            "type": "text",
+                                            "required": true
+                                        },
+                                        {
+                                            "key": "workflow",
+                                            "label": "Workflow ID",
+                                            "type": "text",
+                                            "required": false,
+                                            "helpKey": "NERM workflow ID"
+                                        },
+                                        {
+                                            "key": "requester_id",
+                                            "label": "Requester",
+                                            "helpKey": "User running the workflow",
+                                            "type": "select",
+                                            "required": true,
+                                            "options": [
+                                                {
+                                                    "label": "Admin",
+                                                    "value": "admin"
+                                                },
+                                                {
+                                                    "label": "User",
+                                                    "value": "user_id"
+                                                },
+                                                {
+                                                    "label": "Sponsor",
+                                                    "value": "sponsor_user_id"
+                                                },
+                                                {
+                                                    "label": "Approver",
+                                                    "value": "approver_user_id"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "key": "wait",
+                                            "label": "Wait for workflow to finish",
+                                            "helpKey": "Wait for workflow to finish before returning the account",
+                                            "type": "checkbox",
+                                            "required": false
+                                        },
+                                        {
+                                            "key": "config",
+                                            "label": "Attributes",
+                                            "type": "list",
+                                            "required": true,
+                                            "helpKey": "List of attributes to add to the entitlement"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "menu",
+            "label": "Push Mode Configuration",
+            "items": [
+                {
+                    "type": "section",
+                    "sectionTitle": "Push mode configuration",
+                    "sectionHelpMessage": "Configuration details for pushing ISC contents to NERM",
+                    "items": [
+                        {
+                            "key": "push_mode",
+                            "label": "Run push mode on account aggregation?",
+                            "helpKey": "Push ISC objects on entitlement aggregation",
+                            "type": "checkbox",
+                            "required": false
+                        },
+                        {
+                            "key": "mappings",
+                            "label": "Profile mapping",
+                            "titleKey": "index",
+                            "subtitleKey": "profile",
+                            "dragNDropEnabled": true,
+                            "deleteButton": true,
+                            "editButton": true,
+                            "addButton": true,
+                            "copyButton": true,
+                            "buttonLabel": "Add profile mapping",
+                            "type": "cardList",
+                            "subMenus": [
+                                {
+                                    "label": "Profile mapping configuration",
+                                    "items": [
+                                        {
+                                            "key": "index",
+                                            "label": "Search index",
+                                            "type": "select",
+                                            "required": true,
+                                            "helpKey": "Search index to use",
+                                            "options": [
+                                                {
+                                                    "label": "Identities",
+                                                    "value": "identities"
+                                                },
+                                                {
+                                                    "label": "Roles",
+                                                    "value": "roles"
+                                                },
+                                                {
+                                                    "label": "Access profiles",
+                                                    "value": "accessprofiles"
+                                                },
+                                                {
+                                                    "label": "Entitlements",
+                                                    "value": "entitlements"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "key": "search",
+                                            "label": "Search",
+                                            "type": "text",
+                                            "required": true,
+                                            "helpKey": "Search query"
+                                        },
+                                        {
+                                            "key": "id",
+                                            "label": "ID attribute",
+                                            "type": "text",
+                                            "required": true,
+                                            "helpKey": "NERM attribute to store object ID"
+                                        },
+                                        {
+                                            "key": "profile",
+                                            "label": "Profile type name",
+                                            "type": "text",
+                                            "required": true,
+                                            "helpKey": "NERM profile type name"
+                                        },
+                                        {
+                                            "key": "mapping",
+                                            "label": "Attribute mapping",
+                                            "type": "keyValue",
+                                            "keyValueKey": {
+                                                "key": "key",
+                                                "label": "NERM attribute",
+                                                "type": "text",
+                                                "required": true,
+                                                "maxlength": "4096"
+                                            },
+                                            "keyValueValue": {
+                                                "key": "value",
+                                                "label": "ISC attribute",
+                                                "type": "text",
+                                                "required": true,
+                                                "maxlength": "4096"
+                                            }
+                                        },
+                                        {
+                                            "key": "nested",
+                                            "label": "Nest elements?",
+                                            "type": "checkbox",
+                                            "required": false,
+                                            "helpKey": "Check this option to nest results within a previously defined profile mapping"
+                                        },
+                                        {
+                                            "key": "sync",
+                                            "label": "Only sync nested elements",
+                                            "type": "checkbox",
+                                            "parentKey": "nested",
+                                            "parentValue": "true",
+                                            "required": false,
+                                            "helpKey": "Enable this option to exclude elements not found on parent profiles"
+                                        },
+                                        {
+                                            "key": "attribute",
+                                            "label": "Attribute name",
+                                            "type": "text",
+                                            "required": true,
+                                            "helpKey": "NERM attribute name for the relationship",
+                                            "parentKey": "nested",
+                                            "parentValue": "true"
+                                        },
+                                        {
+                                            "key": "parent_index",
+                                            "label": "Parent search index",
+                                            "type": "select",
+                                            "required": true,
+                                            "helpKey": "Already defined search index to use.",
+                                            "parentKey": "nested",
+                                            "parentValue": "true",
+                                            "options": [
+                                                {
+                                                    "label": "Identities",
+                                                    "value": "identities"
+                                                },
+                                                {
+                                                    "label": "Roles",
+                                                    "value": "roles"
+                                                },
+                                                {
+                                                    "label": "Access profiles",
+                                                    "value": "accessprofiles"
+                                                },
+                                                {
+                                                    "label": "Entitlements",
+                                                    "value": "entitlements"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "accountSchema": {
+        "displayAttribute": "id",
+        "identityAttribute": "name",
+        "attributes": [
+            {
+                "name": "id",
+                "type": "string",
+                "description": "ID"
+            },
+            {
+                "name": "name",
+                "type": "string",
+                "description": "Name"
+            },
+            {
+                "name": "status",
+                "type": "string",
+                "description": "Status"
+            },
+            {
+                "name": "user_id",
+                "type": "string",
+                "description": "User ID"
+            },
+            {
+                "name": "login",
+                "type": "string",
+                "description": "User login"
+            },
+            {
+                "name": "types",
+                "description": "Types",
+                "type": "string",
+                "multi": true,
+                "entitlement": true,
+                "managed": true,
+                "schemaObjectType": "type"
+            },
+            {
+                "name": "roles",
+                "description": "Roles",
+                "type": "string",
+                "multi": true,
+                "entitlement": true,
+                "managed": true,
+                "schemaObjectType": "role"
+            },
+            {
+                "name": "workflows",
+                "description": "Workflows",
+                "type": "string",
+                "multi": true,
+                "entitlement": true,
+                "managed": true,
+                "schemaObjectType": "workflow"
+            }
+        ]
+    },
+    "entitlementSchemas": [
+        {
+            "type": "type",
+            "identityAttribute": "id",
+            "displayAttribute": "name",
+            "attributes": [
+                {
+                    "name": "id",
+                    "type": "string",
+                    "description": "Account type ID"
+                },
+                {
+                    "name": "name",
+                    "type": "string",
+                    "description": "Account type name"
+                },
+                {
+                    "name": "description",
+                    "type": "string",
+                    "description": "Description"
+                }
+            ]
+        },
+        {
+            "type": "role",
+            "identityAttribute": "id",
+            "displayAttribute": "name",
+            "attributes": [
+                {
+                    "name": "id",
+                    "type": "string",
+                    "description": "ID"
+                },
+                {
+                    "name": "name",
+                    "type": "string",
+                    "description": "Name"
+                },
+                {
+                    "name": "groups",
+                    "type": "string",
+                    "multi": true,
+                    "description": "Groups"
+                }
+            ]
+        },
+        {
+            "type": "workflow",
+            "identityAttribute": "id",
+            "displayAttribute": "name",
+            "attributes": [
+                {
+                    "name": "id",
+                    "type": "string",
+                    "description": "ID"
+                },
+                {
+                    "name": "name",
+                    "type": "string",
+                    "description": "Name"
+                },
+                {
+                    "name": "requester_id",
+                    "type": "string",
+                    "description": "Requester ID"
+                }
+            ]
+        }
+    ]
+}
