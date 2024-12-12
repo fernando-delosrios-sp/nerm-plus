@@ -239,13 +239,14 @@ export const connector = async () => {
     }
 
     const addRole = async (account: StdAccountListOutput, role_id: string) => {
-        let id
+        let id: string
         switch (config.account_type) {
             case 'Profile':
                 if (!account.attributes.user_id) {
                     addType(account, 'NeprofileUser')
                 }
-                id = account.attributes.user_id!
+                id = account.attributes.user_id as string
+                break
             default:
                 id = account.identity!
                 break
