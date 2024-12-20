@@ -29,3 +29,10 @@ export const USERONLY_ATTRIBUTES = [
 ]
 export const PROFILETYPE_ATTRIBUTES = ['ProfileSearchAttribute', 'ProfileSelectAttribute']
 export const WORKFLOW_PENDINGSTATUSES = ['pending request', 'pending set attribute']
+export const ENTITLEMENT_ATTRIBUTES = ['types', 'workflows', 'roles']
+export const BATCH_SIZE = 100
+export const TYPES: { [key: string]: string } = {
+    roles: 'ROLE',
+    accessprofiles: 'ACCESS_PROFILE',
+    entitlements: 'ENTITLEMENT',
+}

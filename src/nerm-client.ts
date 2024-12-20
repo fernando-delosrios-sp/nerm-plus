@@ -1,9 +1,10 @@
-import axios, { AxiosRequestConfig, AxiosInstance, AxiosResponse } from 'axios'
+import axios, { AxiosRequestConfig } from 'axios'
 import axiosThrottle from 'axios-request-throttle'
 import axiosRetry from 'axios-retry'
 import { AxiosCacheInstance, setupCache } from 'axios-cache-interceptor'
 import { retriesConfig, throttleConfig } from './axios'
 import {
+    ENTITLEMENT_ATTRIBUTES,
     PROFILE_ROOTATTRIBUTES,
     PROFILETYPE_ATTRIBUTES,
     QUERYLIMIT,
@@ -77,16 +78,17 @@ export class NERMClient {
         }
     }
 
-    private async getRequest(url: string, type: string): Promise<any> {
+    private async getRequest(url: string, type?: string, params?: any): Promise<any> {
         const request: AxiosRequestConfig = {
             method: 'get',
             url,
+            params,
         }
 
         let item: any
         try {
             const response = await this.client.request(request)
-            item = response.data[type]
+            item = type ? response.data[type] : response.data
         } catch (error) {
             logger.error((error as any).response.data.error ?? error)
         } finally {
@@ -145,6 +147,13 @@ export class NERMClient {
         } finally {
             return item
         }
+    }
+
+    getJobStatus = async (id: string): Promise<any> => {
+        const url = `/job_status`
+        const type = undefined
+
+        return this.getRequest(url, type)
     }
 
     async *listProfileTypes(params?: any) {
@@ -320,6 +329,16 @@ export class NERMClient {
         }
     }
 
+    async getUserRoleAssignments(user_id: any) {
+        const url = `/user_roles`
+        const type = 'user_roles'
+        const params = {
+            user_id,
+        }
+
+        return await this.getRequest(url, type, params)
+    }
+
     async getWorkflowSession(id: any) {
         const url = `/workflow_sessions/${id}`
         const type = 'workflow_session'
@@ -371,9 +390,9 @@ export class NERMClient {
 
         //Need to check other multi-valued attribute types like tags
         if (attributeType?.allow_multiple_selections) {
-            const message = `Unsupported operation: Cannot update multivalued attribute ${path}`
-            logger.error(message)
-            return { profile: undefined, path }
+            // const message = `Unsupported operation: Cannot update multivalued attribute ${path}`
+            // logger.error(message)
+            return { profile, path }
         }
 
         if (hierarchy.length > 0) {
@@ -388,7 +407,7 @@ export class NERMClient {
     async getAttributeRecursively(profile: any, name: string): Promise<any> {
         let hierarchy = name.split('.').reverse()
         const parent = hierarchy.pop()!
-        const children = hierarchy.join('.')
+        const children = hierarchy.reverse().join('.')
         const attributeType = await this.getAttribute(parent)
         let isMulti = attributeType ? attributeType.allow_multiple_selections : false
         let values: any | any[] = []
@@ -409,7 +428,7 @@ export class NERMClient {
                             isMulti = true
                             values = values.concat(childrenProfiles.filter((x) => x !== undefined))
                         } else {
-                            values = [childrenProfiles]
+                            values.push(childrenProfiles)
                         }
                     }
                 } else {
@@ -440,15 +459,17 @@ export class NERMClient {
         const attributes: { [key: string]: any } = {}
         for (const attr of schema.attributes!) {
             let finalValue
-            if (attr.name === 'types') {
-                finalValue = ['Profile']
-                if (profile.attributes.user_id) {
-                    const user = await this.getUser(profile.attributes.user_id)
-                    if (user) {
-                        finalValue.push(user.type)
+            if (ENTITLEMENT_ATTRIBUTES.includes(attr.name)) {
+                if (attr.name === 'types') {
+                    finalValue = ['Profile']
+                    if (profile.attributes.user_id) {
+                        const user = await this.getUser(profile.attributes.user_id)
+                        if (user) {
+                            finalValue.push(user.type)
+                        }
                     }
+                    attributes[attr.name] = finalValue
                 }
-                attributes[attr.name] = finalValue
             } else {
                 const value = await this.getAttributeRecursively(profile, attr.name!)
                 const isArray = Array.isArray(value)
@@ -555,10 +576,8 @@ export class NERMClient {
         const type = 'user_role'
 
         const body = {
-            user_role: {
-                user_id,
-                role_id,
-            },
+            user_id,
+            role_id,
         }
 
         return this.createRequest(url, type, body)

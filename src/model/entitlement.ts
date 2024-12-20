@@ -65,7 +65,7 @@ export class Profile implements StdEntitlementListOutput {
     identity: string
     uuid: string
     key?: Key | undefined
-    type: string = 'profile'
+    type: string
     deleted?: boolean | undefined
     attributes: Attributes
     permissions?: Permission[] | undefined
@@ -74,6 +74,14 @@ export class Profile implements StdEntitlementListOutput {
         const { id, name } = input
         let attributes: Attributes = { id, name }
         attrs.forEach((x) => (attributes[x] = input.attributes[x]))
+        let description
+        try {
+            description = attrs.find((x) => /.*description/.test(x))
+        } catch (error) {}
+        if (description) {
+            attributes.description = input.attributes[description]
+        }
+        this.type = type
         this.identity = id
         this.uuid = name
         this.attributes = attributes

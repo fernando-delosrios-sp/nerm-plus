@@ -19,8 +19,8 @@ export const genericEntitlement2StdEntitlementListOutput = (
     return entitlement
 }
 
-export const name2Attribute = (name: string): AttributeDefinition => {
-    const attribute: AttributeDefinition = {
+export const name2Attribute = (name: string): SchemaAttribute => {
+    const attribute: SchemaAttribute = {
         type: 'STRING',
         name,
         description: name,
@@ -69,17 +69,17 @@ export const apiSchema2Schema = (apiSchema: ApiSchema): AccountSchema => {
     return schema
 }
 
-export const profile2Schema = (profile: any): ApiSchema => {
+export const profile2EntitlementSchema = (profile: any): ApiSchema => {
     const schema: ApiSchema = { ...defaultEntitlementSchema }
     schema.name = profile.name
+    schema.nativeObjectType = profile.name
     schema.attributes = [...schema.attributes!, ...profile.attributes.map(name2Attribute)]
 
     return schema
 }
 
 export const mergeProfileWithConfig = (profile: any, conf: any): any => {
-    const config = conf.find((x: { name: any }) => x.name === profile.name)
-    const result = { ...profile, attributes: config.attributes ?? [] }
+    const result = { ...profile, attributes: conf.attributes ?? [] }
 
     return result
 }

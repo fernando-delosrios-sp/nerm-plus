@@ -62,9 +62,8 @@ export const defaultAccountSchema: AccountSchema = {
 }
 
 export const defaultEntitlementSchema: ApiSchema = {
-    displayAttribute: 'id',
-    identityAttribute: 'name',
-    nativeObjectType: 'Group',
+    identityAttribute: 'id',
+    displayAttribute: 'name',
     attributes: [
         {
             name: 'id',
@@ -75,6 +74,11 @@ export const defaultEntitlementSchema: ApiSchema = {
             name: 'name',
             type: 'STRING',
             description: 'Name',
+        },
+        {
+            name: 'description',
+            type: 'STRING',
+            description: 'Description',
         },
     ],
 }

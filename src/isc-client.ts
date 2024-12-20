@@ -1,10 +1,14 @@
 import {
     Configuration,
     ConfigurationParameters,
+    Index,
     Paginator,
     PublicIdentitiesConfigApi,
     PublicIdentityConfig,
     Schema,
+    Search,
+    SearchApi,
+    SearchDocument,
     SourcesApi,
     SourcesApiCreateSourceSchemaRequest,
 } from 'sailpoint-api-client'
@@ -64,5 +68,20 @@ export class ISCClient {
         const response = await api.createSourceSchema(requestParameters)
 
         return response.data
+    }
+
+    async search(query: string, index: Index): Promise<SearchDocument[]> {
+        const api = new SearchApi(this.config)
+        const search: Search = {
+            indices: [index],
+            query: {
+                query,
+            },
+            sort: ['id'],
+            includeNested: true,
+        }
+
+        const response = await Paginator.paginateSearchApi(api, search)
+        return response.data as SearchDocument[]
     }
 }

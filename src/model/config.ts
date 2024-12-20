@@ -11,7 +11,8 @@ export type Operation = {
 }
 export type Profile = {
     name: string
-    config: string[]
+    attribute: string
+    attributes: string[]
 }
 
 export type Mapping = {
