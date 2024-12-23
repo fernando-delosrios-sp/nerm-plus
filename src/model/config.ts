@@ -22,8 +22,9 @@ export type Mapping = {
     profile: string
     mapping: { [key: string]: string }
     nested?: boolean
-    child_index?: IndexType
+    parent_index?: IndexType
     attribute?: string
+    sync: boolean
 }
 
 export type Workflow = {

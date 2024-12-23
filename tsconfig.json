@@ -10,7 +10,8 @@
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
-        "sourceMap": true
+        "sourceMap": true,
+        "lib": ["esnext", "dom", "dom.iterable"]
     },
     "include": ["src/**/*"],
     "exclude": ["node_modules", "**/*.spec.ts", "**/*.spec.js"]

@@ -433,10 +433,19 @@
                                         },
                                         {
                                             "key": "nested",
-                                            "label": "Nested profiles",
+                                            "label": "Nest elements?",
                                             "type": "checkbox",
                                             "required": false,
-                                            "helpKey": "This profile contains relationships to other profiles"
+                                            "helpKey": "Check this option to nest results within a previously defined profile mapping"
+                                        },
+                                        {
+                                            "key": "sync",
+                                            "label": "Only sync nested elements",
+                                            "type": "checkbox",
+                                            "parentKey": "nested",
+                                            "parentValue": "true",
+                                            "required": false,
+                                            "helpKey": "Enable this option to exclude elements not found on parent profiles"
                                         },
                                         {
                                             "key": "attribute",
@@ -448,14 +457,18 @@
                                             "parentValue": "true"
                                         },
                                         {
-                                            "key": "child_index",
-                                            "label": "Child search index",
+                                            "key": "parent_index",
+                                            "label": "Parent search index",
                                             "type": "select",
                                             "required": true,
-                                            "helpKey": "Already defined search index to use. Only items related to the parent index will be pushed.",
+                                            "helpKey": "Already defined search index to use.",
                                             "parentKey": "nested",
                                             "parentValue": "true",
                                             "options": [
+                                                {
+                                                    "label": "Identities",
+                                                    "value": "identities"
+                                                },
                                                 {
                                                     "label": "Roles",
                                                     "value": "roles"

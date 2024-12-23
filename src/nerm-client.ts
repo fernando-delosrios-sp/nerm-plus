@@ -4,6 +4,7 @@ import axiosRetry from 'axios-retry'
 import { AxiosCacheInstance, setupCache } from 'axios-cache-interceptor'
 import { retriesConfig, throttleConfig } from './axios'
 import {
+    BATCH_SIZE,
     ENTITLEMENT_ATTRIBUTES,
     PROFILE_ROOTATTRIBUTES,
     PROFILETYPE_ATTRIBUTES,
@@ -104,11 +105,13 @@ export class NERMClient {
         }
 
         let item: any
+        let response: any
         try {
-            const response = await this.client.request(request)
+            response = await this.client.request(request)
             item = response.data[type]
         } catch (error) {
             logger.error((error as any).response.data.error ?? error)
+            item = response
         } finally {
             return item
         }
@@ -122,11 +125,13 @@ export class NERMClient {
         }
 
         let item: any
+        let response: any
         try {
-            const response = await this.client.request(request)
+            response = await this.client.request(request)
             item = response.data[type]
         } catch (error) {
             logger.error((error as any).response.data.error ?? error)
+            item = response
         } finally {
             return item
         }
@@ -260,6 +265,32 @@ export class NERMClient {
         const type = 'profile'
 
         return await this.createRequest(url, type, body)
+    }
+
+    async createProfiles(profiles: any[]) {
+        const url = `/profiles`
+        const type = 'profiles'
+        let pendingItems = profiles.length
+        const jobList = []
+        while (pendingItems > 0) {
+            const batchSize = pendingItems < BATCH_SIZE ? pendingItems : BATCH_SIZE
+            pendingItems -= batchSize
+            const batchItems = profiles.splice(0, batchSize)
+            const response = await this.createRequest(url, type, batchItems)
+            if (response.job_status && response.job_status.job_id) {
+                jobList.push(response.job_status.job_id)
+            }
+        }
+
+        while (jobList.length > 0) {
+            const jobId = jobList.pop()!
+            let status = 'pending'
+            do {
+                const response = await this.getJobStatus(jobId)
+                status = response.status
+                await new Promise((r) => setTimeout(r, 2000))
+            } while (status === 'pending' || status === 'queued' || status === 'working')
+        }
     }
 
     async updateProfile(id: string, body: any) {

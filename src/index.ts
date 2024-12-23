@@ -1,6 +1,7 @@
 import {
     AccountSchema,
     Attributes,
+    CommandHandler,
     ConnectorError,
     createConnector,
     logger,
@@ -28,16 +29,16 @@ import { apiSchema2Schema, profile2EntitlementSchema } from './utils'
 import { defaultAccountSchema } from './data/schema'
 import { Profile, Role, Type, Workflow } from './model/entitlement'
 import {
-    BATCH_SIZE,
+    accessTypeMapping,
+    parentChildAttributes,
     PROCESSINGWAIT,
     PROFILE_ROOTATTRIBUTES,
     PROFILEONLY_ATTRIBUTES,
     PROFILETYPE_ATTRIBUTES,
-    TYPES,
     USERONLY_ATTRIBUTES,
 } from './constants'
 import { NeaccessUserAccount, NeprofileUserAccount, ProfileAccount } from './model/account'
-import { IdentityDocument, SearchDocument } from 'sailpoint-api-client'
+import { SearchDocument } from 'sailpoint-api-client'
 
 // Connector must be exported as module property named connector
 export const connector = async () => {
@@ -46,8 +47,34 @@ export const connector = async () => {
     const nerm = new NERMClient(config)
     const spConnectorInstanceId = config.spConnectorInstanceId
 
-    const getKey = (map: any, val: any): any => {
-        return Object.keys(map).find((key) => map[key] === val)
+    const parents2children = (parents: SearchDocument[], type: string): Map<string, Set<string>> => {
+        const childrenMap: Map<string, Set<string>> = new Map()
+        const parent_type = parents[0] ? parents[0]._type : undefined
+        if (parent_type) {
+            const attribute = parentChildAttributes[parent_type][type]
+            if (attribute) {
+                for (const parent of parents as any[]) {
+                    const children = parent[attribute]
+                    for (const child of children) {
+                        let include = true
+                        if (attribute === 'access') {
+                            const accessType = accessTypeMapping[type]
+                            if (child.type !== accessType) {
+                                include = false
+                            }
+                        }
+
+                        if (childrenMap.has(child.id)) {
+                            childrenMap.get(child.id)?.add(parent.id)
+                        } else {
+                            childrenMap.set(child.id, new Set([parent.id]))
+                        }
+                    }
+                }
+            }
+        }
+
+        return childrenMap
     }
 
     const getAttribute = (object: { [key: string]: any }, attribute: string): any => {
@@ -62,71 +89,23 @@ export const connector = async () => {
         return o
     }
 
-    const entity2profile = (
-        entity: SearchDocument,
-        profile_type_id: string,
-        mapping: Mapping,
-        profileMap?: Map<string, Map<string, string[]>>
-    ): any => {
-        const map = { ...mapping }
+    const entity2profile = (entity: SearchDocument, profile_type_id: string, conf: Mapping): any => {
+        const map = { ...conf.mapping }
+        const e = entity as any
+        const status = e?.enabled || !e?.inactive ? 'Active' : 'Inactive'
         const profile: any = {
             profile_type_id,
-            status: 'Active',
-            name: getAttribute(entity, map.name),
+            status,
+            name: getAttribute(entity, 'name'),
         }
-        delete map.name
-        const attributes: Mapping = {}
+        const attributes: {
+            [key: string]: string
+        } = {}
         Object.entries(map).forEach(([k, v]) => (attributes[k] = getAttribute(entity, v)))
+        attributes[conf.id] = entity.id
         profile.attributes = attributes
 
-        if (profileMap) {
-            for (const [key, values] of profileMap.entries()) {
-                const id = profile.attributes[Object.keys(mapping).find((x) => mapping[x] === 'id')!]
-                const children = values.get(id)
-                if (children) {
-                    profile.attributes[key] = children
-                }
-            }
-        }
-
         return profile
-    }
-
-    const waitForJobsToFinish = async (jobList: string[]) => {
-        while (jobList.length > 0) {
-            const jobId = jobList.pop()!
-            let status = 'pending'
-            do {
-                const response = await nerm.getJobStatus(jobId)
-                status = response.status
-                await new Promise((r) => setTimeout(r, 2000))
-            } while (status === 'pending' || status === 'queued' || status === 'working')
-        }
-    }
-
-    const createProfiles = async (profiles: any[]) => {
-        let pendingItems = profiles.length
-        const jobList = []
-        while (pendingItems > 0) {
-            const batchSize = pendingItems < BATCH_SIZE ? pendingItems : BATCH_SIZE
-            pendingItems -= batchSize
-            const batchItems = profiles.splice(0, batchSize)
-            const profileRequest = {
-                profiles: batchItems,
-            }
-            const response = await nerm.createProfile(profileRequest)
-            if (response.job_status && response.job_status.job_id) {
-                jobList.push(response.job_status.job_id)
-            }
-        }
-        await waitForJobsToFinish(jobList)
-    }
-
-    const createProfile = async (profile: any) => {
-        const profileRequest = {
-            profile,
-        }
-        const response = await nerm.createProfile(profileRequest)
     }
 
     const buildNERMAccountBody = async (
@@ -447,8 +426,6 @@ export const connector = async () => {
             newValue = currentValue.filter((x: { id: string }) => x.id !== value).map((x: { id: string }) => x.id)
         }
         setAttribute(account, attribute, newValue)
-        // await nerm.setProfileAttribute(profile.id, attribute, newValue)
-        // account.attributes[attribute] = newValue
     }
 
     const getSchema = async () => {
@@ -513,85 +490,6 @@ export const connector = async () => {
             if (response && operation.wait) {
                 account = await buildAccount(account, schema)
             }
-        }
-    }
-
-    const pushContents = async () => {
-        const mappings = config.mappings ?? []
-        const identityConf = mappings.find((x) => x.index === 'identities')
-        let identities: IdentityDocument[] | undefined
-        let identityProfileType: string
-        let identityParams: any
-        let syncIdentities = false
-        if (identityConf) {
-            const { index, profile, search, sync } = identityConf
-            syncIdentities = sync
-            const response = await nerm.getProfileTypeByName(profile)
-            if (response) {
-                identityProfileType = response.profile_types[0].id!
-                identities = (await isc.search(search, index)) as IdentityDocument[]
-                identityParams = {
-                    profile_type_id: identityProfileType,
-                }
-            }
-        }
-
-        const profileMap: Map<string, Map<string, string[]>> = new Map()
-        for (const conf of mappings.filter((x) => x.index !== 'identities')) {
-            const { index, profile, search, attribute, mapping } = conf
-            let response = await nerm.getProfileTypeByName(profile)
-            if (response) {
-                const profileType = response.profile_types[0].id!
-                let entities = await isc.search(search, index)
-
-                let profiles = entities.map((x) => entity2profile(x, profileType, conf))
-                const params = {
-                    profile_type_id: profileType,
-                }
-
-                response = await nerm.listProfiles(params)
-                const attributeName = getKey(mapping, 'id') as string
-                const existingNames = response.profiles.map((x: { [x: string]: any }) => x.attributes[attributeName])
-                profiles = profiles.filter((x) => !existingNames.includes(x.attributes[attributeName]))
-                await createProfiles(profiles)
-
-                response = await nerm.listProfiles(params)
-                const profileObjects = response.profiles
-
-                if (syncIdentities) {
-                    const idAttribute = Object.keys(mapping).find((x) => mapping[x] === 'id')!
-                    const childrenMap: Map<string, string[]> = new Map()
-                    for (const identity of identities!) {
-                        const childIds = identity.access!.filter((x) => x.type === TYPES[index]).map((x) => x.id)
-                        const children = profileObjects
-                            .filter((x: { attributes: { [x: string]: string | undefined } }) =>
-                                childIds.includes(x.attributes[idAttribute])
-                            )
-                            .map((x: { id: any }) => x.id!)
-                        childrenMap.set(identity.id!, children)
-                    }
-                    profileMap.set(attribute, childrenMap)
-                }
-            }
-        }
-
-        let identityProfiles
-        if (syncIdentities) {
-            identityProfiles = identities!.map((x) => entity2profile(x, identityProfileType, identityConf!, profileMap))
-        } else {
-            identityProfiles = identities!.map((x) => entity2profile(x, identityProfileType, identityConf!))
-        }
-
-        const response = nerm.listProfiles(identityParams)
-        const attributeName = getKey(identityConf?.mapping, 'id') as string
-        let existingNames = []
-        for await (const profile of response) {
-            const name = profile.attributes[attributeName]
-            existingNames.push(name)
-        }
-        identityProfiles = identityProfiles.filter((x) => !existingNames.includes(x.attributes[attributeName]))
-        for (const profile of identityProfiles) {
-            await createProfile(profile)
         }
     }
 
@@ -739,7 +637,7 @@ export const connector = async () => {
             }
 
             if (config.push_mode) {
-                await pushContents()
+                await pushContents(context, input, res)
             }
         } catch (error) {
             logger.error(error)
@@ -964,6 +862,80 @@ export const connector = async () => {
         }
     }
 
+    const pushContents: CommandHandler = async (context, input, res) => {
+        const mappings = config.mappings!.sort((a, b) => (a.nested ? (b.nested ? 0 : 1) : -1)) ?? []
+        const masterProfileMap: Map<string, any[]> = new Map()
+        const masterEntityMap: Map<string, SearchDocument[]> = new Map()
+
+        for (const conf of mappings) {
+            const { nested, sync, index, profile, search, parent_index, attribute, id } = conf
+            const profileType = await nerm.getProfileTypeByName(profile)
+            if (profileType) {
+                const params = {
+                    profile_type_id: profileType.id,
+                }
+                const profileMap: Map<string, any> = new Map()
+                let profiles: any[] = []
+                let existingProfiles = nerm.listProfiles(params)
+                let entities = await isc.search(search, index)
+                let children: Map<string, Set<string>> = new Map()
+
+                if (nested) {
+                    const parents = masterEntityMap.get(parent_index!)!
+                    children = parents2children(parents, index)
+                }
+
+                for (const entity of entities) {
+                    let profile
+                    if (!sync || children?.has(entity.id)) {
+                        profile = entity2profile(entity, profileType.id, conf)
+                    }
+
+                    if (nested && profile) {
+                        const childParents = children?.get(entity.id) ?? new Set()
+                        const parentObjects = masterProfileMap.get(parent_index!)
+                        if (parentObjects) {
+                            const childParentProfiles = parentObjects
+                                .filter((x) => childParents.has(x.attributes[id]))
+                                .map((x) => x.id)
+                            profile.attributes[attribute!] = childParentProfiles
+                        }
+                    }
+
+                    if (profile) {
+                        profileMap.set(entity.id, profile)
+                    }
+                }
+
+                for await (const profile of existingProfiles) {
+                    profileMap.delete(profile.attributes[id])
+                }
+                const pendingProfiles = [...profileMap.values()]
+                if (nested) {
+                    const responses: Promise<any>[] = []
+                    for (const profile of pendingProfiles) {
+                        responses.push(nerm.createProfile(profile))
+                    }
+                    await Promise.all(responses)
+                } else {
+                    await nerm.createProfiles(pendingProfiles)
+                }
+
+                if (!nested) {
+                    existingProfiles = nerm.listProfiles(params)
+                    const ids = entities.map((x) => x.id)
+                    for await (const profile of existingProfiles) {
+                        if (ids.includes(profile.attributes[id])) {
+                            profiles.push(profile)
+                        }
+                    }
+                    masterProfileMap.set(index, profiles)
+                    masterEntityMap.set(index, entities)
+                }
+            }
+        }
+    }
+
     return createConnector()
         .stdTestConnection(stdTestConnection)
         .stdAccountDiscoverSchema(stdAccountDiscoverSchema)
@@ -975,4 +947,5 @@ export const connector = async () => {
         .stdAccountEnable(stdAccountEnable)
         .stdAccountDisable(stdAccountDisable)
         .stdAccountDelete(stdAccountDelete)
+        .command('std:push:contents', pushContents)
 }
