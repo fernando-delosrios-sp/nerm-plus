@@ -25,12 +25,10 @@ import { AccountType, Config, Mapping, RequesterType } from './model/config'
 import { ISCClient } from './isc-client'
 import { NERMClient } from './nerm-client'
 import { typeEntitlements } from './data/types'
-import { apiSchema2Schema, profile2EntitlementSchema } from './utils'
+import { apiSchema2Schema, entity2profile, parents2children, profile2EntitlementSchema } from './utils'
 import { defaultAccountSchema } from './data/schema'
 import { Profile, Role, Type, Workflow } from './model/entitlement'
 import {
-    ACCESSTYPE_MAPPING,
-    PARENTCHILD_ATTRIBUTES,
     PROCESSINGWAIT,
     PROFILE_ROOTATTRIBUTES,
     PROFILEONLY_ATTRIBUTES,
@@ -46,67 +44,6 @@ export const connector = async () => {
     const isc = new ISCClient(config)
     const nerm = new NERMClient(config)
     const spConnectorInstanceId = config.spConnectorInstanceId
-
-    const parents2children = (parents: SearchDocument[], type: string): Map<string, Set<string>> => {
-        const childrenMap: Map<string, Set<string>> = new Map()
-        const parent_type = parents[0] ? parents[0]._type : undefined
-        if (parent_type) {
-            const attribute = PARENTCHILD_ATTRIBUTES[parent_type][type]
-            if (attribute) {
-                for (const parent of parents as any[]) {
-                    const children = parent[attribute]
-                    for (const child of children) {
-                        let include = true
-                        if (attribute === 'access') {
-                            const accessType = ACCESSTYPE_MAPPING[type]
-                            if (child.type !== accessType) {
-                                include = false
-                            }
-                        }
-
-                        if (childrenMap.has(child.id)) {
-                            childrenMap.get(child.id)?.add(parent.id)
-                        } else {
-                            childrenMap.set(child.id, new Set([parent.id]))
-                        }
-                    }
-                }
-            }
-        }
-
-        return childrenMap
-    }
-
-    const getAttribute = (object: { [key: string]: any }, attribute: string): any => {
-        let o = object
-        const attributes = attribute.split('.').reverse()
-        const a = attributes.pop()!
-        o = o[a]
-        if (attributes.length > 0) {
-            o = getAttribute(o, attributes.reverse().join('.'))
-        }
-
-        return o
-    }
-
-    const entity2profile = (entity: SearchDocument, profile_type_id: string, conf: Mapping): any => {
-        const map = { ...conf.mapping }
-        const e = entity as any
-        const status = e?.enabled || !e?.inactive ? 'Active' : 'Inactive'
-        const profile: any = {
-            profile_type_id,
-            status,
-            name: getAttribute(entity, 'name'),
-        }
-        const attributes: {
-            [key: string]: string
-        } = {}
-        Object.entries(map).forEach(([k, v]) => (attributes[k] = getAttribute(entity, v)))
-        attributes[conf.id] = entity.id
-        profile.attributes = attributes
-
-        return profile
-    }
 
     const buildNERMAccountBody = async (
         attributes: Attributes,

@@ -1,7 +1,9 @@
 import { AccountSchema, Attributes, SchemaAttribute, StdEntitlementListOutput } from '@sailpoint/connector-sdk'
 import { GenericEntitlement } from './model/entitlement'
-import { Schema as ApiSchema, AttributeDefinition } from 'sailpoint-api-client'
+import { Schema as ApiSchema, AttributeDefinition, SearchDocument } from 'sailpoint-api-client'
 import { defaultEntitlementSchema } from './data/schema'
+import { ACCESSTYPE_MAPPING, PARENTCHILD_ATTRIBUTES } from './data/constants'
+import { Mapping } from './model/config'
 
 const typesMap: Map<string, string> = new Map([['STRING', 'string']])
 
@@ -82,4 +84,65 @@ export const mergeProfileWithConfig = (profile: any, conf: any): any => {
     const result = { ...profile, attributes: conf.attributes ?? [] }
 
     return result
+}
+
+export const parents2children = (parents: SearchDocument[], type: string): Map<string, Set<string>> => {
+    const childrenMap: Map<string, Set<string>> = new Map()
+    const parent_type = parents[0] ? parents[0]._type : undefined
+    if (parent_type) {
+        const attribute = PARENTCHILD_ATTRIBUTES[parent_type][type]
+        if (attribute) {
+            for (const parent of parents as any[]) {
+                const children = parent[attribute]
+                for (const child of children) {
+                    let include = true
+                    if (attribute === 'access') {
+                        const accessType = ACCESSTYPE_MAPPING[type]
+                        if (child.type !== accessType) {
+                            include = false
+                        }
+                    }
+
+                    if (childrenMap.has(child.id)) {
+                        childrenMap.get(child.id)?.add(parent.id)
+                    } else {
+                        childrenMap.set(child.id, new Set([parent.id]))
+                    }
+                }
+            }
+        }
+    }
+
+    return childrenMap
+}
+
+export const getAttribute = (object: { [key: string]: any }, attribute: string): any => {
+    let o = object
+    const attributes = attribute.split('.').reverse()
+    const a = attributes.pop()!
+    o = o[a]
+    if (attributes.length > 0) {
+        o = getAttribute(o, attributes.reverse().join('.'))
+    }
+
+    return o
+}
+
+export const entity2profile = (entity: SearchDocument, profile_type_id: string, conf: Mapping): any => {
+    const map = { ...conf.mapping }
+    const e = entity as any
+    const status = e?.enabled || !e?.inactive ? 'Active' : 'Inactive'
+    const profile: any = {
+        profile_type_id,
+        status,
+        name: getAttribute(entity, 'name'),
+    }
+    const attributes: {
+        [key: string]: string
+    } = {}
+    Object.entries(map).forEach(([k, v]) => (attributes[k] = getAttribute(entity, v)))
+    attributes[conf.id] = entity.id
+    profile.attributes = attributes
+
+    return profile
 }
