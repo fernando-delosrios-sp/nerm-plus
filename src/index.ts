@@ -494,7 +494,7 @@ export const connector = async () => {
     }
 
     const send = async <T>(res: Response<T>, output: T) => {
-        logger.info(output)
+        logger.debug(output)
         res.send(output)
     }
 
