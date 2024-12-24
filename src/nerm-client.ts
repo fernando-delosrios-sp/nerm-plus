@@ -12,7 +12,7 @@ import {
     QUERYORDER,
     RETRIES,
     WORKFLOW_PENDINGSTATUSES,
-} from './constants'
+} from './data/constants'
 import { AccountSchema, logger } from '@sailpoint/connector-sdk'
 
 type UserType = 'NeprofileUser' | 'NeaccessUser'

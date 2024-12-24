@@ -36,13 +36,13 @@ export const TYPES: { [key: string]: string } = {
     accessprofiles: 'ACCESS_PROFILE',
     entitlements: 'ENTITLEMENT',
 }
-export const accessTypeMapping: { [key: string]: string } = {
+export const ACCESSTYPE_MAPPING: { [key: string]: string } = {
     role: 'ROLE',
     accessprofile: 'ACCESS_PROFILE',
     entitlement: 'ENTITLEMENT',
 }
 
-export const parentChildAttributes: any = {
+export const PARENTCHILD_ATTRIBUTES: any = {
     role: {
         accessprofiles: 'accessProfiles',
         entitlements: 'entitlements',

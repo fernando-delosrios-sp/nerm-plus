@@ -29,14 +29,14 @@ import { apiSchema2Schema, profile2EntitlementSchema } from './utils'
 import { defaultAccountSchema } from './data/schema'
 import { Profile, Role, Type, Workflow } from './model/entitlement'
 import {
-    accessTypeMapping,
-    parentChildAttributes,
+    ACCESSTYPE_MAPPING,
+    PARENTCHILD_ATTRIBUTES,
     PROCESSINGWAIT,
     PROFILE_ROOTATTRIBUTES,
     PROFILEONLY_ATTRIBUTES,
     PROFILETYPE_ATTRIBUTES,
     USERONLY_ATTRIBUTES,
-} from './constants'
+} from './data/constants'
 import { NeaccessUserAccount, NeprofileUserAccount, ProfileAccount } from './model/account'
 import { SearchDocument } from 'sailpoint-api-client'
 
@@ -51,14 +51,14 @@ export const connector = async () => {
         const childrenMap: Map<string, Set<string>> = new Map()
         const parent_type = parents[0] ? parents[0]._type : undefined
         if (parent_type) {
-            const attribute = parentChildAttributes[parent_type][type]
+            const attribute = PARENTCHILD_ATTRIBUTES[parent_type][type]
             if (attribute) {
                 for (const parent of parents as any[]) {
                     const children = parent[attribute]
                     for (const child of children) {
                         let include = true
                         if (attribute === 'access') {
-                            const accessType = accessTypeMapping[type]
+                            const accessType = ACCESSTYPE_MAPPING[type]
                             if (child.type !== accessType) {
                                 include = false
                             }

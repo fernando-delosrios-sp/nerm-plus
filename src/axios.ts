@@ -1,5 +1,5 @@
 import { IAxiosRetryConfig } from 'axios-retry'
-import { REQUESTSPERSECOND, RETRIES } from './constants'
+import { REQUESTSPERSECOND, RETRIES } from './data/constants'
 import { logger } from '@sailpoint/connector-sdk'
 import { AxiosResponseHeaders } from 'axios'
 import axiosRetry from 'axios-retry'

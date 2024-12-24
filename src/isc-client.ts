@@ -12,7 +12,7 @@ import {
     SourcesApi,
     SourcesApiCreateSourceSchemaRequest,
 } from 'sailpoint-api-client'
-import { TOKEN_URL_PATH } from './constants'
+import { TOKEN_URL_PATH } from './data/constants'
 import axios from 'axios'
 import axiosThrottle from 'axios-request-throttle'
 import { retriesConfig, throttleConfig } from './axios'

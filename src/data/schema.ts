@@ -1,4 +1,4 @@
-import { AccountSchema, Schema } from '@sailpoint/connector-sdk'
+import { AccountSchema } from '@sailpoint/connector-sdk'
 import { Schema as ApiSchema } from 'sailpoint-api-client'
 
 export const defaultAccountSchema: AccountSchema = {
