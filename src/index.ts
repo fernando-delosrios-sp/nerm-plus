@@ -362,6 +362,7 @@ export const connector = async () => {
         } else {
             newValue = currentValue.filter((x: { id: string }) => x.id !== value).map((x: { id: string }) => x.id)
         }
+
         setAttribute(account, attribute, newValue)
     }
 
@@ -421,7 +422,10 @@ export const connector = async () => {
     }
 
     const processOperation = async (account: StdAccountListOutput, op: string, schema?: AccountSchema) => {
-        const operation = config.operations?.find((x) => x.operation === op)
+        let operation: any = config.operations?.find((x) => x.operation === op)
+        if (!operation) {
+            operation = config.profiles?.find((x) => x.name === op)
+        }
         if (operation) {
             const response = await runWorkflow(account, operation.workflow, operation.requester_id, operation.wait)
             if (response && operation.wait) {
@@ -633,7 +637,7 @@ export const connector = async () => {
     }
 
     const stdAccountCreate: StdAccountCreateHandler = async (context, input, res) => {
-        const operation = 'create'
+        const operations = ['create']
         logger.info(input)
         if (!input.schema) {
             const schema = await getSchema()
@@ -662,14 +666,25 @@ export const connector = async () => {
             }
         }
 
+        const entitlementSchemas = input.schema?.attributes.filter((x) => x.schemaObjectType)
+        for (const [key, value] of Object.entries(input.attributes)) {
+            const entitlementSchema = entitlementSchemas.find((x) => x.name === key)
+            if (entitlementSchema) {
+                operations.push(entitlementSchema.schemaObjectType!)
+                await profileAttributeOp(account, key, value as any, 'add')
+            }
+        }
+
         if (account) {
-            await processOperation(account, operation, input.schema)
+            for (const operation of operations) {
+                await processOperation(account, operation, input.schema)
+            }
             send(res, account)
         }
     }
 
     const stdAccountUpdate: StdAccountUpdateHandler = async (context, input, res) => {
-        const operation = 'update'
+        const operations = ['create']
         logger.info(input)
         if (!input.schema) {
             const schema = await getSchema()
@@ -699,11 +714,11 @@ export const connector = async () => {
                                     addWorkflow(account, value)
                                     break
                                 default:
-                                    if (
-                                        input.schema?.attributes.find(
-                                            (x) => x.name === change.attribute && x.schemaObjectType
-                                        )
-                                    ) {
+                                    const entitlementSchema = input.schema?.attributes.find(
+                                        (x) => x.name === change.attribute && x.schemaObjectType
+                                    )
+                                    if (entitlementSchema) {
+                                        operations.push(entitlementSchema.schemaObjectType as string)
                                         await profileAttributeOp(account, change.attribute, change.value, 'add')
                                     } else {
                                         const message = `"${change.attribute}" entitlement attribute not supported`
@@ -739,8 +754,11 @@ export const connector = async () => {
                     }
                 }
             }
+
             if (account) {
-                await processOperation(account, operation, input.schema)
+                for (const operation of operations) {
+                    await processOperation(account, operation, input.schema)
+                }
                 send(res, account)
             }
         }

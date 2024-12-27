@@ -98,6 +98,11 @@
                                     "label": "User",
                                     "value": "NeprofileUser"
                                 },
+
+                                {
+                                    "label": "Portal user",
+                                    "value": "NeaccessUser"
+                                },
                                 {
                                     "label": "Profile",
                                     "value": "Profile"
@@ -106,7 +111,7 @@
                         },
                         {
                             "key": "profile_name",
-                            "label": "Profile name",
+                            "label": "Profile type name",
                             "type": "text",
                             "required": true,
                             "parentKey": "account_type",
@@ -318,6 +323,45 @@
                                             "required": true
                                         },
                                         {
+                                            "key": "workflow",
+                                            "label": "Workflow ID",
+                                            "type": "text",
+                                            "required": false,
+                                            "helpKey": "NERM workflow ID"
+                                        },
+                                        {
+                                            "key": "requester_id",
+                                            "label": "Requester",
+                                            "helpKey": "User running the workflow",
+                                            "type": "select",
+                                            "required": true,
+                                            "options": [
+                                                {
+                                                    "label": "Admin",
+                                                    "value": "admin"
+                                                },
+                                                {
+                                                    "label": "User",
+                                                    "value": "user_id"
+                                                },
+                                                {
+                                                    "label": "Sponsor",
+                                                    "value": "sponsor_user_id"
+                                                },
+                                                {
+                                                    "label": "Approver",
+                                                    "value": "approver_user_id"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "key": "wait",
+                                            "label": "Wait for workflow to finish",
+                                            "helpKey": "Wait for workflow to finish before returning the account",
+                                            "type": "checkbox",
+                                            "required": false
+                                        },
+                                        {
                                             "key": "config",
                                             "label": "Attributes",
                                             "type": "list",
@@ -338,12 +382,12 @@
             "items": [
                 {
                     "type": "section",
-                    "sectionTitle": "Identity Security Cloud connection configuration",
-                    "sectionHelpMessage": "Configuration details for Identity Security Cloud Tenant",
+                    "sectionTitle": "Push mode configuration",
+                    "sectionHelpMessage": "Configuration details for pushing ISC contents to NERM",
                     "items": [
                         {
                             "key": "push_mode",
-                            "label": "Enable push mode",
+                            "label": "Run push mode on account aggregation?",
                             "helpKey": "Push ISC objects on entitlement aggregation",
                             "type": "checkbox",
                             "required": false
@@ -351,8 +395,6 @@
                         {
                             "key": "mappings",
                             "label": "Profile mapping",
-                            "parentKey": "push_mode",
-                            "parentValue": "true",
                             "titleKey": "index",
                             "subtitleKey": "profile",
                             "dragNDropEnabled": true,
@@ -407,10 +449,10 @@
                                         },
                                         {
                                             "key": "profile",
-                                            "label": "Profile name",
+                                            "label": "Profile type name",
                                             "type": "text",
                                             "required": true,
-                                            "helpKey": "NERM profile name"
+                                            "helpKey": "NERM profile type name"
                                         },
                                         {
                                             "key": "mapping",

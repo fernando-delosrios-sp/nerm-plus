@@ -12,6 +12,9 @@ export type Operation = {
 export type Profile = {
     name: string
     attribute: string
+    workflow?: string
+    requester_id: RequesterType
+    wait: boolean
     attributes: string[]
 }
 
