@@ -2,6 +2,13 @@
 
 ## Changelog
 
+-   0.1.5 (2025-04-02):
+    -   Countless bug fixes
+    -   Added account create template
+-   0.1.3 (2025-01-13):
+    -   Schema discovery and user management fixes
+-   0.1.2 (2025-01-10):
+    -   Minor fixes
 -   0.1.1 (2024-12-27):
     -   Documentation
     -   Minor fixes

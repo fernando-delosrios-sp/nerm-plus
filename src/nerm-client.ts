@@ -246,6 +246,13 @@ export class NERMClient {
         return await this.getRequest(url, type)
     }
 
+    async getRole(id: string): Promise<any> {
+        const url = `/roles/${id}`
+        const type = 'role'
+
+        return await this.getRequest(url, type)
+    }
+
     async *listRoles() {
         const url = `/roles`
         const type = 'roles'
@@ -480,7 +487,7 @@ export class NERMClient {
         }
 
         if (isMulti) {
-            return values
+            return values.length > 0 ? values : values[0]
         } else {
             return values[0]
         }
@@ -505,10 +512,14 @@ export class NERMClient {
                 const value = await this.getAttributeRecursively(profile, attr.name!)
                 const isArray = Array.isArray(value)
                 if (value) {
-                    const { profile_type_id } = isArray ? value[0] : value
-                    const referencedProfileType = profile_type_id
-                        ? await this.getProfileType(profile_type_id)
-                        : undefined
+                    const isObject = isArray ? typeof value[0] === 'object' : typeof value === 'object'
+                    let profile_type_id
+                    let referencedProfileType
+                    if (isObject) {
+                        profile_type_id = isArray ? value[0].profile_type_id : value.profile_type_id
+                        referencedProfileType = profile_type_id
+                    }
+
                     if (attr.entitlement) {
                         if (attr.schemaObjectType === referencedProfileType?.name) {
                             //Is profile entitlement

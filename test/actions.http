@@ -26,6 +26,13 @@ Content-Type: application/json
   "input": {},
   "config": {{config}}
 }
+
+HTTP/1.1 500  - Internal Server Error
+x-powered-by: Express
+content-type: application/x-ndjson
+date: Mon, 13 Jan 2025 13:28:59 GMT
+connection: close
+transfer-encoding: chunked
 ###
 # Push contents
 POST {{url}}
@@ -50,7 +57,7 @@ Content-Type: application/json
 HTTP/1.1 200  - OK
 x-powered-by: Express
 content-type: application/x-ndjson
-date: Mon, 23 Dec 2024 09:47:47 GMT
+date: Wed, 14 May 2025 14:10:36 GMT
 connection: close
 transfer-encoding: chunked
 ###
@@ -80,17 +87,10 @@ Content-Type: application/json
 {
   "type": "std:entitlement:list",
   "input": {
-        "type": "Locations"
+        "type": "role"
     },
   "config": {{config}}
 }
-
-HTTP/1.1 200  - OK
-x-powered-by: Express
-content-type: application/x-ndjson
-date: Fri, 20 Dec 2024 10:34:15 GMT
-connection: close
-transfer-encoding: chunked
 ###
 # Entitlement read
 POST {{url}}
@@ -135,16 +135,9 @@ Content-Type: application/json
 
 {
   "type": "std:account:update",
-  "input": {"changes":[{"attribute":"assignment_alternate_locations","op":"Remove","value":"fa2a93b2-22ca-4c24-b6be-87fe4688ba71"}], "identity": "18cf6ace-9004-48b2-a7b9-00bc224eb26b"},
+  "input": {"changes":[{"attribute":"workflows","op":"Add","value":"dc1b7eef-52cb-4784-b1c5-d9dd2550962d"}], "identity": "87f9f303-70b4-4b21-a4f9-7b4515755e9f"},
   "config": {{config}}
 }
-
-HTTP/1.1 200  - OK
-x-powered-by: Express
-content-type: application/x-ndjson
-date: Fri, 20 Dec 2024 14:29:22 GMT
-connection: close
-transfer-encoding: chunked
 ###
 # Account create
 POST {{url}}
@@ -152,13 +145,18 @@ Content-Type: application/json
 
 {
   "type": "std:account:create",
-  "input": {"attributes":{"email":"sunrise.approvals@sailpoint.com","first_name":"Sunrise","last_name":"Approvals","name":"Sunrise Approvals","types":"Profile", "person_id":"6456", "status": "Active"}},
+  "input": {
+    "attributes": {
+      "email": "game.on@guest.com",
+      "id": "7476345e-9ec8-4c07-86a8-e40947423057",
+      "last_name": "game.on",
+      "login_name": "game.on@guest.com",
+      "name": "game.on",
+      "person_id": "game.on_guest.com#EXT#@vj42.onmicrosoft.com",
+      "status": "Inactive",
+      "types": ["Profile"],
+      "workflows": ["5ab1f80f-ec74-4449-bbe9-832e76fdccfa"]
+    }
+  },
   "config": {{config}}
 }
-
-HTTP/1.1 200  - OK
-x-powered-by: Express
-content-type: application/x-ndjson
-date: Wed, 04 Dec 2024 11:50:24 GMT
-connection: close
-transfer-encoding: chunked

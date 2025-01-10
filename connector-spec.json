@@ -14,7 +14,8 @@
         "std:account:create",
         "std:account:update",
         "std:entitlement:list",
-        "std:account:discover-schema"
+        "std:account:discover-schema",
+        "custom:push:contents"
     ],
     "sourceConfig": [
         {
@@ -535,8 +536,8 @@
         }
     ],
     "accountSchema": {
-        "displayAttribute": "id",
-        "identityAttribute": "name",
+        "displayAttribute": "name",
+        "identityAttribute": "id",
         "attributes": [
             {
                 "name": "id",
@@ -631,6 +632,11 @@
                     "description": "Name"
                 },
                 {
+                    "name": "type",
+                    "type": "string",
+                    "description": "Role type"
+                },
+                {
                     "name": "groups",
                     "type": "string",
                     "multi": true,
@@ -660,5 +666,69 @@
                 }
             ]
         }
-    ]
+    ],
+    "accountCreateTemplate": {
+        "fields": [
+            {
+                "key": "name",
+                "label": "Name",
+                "type": "string",
+                "required": true,
+                "initialValue": {
+                    "type": "identityAttribute",
+                    "attributes": {
+                        "name": "uid"
+                    }
+                }
+            },
+            {
+                "key": "email",
+                "label": "Email",
+                "type": "string",
+                "required": false,
+                "initialValue": {
+                    "type": "identityAttribute",
+                    "attributes": {
+                        "name": "email"
+                    }
+                }
+            },
+            {
+                "key": "first_name",
+                "label": "First name",
+                "type": "string",
+                "required": false,
+                "initialValue": {
+                    "type": "identityAttribute",
+                    "attributes": {
+                        "name": "firstname"
+                    }
+                }
+            },
+            {
+                "key": "last_name",
+                "label": "Last name",
+                "type": "string",
+                "required": false,
+                "initialValue": {
+                    "type": "identityAttribute",
+                    "attributes": {
+                        "name": "lastname"
+                    }
+                }
+            },
+            {
+                "key": "status",
+                "label": "status",
+                "type": "string",
+                "required": false,
+                "initialValue": {
+                    "type": "static",
+                    "attributes": {
+                        "value": "Active"
+                    }
+                }
+            }
+        ]
+    }
 }

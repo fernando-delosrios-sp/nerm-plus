@@ -1,6 +1,6 @@
 {
     "name": "nerm",
-    "version": "0.1.1",
+    "version": "0.1.6",
     "main": "dist/index.js",
     "scripts": {
         "clean": "shx rm -rf ./dist",
@@ -8,21 +8,23 @@
         "build": "npx ncc build ./src/index.ts -o ./dist -m -C",
         "dev": "cross-env NODE_OPTIONS=--enable-source-maps spcx run dist/index.js",
         "debug": "spcx run dist/index.js",
+        "iiq": "npx tsc ./src/iiq-run.ts --watch",
         "prettier": "npx prettier --write .",
         "prepack-zip": "npm ci && npm run build",
         "pack-zip": "spcx package"
     },
     "private": true,
     "dependencies": {
-        "@sailpoint/connector-sdk": "^1.1.13",
+        "@sailpoint/connector-sdk": "1.1.24",
+        "sailpoint-api-client": "^1.6.1",
         "axios-cache-interceptor": "^1.6.2",
         "axios-request-throttle": "^1.0.0",
         "axios-retry": "^4.5.0",
         "form-data": "^4.0.1",
-        "nerm": "file:",
-        "sailpoint-api-client": "1.4.10"
+        "nerm": "file:"
     },
     "devDependencies": {
+        "@types/express": "^5.0.1",
         "@types/node": "^20.11.17",
         "@vercel/ncc": "^0.34.0",
         "prettier": "^2.3.2",
