@@ -631,6 +631,11 @@
                     "description": "Name"
                 },
                 {
+                    "name": "type",
+                    "type": "string",
+                    "description": "Role type"
+                },
+                {
                     "name": "groups",
                     "type": "string",
                     "multi": true,

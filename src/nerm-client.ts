@@ -246,6 +246,13 @@ export class NERMClient {
         return await this.getRequest(url, type)
     }
 
+    async getRole(id: string): Promise<any> {
+        const url = `/roles/${id}`
+        const type = 'role'
+
+        return await this.getRequest(url, type)
+    }
+
     async *listRoles() {
         const url = `/roles`
         const type = 'roles'

@@ -2,6 +2,8 @@
 
 ## Changelog
 
+-   0.1.2 (2025-01-10):
+    -   Minor fixes
 -   0.1.1 (2024-12-27):
     -   Documentation
     -   Minor fixes

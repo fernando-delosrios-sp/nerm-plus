@@ -21,11 +21,11 @@ import {
     StdEntitlementListHandler,
     StdTestConnectionHandler,
 } from '@sailpoint/connector-sdk'
-import { AccountType, Config, Mapping, RequesterType } from './model/config'
+import { AccountType, Config, RequesterType } from './model/config'
 import { ISCClient } from './isc-client'
 import { NERMClient } from './nerm-client'
 import { typeEntitlements } from './data/types'
-import { apiSchema2Schema, entity2profile, parents2children, profile2EntitlementSchema } from './utils'
+import { apiSchema2Schema, entity2profile, getRoleType, parents2children, profile2EntitlementSchema } from './utils'
 import { defaultAccountSchema } from './data/schema'
 import { Profile, Role, Type, Workflow } from './model/entitlement'
 import {
@@ -155,7 +155,7 @@ export const connector = async () => {
 
     const buildAccount = async (nermObject: any, schema?: AccountSchema): Promise<StdAccountListOutput> => {
         let account: StdAccountListOutput
-        let id
+        let id: string | undefined
         switch (config.account_type) {
             case 'Profile':
                 account = new ProfileAccount(nermObject)
@@ -163,7 +163,7 @@ export const connector = async () => {
                     const attributes = await nerm.resolveProfileAttributes(nermObject, schema)
                     account.attributes = attributes
                 }
-                id = account.attributes.user_id
+                id = account.attributes.user_id as string
                 break
             case 'NeprofileUser':
                 account = new NeprofileUserAccount(nermObject)
@@ -175,6 +175,12 @@ export const connector = async () => {
         }
 
         if (id) {
+            if (config.account_type === 'Profile') {
+                const user = await nerm.getUser(id)
+                const type = user.type as string
+                account.attributes.types = ['Profile', type]
+            }
+
             const roleAssignments = await nerm.getUserRoleAssignments(id)
             if (roleAssignments) {
                 account.attributes.roles = roleAssignments.map((x: { role_id: any }) => x.role_id)
@@ -273,10 +279,16 @@ export const connector = async () => {
     const addRole = async (account: StdAccountListOutput, role_id: string) => {
         logger.info(`Adding ${role_id} role to ${account.uuid}`)
         let id: string
+        const role = await nerm.getRole(role_id)
+        const type = getRoleType(role)
         switch (config.account_type) {
             case 'Profile':
                 if (!account.attributes.user_id) {
-                    addType(account, 'NeprofileUser')
+                    if (type === 'NeprofileUser') {
+                        addType(account, 'NeprofileUser')
+                    } else {
+                        addType(account, 'NeaccessUser')
+                    }
                 }
                 id = account.attributes.user_id as string
                 break
@@ -297,10 +309,16 @@ export const connector = async () => {
     const removeRole = async (account: StdAccountListOutput, role_id: string) => {
         logger.info(`Removing ${role_id} role to ${account.uuid}`)
         let id
+        const role = await nerm.getRole(role_id)
+        const type = getRoleType(role)
         switch (config.account_type) {
             case 'Profile':
                 if (!account.attributes.user_id) {
-                    addType(account, 'NeprofileUser')
+                    if (type === 'NeprofileUser') {
+                        addType(account, 'NeprofileUser')
+                    } else {
+                        addType(account, 'NeaccessUser')
+                    }
                 }
                 id = account.attributes.user_id!
             default:

@@ -1,5 +1,6 @@
 import { Attributes, Key, Permission, StdEntitlementListOutput } from '@sailpoint/connector-sdk'
 import { Workflow as WorkflowType } from './config'
+import { getRoleType } from '../utils'
 
 export type GenericEntitlement = {
     id: string
@@ -39,6 +40,7 @@ export class Role implements StdEntitlementListOutput {
         this.attributes = {
             id: this.identity,
             name: this.uuid,
+            type: getRoleType(input),
             groups: input.groups,
         }
     }
