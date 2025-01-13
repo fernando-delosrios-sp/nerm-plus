@@ -2,6 +2,8 @@
 
 ## Changelog
 
+-   0.1.3 (2025-01-13):
+    -   Schema discovery and user management fixes
 -   0.1.2 (2025-01-10):
     -   Minor fixes
 -   0.1.1 (2024-12-27):

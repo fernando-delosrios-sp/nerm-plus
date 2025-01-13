@@ -1,5 +1,4 @@
-import { AccountSchema, Attributes, Schema, StdAccountListOutput } from '@sailpoint/connector-sdk'
-import { AccountType } from './config'
+import { AccountSchema, Attributes, StdAccountListOutput } from '@sailpoint/connector-sdk'
 
 export type AccountAttributes = {
     [key: string]: string | number | boolean | null | undefined
@@ -13,12 +12,6 @@ const processAttributes = (attrs: { [key: string]: any }, schema: AccountSchema)
     return attributes
 }
 
-const updateTypes = (attributes: Attributes, type: AccountType) => {
-    let types: Set<string> = new Set((attributes.types as string[]) ?? [])
-    types.add(type)
-    attributes.types = Array.from(types)
-}
-
 export class ProfileAccount implements StdAccountListOutput {
     identity: string
     uuid: string
@@ -30,12 +23,12 @@ export class ProfileAccount implements StdAccountListOutput {
         // delete attributes.attributes
         this.disabled = input.status === 'Active' ? false : true
         this.identity = input.id
-        this.uuid = input.name
+        this.uuid = input.name ?? ''
         this.attributes = {
             id: input.id,
             name: input.name,
+            types: ['Profile'],
         }
-        updateTypes(this.attributes, 'Profile')
     }
 }
 
@@ -48,9 +41,8 @@ export class NeprofileUserAccount implements StdAccountListOutput {
     constructor(input: any) {
         this.disabled = input.status === 'Active' ? false : true
         this.identity = input.id
-        this.uuid = input.name
-        this.attributes = input
-        updateTypes(this.attributes, 'NeprofileUser')
+        this.uuid = input.name ?? ''
+        this.attributes = { types: ['NeprofileUser'] }
     }
 }
 
@@ -63,8 +55,7 @@ export class NeaccessUserAccount implements StdAccountListOutput {
     constructor(input: any) {
         this.disabled = input.status === 'Active' ? false : true
         this.identity = input.id
-        this.uuid = input.name
-        this.attributes = input
-        updateTypes(this.attributes, 'NeaccessUser')
+        this.uuid = input.name ?? ''
+        this.attributes = { types: ['NeaccessUser'] }
     }
 }

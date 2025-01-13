@@ -26,6 +26,13 @@ Content-Type: application/json
   "input": {},
   "config": {{config}}
 }
+
+HTTP/1.1 500  - Internal Server Error
+x-powered-by: Express
+content-type: application/x-ndjson
+date: Mon, 13 Jan 2025 13:28:59 GMT
+connection: close
+transfer-encoding: chunked
 ###
 # Push contents
 POST {{url}}
@@ -47,10 +54,10 @@ Content-Type: application/json
   "config": {{config}}
 }
 
-HTTP/1.1 200  - OK
+HTTP/1.1 500  - Internal Server Error
 x-powered-by: Express
 content-type: application/x-ndjson
-date: Mon, 23 Dec 2024 09:47:47 GMT
+date: Mon, 13 Jan 2025 13:29:15 GMT
 connection: close
 transfer-encoding: chunked
 ###
@@ -152,13 +159,13 @@ Content-Type: application/json
 
 {
   "type": "std:account:create",
-  "input": {"attributes":{"email":"sunrise.approvals@sailpoint.com","first_name":"Sunrise","last_name":"Approvals","name":"Sunrise Approvals","types":"Profile", "person_id":"6456", "status": "Active"}},
+  "input": {"attributes":{"email":"Daniel.Lewis@sailpointdemo.com","login":"Daniel.Lewis","name":"Danniel.Lewis","types":"NeprofileUser"}},
   "config": {{config}}
 }
 
 HTTP/1.1 200  - OK
 x-powered-by: Express
 content-type: application/x-ndjson
-date: Wed, 04 Dec 2024 11:50:24 GMT
+date: Fri, 10 Jan 2025 16:27:26 GMT
 connection: close
 transfer-encoding: chunked

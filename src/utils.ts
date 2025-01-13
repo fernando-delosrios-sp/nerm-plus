@@ -3,7 +3,7 @@ import { GenericEntitlement } from './model/entitlement'
 import { Schema as ApiSchema, AttributeDefinition, SearchDocument } from 'sailpoint-api-client'
 import { defaultEntitlementSchema } from './data/schema'
 import { ACCESSTYPE_MAPPING, PARENTCHILD_ATTRIBUTES } from './data/constants'
-import { Mapping } from './model/config'
+import { AccountType, Mapping } from './model/config'
 
 const typesMap: Map<string, string> = new Map([['STRING', 'string']])
 
@@ -154,4 +154,21 @@ export const getRoleType = (role: any): 'NeprofileUser' | 'NeaccessUser' => {
     } else {
         return 'NeaccessUser'
     }
+}
+
+export const updateTypes = (attributes: Attributes, type: AccountType) => {
+    let types: Set<string> = new Set((attributes.types as string[]) ?? [])
+    types.add(type)
+    attributes.types = Array.from(types)
+}
+
+export const resolveUserAttributes = (attributes: Attributes, schema?: AccountSchema): Attributes => {
+    let userAttributes: Attributes = {}
+    if (schema) {
+        for (const att of schema.attributes) {
+            userAttributes[att.name] = attributes[att.name]
+        }
+    }
+
+    return userAttributes
 }

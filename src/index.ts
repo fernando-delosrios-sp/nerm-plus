@@ -25,7 +25,15 @@ import { AccountType, Config, RequesterType } from './model/config'
 import { ISCClient } from './isc-client'
 import { NERMClient } from './nerm-client'
 import { typeEntitlements } from './data/types'
-import { apiSchema2Schema, entity2profile, getRoleType, parents2children, profile2EntitlementSchema } from './utils'
+import {
+    apiSchema2Schema,
+    entity2profile,
+    getRoleType,
+    parents2children,
+    profile2EntitlementSchema,
+    resolveUserAttributes,
+    updateTypes,
+} from './utils'
 import { defaultAccountSchema } from './data/schema'
 import { Profile, Role, Type, Workflow } from './model/entitlement'
 import {
@@ -156,29 +164,36 @@ export const connector = async () => {
     const buildAccount = async (nermObject: any, schema?: AccountSchema): Promise<StdAccountListOutput> => {
         let account: StdAccountListOutput
         let id: string | undefined
+        let attributes: Attributes = {}
         switch (config.account_type) {
             case 'Profile':
                 account = new ProfileAccount(nermObject)
                 if (schema) {
-                    const attributes = await nerm.resolveProfileAttributes(nermObject, schema)
-                    account.attributes = attributes
+                    attributes = await nerm.resolveProfileAttributes(nermObject, schema)
                 }
                 id = account.attributes.user_id as string
                 break
             case 'NeprofileUser':
                 account = new NeprofileUserAccount(nermObject)
+                attributes = resolveUserAttributes(nermObject, schema)
+                // account.attributes.user_id = account.identity as string
                 id = account.identity
+                break
             case 'NeaccessUser':
                 account = new NeaccessUserAccount(nermObject)
+                attributes = resolveUserAttributes(nermObject, schema)
+                // account.attributes.user_id = account.identity as string
                 id = account.identity
                 break
         }
 
+        account.attributes = { ...attributes, ...account.attributes }
+
         if (id) {
             if (config.account_type === 'Profile') {
                 const user = await nerm.getUser(id)
-                const type = user.type as string
-                account.attributes.types = ['Profile', type]
+                const type = user.type as AccountType
+                updateTypes(account.attributes, type)
             }
 
             const roleAssignments = await nerm.getUserRoleAssignments(id)
@@ -210,6 +225,8 @@ export const connector = async () => {
     }
 
     const addType = async (account: StdAccountListOutput, type: AccountType) => {
+        if (type === config.account_type) return
+
         logger.info(`Adding ${type} type to ${account.uuid}`)
         const name = account.uuid as string
         switch (type) {
@@ -217,10 +234,11 @@ export const connector = async () => {
                 const message = `"Add Profile type" operation not supported`
                 throw new ConnectorError(message)
             default:
-                if (type === 'NeaccessUser' && config.account_type !== 'NeprofileUser') {
-                    const message = `"Add NeaccessUser type" operation not supported for Users`
+                if (config.account_type !== 'Profile') {
+                    const message = `"Only one user type is allowed per account`
                     throw new ConnectorError(message)
                 }
+
                 const user_id = account.attributes.user_id as string
                 if (user_id) {
                     const response = await nerm.getUser(user_id)
@@ -230,31 +248,29 @@ export const connector = async () => {
                             account.attributes.roles = roleAssignments.map((x: { role_id: any }) => x.role_id)
                         }
                     }
-                }
-
-                const login = config.login_attribute
-                    ? (account.attributes[config.login_attribute] as string)
-                    : undefined
-                if (!login) {
-                    const message = 'Missing login attribute for user creation'
-                    throw new ConnectorError(message)
                 } else {
-                    const attributes = { ...account.attributes, login, name }
-                    let response = await nerm.getUserByLoginAndType(login, type)
-                    if (!response) {
-                        const body = await buildNERMAccountBody(attributes, type)
-                        response = await nerm.createUser(body)
-                    }
-                    if (response) {
-                        await setAttribute(account, 'user_id', response.id)
+                    const login = config.login_attribute
+                        ? (account.attributes[config.login_attribute] as string)
+                        : undefined
+                    if (!login) {
+                        const message = 'Missing login attribute for user creation'
+                        throw new ConnectorError(message)
                     } else {
-                        throw new ConnectorError(`Failed to add "${type}" type to ${account.uuid}`)
+                        const attributes = { ...account.attributes, login, name }
+                        let response = await nerm.getUserByLoginAndType(login, type)
+                        if (!response) {
+                            const body = await buildNERMAccountBody(attributes, type)
+                            response = await nerm.createUser(body)
+                        }
+                        if (response) {
+                            account.attributes.user_id = response.id
+                        } else {
+                            throw new ConnectorError(`Failed to add "${type}" type to ${account.uuid}`)
+                        }
                     }
                 }
         }
-        const types = new Set(account.attributes.types as string[])
-        types.add(type)
-        account.attributes.types = [...types]
+        updateTypes(account.attributes, type)
     }
 
     const removeType = async (account: StdAccountListOutput, type: AccountType) => {
@@ -520,6 +536,7 @@ export const connector = async () => {
             } else {
                 schema = defaultAccountSchema
             }
+
             switch (config.account_type) {
                 case 'Profile':
                     schema.attributes = schema.attributes.filter((x) => !USERONLY_ATTRIBUTES.includes(x.name))
@@ -544,13 +561,7 @@ export const connector = async () => {
                 default:
                     schema.attributes = schema.attributes
                         .filter((x) => !PROFILEONLY_ATTRIBUTES.includes(x.name))
-                        .filter((x) => x.name.includes('.'))
-                    const login: SchemaAttribute = {
-                        name: 'login',
-                        type: 'string',
-                        description: 'Login attribute',
-                    }
-                    schema.attributes.push(login)
+                        .filter((x) => !x.name.includes('.'))
             }
 
             send(res, schema!)
@@ -574,13 +585,13 @@ export const connector = async () => {
             switch (config.account_type) {
                 case 'NeprofileUser':
                     for await (const user of nerm.listUsers(config.account_type)) {
-                        const account = await getAccount(user.id)
+                        const account = await getAccount(user.id, input.schema)
                         send(res, account)
                     }
                     break
                 case 'NeaccessUser':
                     for await (const user of nerm.listUsers(config.account_type)) {
-                        const account = await getAccount(user.id)
+                        const account = await getAccount(user.id, input.schema)
                         send(res, account)
                     }
                     break
@@ -686,10 +697,12 @@ export const connector = async () => {
 
         const entitlementSchemas = input.schema?.attributes.filter((x) => x.schemaObjectType)
         for (const [key, value] of Object.entries(input.attributes)) {
-            const entitlementSchema = entitlementSchemas.find((x) => x.name === key)
-            if (entitlementSchema) {
-                operations.push(entitlementSchema.schemaObjectType!)
-                await profileAttributeOp(account, key, value as any, 'add')
+            if (!['types', 'roles', 'workflows'].includes(key)) {
+                const entitlementSchema = entitlementSchemas.find((x) => x.name === key)
+                if (entitlementSchema) {
+                    operations.push(entitlementSchema.schemaObjectType!)
+                    await profileAttributeOp(account, key, value as any, 'add')
+                }
             }
         }
 
