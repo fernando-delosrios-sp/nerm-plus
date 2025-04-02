@@ -37,6 +37,7 @@ import {
 import { defaultAccountSchema } from './data/schema'
 import { Profile, Role, Type, Workflow } from './model/entitlement'
 import {
+    ENTITLEMENT_ATTRIBUTES,
     PROCESSINGWAIT,
     PROFILE_ROOTATTRIBUTES,
     PROFILEONLY_ATTRIBUTES,
@@ -59,7 +60,7 @@ export const connector = async () => {
         schema?: AccountSchema
     ): Promise<any> => {
         let body: any = {
-            status: attributes['status'] ?? 'Active',
+            status: attributes?.status ?? 'Active',
             name: attributes.name,
         }
         switch (type) {
@@ -68,6 +69,10 @@ export const connector = async () => {
                 body.profile_type_id = profileType.id
                 body.attributes = {}
                 for (const attribute of schema!.attributes) {
+                    if (ENTITLEMENT_ATTRIBUTES.includes(attribute.name)) {
+                        continue
+                    }
+
                     let finalValue
                     const key = attribute.name.split('.').reverse().pop()!
                     const attributeType = await nerm.getAttribute(key!)
@@ -264,6 +269,7 @@ export const connector = async () => {
                         }
                         if (response) {
                             account.attributes.user_id = response.id
+                            await nerm.setProfileAttribute(account.identity!, 'user_id', response.id)
                         } else {
                             throw new ConnectorError(`Failed to add "${type}" type to ${account.uuid}`)
                         }
@@ -301,9 +307,9 @@ export const connector = async () => {
             case 'Profile':
                 if (!account.attributes.user_id) {
                     if (type === 'NeprofileUser') {
-                        addType(account, 'NeprofileUser')
+                        await addType(account, 'NeprofileUser')
                     } else {
-                        addType(account, 'NeaccessUser')
+                        await addType(account, 'NeaccessUser')
                     }
                 }
                 id = account.attributes.user_id as string
@@ -450,7 +456,7 @@ export const connector = async () => {
             const { requester_id } = workflow
             await runWorkflow(account, workflow_id, requester_id)
         } else {
-            const message = `Unable to configuration for workflow ${workflow_id}`
+            const message = `Unable to find configuration for workflow ${workflow_id}`
             throw new ConnectorError(message)
         }
     }
@@ -627,6 +633,7 @@ export const connector = async () => {
     }
 
     const stdEntitlementList: StdEntitlementListHandler = async (context, input, res) => {
+        logger.info(input)
         switch (input.type) {
             case 'type':
                 for await (const type of typeEntitlements) {
@@ -677,32 +684,32 @@ export const connector = async () => {
         if (input.attributes.types) {
             const types = [input.attributes.types].flat()
             for (const type of types) {
-                addType(account, type)
+                await addType(account, type)
             }
         }
 
         if (input.attributes.roles) {
             const roles = [input.attributes.roles].flat()
             for (const role of roles) {
-                addRole(account, role)
+                await addRole(account, role)
             }
         }
 
         if (input.attributes.workflows) {
             const workflows = [input.attributes.workflows].flat()
             for (const workflow of workflows) {
-                addWorkflow(account, workflow)
+                await addWorkflow(account, workflow)
             }
         }
 
-        const entitlementSchemas = input.schema?.attributes.filter((x) => x.schemaObjectType)
+        const entitlementSchemas = input.schema?.attributes.filter(
+            (x) => x.schemaObjectType && !ENTITLEMENT_ATTRIBUTES.includes(x.name)
+        )
         for (const [key, value] of Object.entries(input.attributes)) {
-            if (!['types', 'roles', 'workflows'].includes(key)) {
-                const entitlementSchema = entitlementSchemas.find((x) => x.name === key)
-                if (entitlementSchema) {
-                    operations.push(entitlementSchema.schemaObjectType!)
-                    await profileAttributeOp(account, key, value as any, 'add')
-                }
+            const entitlementSchema = entitlementSchemas.find((x) => x.name === key)
+            if (entitlementSchema) {
+                operations.push(entitlementSchema.schemaObjectType!)
+                await profileAttributeOp(account, key, value as any, 'add')
             }
         }
 
@@ -735,14 +742,14 @@ export const connector = async () => {
                                         await addType(account, value)
                                         account = await getAccount(input.identity, input.schema)
                                     } else {
-                                        addType(account, value)
+                                        await addType(account, value)
                                     }
                                     break
                                 case 'roles':
-                                    addRole(account, value)
+                                    await addRole(account, value)
                                     break
                                 case 'workflows':
-                                    addWorkflow(account, value)
+                                    await addWorkflow(account, value)
                                     break
                                 default:
                                     const entitlementSchema = input.schema?.attributes.find(
@@ -760,10 +767,10 @@ export const connector = async () => {
                         case 'Remove':
                             switch (change.attribute) {
                                 case 'types':
-                                    removeType(account, value)
+                                    await removeType(account, value)
                                     break
                                 case 'roles':
-                                    removeRole(account, value)
+                                    await removeRole(account, value)
                                     break
                                 case 'workflows':
                                     throw new ConnectorError('Operation not supported')
@@ -781,7 +788,7 @@ export const connector = async () => {
                             }
                             break
                         case 'Set':
-                            setAttribute(account, change.attribute, value)
+                            await setAttribute(account, change.attribute, value)
                     }
                 }
             }
