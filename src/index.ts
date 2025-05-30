@@ -107,7 +107,7 @@ export const connector = async () => {
                 }
                 break
             case 'NeprofileUser':
-                if (!attributes.login) {
+                if (!config.login_attribute || !attributes[config.login_attribute]) {
                     const message = 'Cannot create user without login'
                     throw new ConnectorError(message)
                 }
@@ -176,7 +176,7 @@ export const connector = async () => {
                 if (schema) {
                     attributes = await nerm.resolveProfileAttributes(nermObject, schema)
                 }
-                id = account.attributes.user_id as string
+                id = attributes.user_id as string
                 break
             case 'NeprofileUser':
                 account = new NeprofileUserAccount(nermObject)
@@ -198,7 +198,11 @@ export const connector = async () => {
             if (config.account_type === 'Profile') {
                 const user = await nerm.getUser(id)
                 const type = user.type as AccountType
-                updateTypes(account.attributes, type)
+                if (config.login_attribute) {
+                    updateTypes(account.attributes, type, { [config.login_attribute]: user.login })
+                } else {
+                    updateTypes(account.attributes, type)
+                }
             }
 
             const roleAssignments = await nerm.getUserRoleAssignments(id)
@@ -234,6 +238,7 @@ export const connector = async () => {
 
         logger.info(`Adding ${type} type to ${account.uuid}`)
         const name = account.uuid as string
+        let loginValue: string | undefined
         switch (type) {
             case 'Profile':
                 const message = `"Add Profile type" operation not supported`
@@ -273,6 +278,7 @@ export const connector = async () => {
                         } else {
                             throw new ConnectorError(`Failed to add "${type}" type to ${account.uuid}`)
                         }
+                        loginValue = response.login
                     }
                 }
         }
@@ -361,12 +367,18 @@ export const connector = async () => {
         switch (config.account_type) {
             case 'Profile':
                 await nerm.setProfileAttribute(account.identity!, attribute, value)
-                if (account.attributes.user_id) {
-                    const id = account.attributes.user_id as string
+                const id = account.attributes.user_id as string
+                if (id) {
                     if (attribute === config.login_attribute) {
                         await nerm.setUserAttribute(id, 'login', value)
-                    } else if (attribute === 'name') {
+                    }
+
+                    if (attribute === 'name') {
                         await nerm.setUserAttribute(id, 'name', value)
+                    }
+
+                    if (attribute === 'email') {
+                        await nerm.setUserAttribute(id, 'email', value)
                     }
                 }
                 break
@@ -591,21 +603,33 @@ export const connector = async () => {
             switch (config.account_type) {
                 case 'NeprofileUser':
                     for await (const user of nerm.listUsers(config.account_type)) {
-                        const account = await getAccount(user.id, input.schema)
-                        send(res, account)
+                        try {
+                            const account = await getAccount(user.id, input.schema)
+                            send(res, account)
+                        } catch (error) {
+                            logger.error(error)
+                        }
                     }
                     break
                 case 'NeaccessUser':
                     for await (const user of nerm.listUsers(config.account_type)) {
-                        const account = await getAccount(user.id, input.schema)
-                        send(res, account)
+                        try {
+                            const account = await getAccount(user.id, input.schema)
+                            send(res, account)
+                        } catch (error) {
+                            logger.error(error)
+                        }
                     }
                     break
                 case 'Profile':
                     const profileType = await nerm.getProfileTypeByName(config.profile_name)
                     for await (const profile of nerm.listProfiles({ profile_type_id: profileType.id })) {
-                        const account = await getAccount(profile.id, input.schema)
-                        send(res, account)
+                        try {
+                            const account = await getAccount(profile.id, input.schema)
+                            send(res, account)
+                        } catch (error) {
+                            logger.error(error)
+                        }
                     }
                     break
                 default:
@@ -722,7 +746,7 @@ export const connector = async () => {
     }
 
     const stdAccountUpdate: StdAccountUpdateHandler = async (context, input, res) => {
-        const operations = ['create']
+        const operations = ['update']
         logger.info(input)
         if (!input.schema) {
             const schema = await getSchema()
@@ -880,12 +904,12 @@ export const connector = async () => {
 
                 for (const entity of entities) {
                     let profile
-                    if (!sync || children?.has(entity.id)) {
+                    if (!sync || children?.has(entity.id as string)) {
                         profile = entity2profile(entity, profileType.id, conf)
                     }
 
                     if (nested && profile) {
-                        const childParents = children?.get(entity.id) ?? new Set()
+                        const childParents = children?.get(entity.id as string) ?? new Set()
                         const parentObjects = masterProfileMap.get(parent_index!)
                         if (parentObjects) {
                             const childParentProfiles = parentObjects
@@ -896,7 +920,7 @@ export const connector = async () => {
                     }
 
                     if (profile) {
-                        profileMap.set(entity.id, profile)
+                        profileMap.set(entity.id as string, profile)
                     }
                 }
 
@@ -940,5 +964,5 @@ export const connector = async () => {
         .stdAccountEnable(stdAccountEnable)
         .stdAccountDisable(stdAccountDisable)
         .stdAccountDelete(stdAccountDelete)
-        .command('std:push:contents', pushContents)
+        .command('custom:push:contents', pushContents)
 }

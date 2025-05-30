@@ -88,7 +88,7 @@ export const mergeProfileWithConfig = (profile: any, conf: any): any => {
 
 export const parents2children = (parents: SearchDocument[], type: string): Map<string, Set<string>> => {
     const childrenMap: Map<string, Set<string>> = new Map()
-    const parent_type = parents[0] ? parents[0]._type : undefined
+    const parent_type = parents[0] ? (parents[0] as any)._type : undefined
     if (parent_type) {
         const attribute = PARENTCHILD_ATTRIBUTES[parent_type][type]
         if (attribute) {
@@ -141,7 +141,7 @@ export const entity2profile = (entity: SearchDocument, profile_type_id: string, 
         [key: string]: string
     } = {}
     Object.entries(map).forEach(([k, v]) => (attributes[k] = getAttribute(entity, v)))
-    attributes[conf.id] = entity.id
+    attributes[conf.id] = entity.id as string
     profile.attributes = attributes
 
     return profile
@@ -156,10 +156,13 @@ export const getRoleType = (role: any): 'NeprofileUser' | 'NeaccessUser' => {
     }
 }
 
-export const updateTypes = (attributes: Attributes, type: AccountType) => {
+export const updateTypes = (attributes: Attributes, type: AccountType, login?: Attributes) => {
     let types: Set<string> = new Set((attributes.types as string[]) ?? [])
     types.add(type)
     attributes.types = Array.from(types)
+    if (login) {
+        Object.assign(attributes, login)
+    }
 }
 
 export const resolveUserAttributes = (attributes: Attributes, schema?: AccountSchema): Attributes => {
