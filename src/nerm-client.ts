@@ -462,11 +462,13 @@ export class NERMClient {
                             attributeType.profile_type_id
                         )
                         const childrenProfiles = await this.getAttributeRecursively(referencedProfile, children)
-                        if (Array.isArray(childrenProfiles)) {
-                            isMulti = true
-                            values = values.concat(childrenProfiles.filter((x) => x !== undefined))
-                        } else {
-                            values.push(childrenProfiles)
+                        if (childrenProfiles) {
+                            if (Array.isArray(childrenProfiles)) {
+                                isMulti = true
+                                values = values.concat(childrenProfiles.filter((x) => x !== undefined))
+                            } else {
+                                values.push(childrenProfiles)
+                            }
                         }
                     }
                 } else {

@@ -18,6 +18,7 @@ import {
     StdAccountListOutput,
     StdAccountReadHandler,
     StdAccountUpdateHandler,
+    StdChangePasswordHandler,
     StdEntitlementListHandler,
     StdTestConnectionHandler,
 } from '@sailpoint/connector-sdk'
@@ -29,6 +30,7 @@ import {
     apiSchema2Schema,
     entity2profile,
     getRoleType,
+    getStatus,
     parents2children,
     profile2EntitlementSchema,
     resolveUserAttributes,
@@ -59,6 +61,7 @@ export const connector = async () => {
         type: AccountType,
         schema?: AccountSchema
     ): Promise<any> => {
+        logger.debug(`Building NERM account body for type: ${type}`)
         let body: any = {
             status: attributes?.status ?? 'Active',
             name: attributes.name,
@@ -122,7 +125,7 @@ export const connector = async () => {
                 }
                 break
             case 'NeaccessUser':
-                if (!attributes.login) {
+                if (!config.login_attribute || !attributes[config.login_attribute]) {
                     const message = 'Cannot create user without login'
                     throw new ConnectorError(message)
                 }
@@ -139,10 +142,13 @@ export const connector = async () => {
             default:
         }
         delete body.id
+        body.status = getStatus(body.status, type)
+
         return body
     }
 
     const getAccount = async (id: string, schema?: AccountSchema): Promise<StdAccountListOutput> => {
+        logger.debug(`Getting account with ID: ${id}`)
         let response: any
 
         switch (config.account_type) {
@@ -167,6 +173,7 @@ export const connector = async () => {
     }
 
     const buildAccount = async (nermObject: any, schema?: AccountSchema): Promise<StdAccountListOutput> => {
+        logger.debug(`Building account from NERM object: ${JSON.stringify(nermObject)}`)
         let account: StdAccountListOutput
         let id: string | undefined
         let attributes: Attributes = {}
@@ -181,12 +188,14 @@ export const connector = async () => {
             case 'NeprofileUser':
                 account = new NeprofileUserAccount(nermObject)
                 attributes = resolveUserAttributes(nermObject, schema)
+                account.attributes[config.login_attribute] = nermObject.login
                 // account.attributes.user_id = account.identity as string
                 id = account.identity
                 break
             case 'NeaccessUser':
                 account = new NeaccessUserAccount(nermObject)
                 attributes = resolveUserAttributes(nermObject, schema)
+                account.attributes[config.login_attribute] = nermObject.login
                 // account.attributes.user_id = account.identity as string
                 id = account.identity
                 break
@@ -214,7 +223,8 @@ export const connector = async () => {
         return account!
     }
 
-    const createAccount = async (input: StdAccountCreateInput): Promise<any> => {
+    const createAccount = async (input: StdAccountCreateInput): Promise<StdAccountListOutput> => {
+        logger.debug(`Creating account with input: ${JSON.stringify(input)}`)
         const body = await buildNERMAccountBody(input.attributes, config.account_type, input.schema)
         let rawAccount
         switch (config.account_type) {
@@ -364,6 +374,7 @@ export const connector = async () => {
     }
 
     const setAttribute = async (account: StdAccountListOutput, attribute: string, value: any) => {
+        logger.debug(`Setting attribute ${attribute} to value ${value} for account ${account.uuid}`)
         switch (config.account_type) {
             case 'Profile':
                 await nerm.setProfileAttribute(account.identity!, attribute, value)
@@ -406,6 +417,9 @@ export const connector = async () => {
     }
 
     const profileAttributeOp = async (account: any, attribute: string, value: string, op: 'add' | 'remove') => {
+        logger.debug(
+            `Performing ${op} operation on attribute ${attribute} with value ${value} for account ${account.identity}`
+        )
         const profile = await nerm.getProfile(account.identity)
         const currentValue = await nerm.getAttributeRecursively(profile, attribute)
         let newValue
@@ -419,6 +433,7 @@ export const connector = async () => {
     }
 
     const getSchema = async () => {
+        logger.debug('Getting schema from ISC')
         const sources = await isc.listSources()
         const source = sources.find(
             (x) => (x.connectorAttributes as any).spConnectorInstanceId === spConnectorInstanceId
@@ -435,6 +450,7 @@ export const connector = async () => {
         requester: RequesterType,
         wait: boolean = false
     ): Promise<any> => {
+        logger.debug(`Running workflow ${workflow_id} for account ${account.uuid} with requester ${requester}`)
         let requester_id
         const requester_type = 'NeprofileUser'
         if (requester === 'admin') {
@@ -463,6 +479,7 @@ export const connector = async () => {
     }
 
     const addWorkflow = async (account: StdAccountListOutput, workflow_id: string) => {
+        logger.debug(`Adding workflow ${workflow_id} to account ${account.uuid}`)
         const workflow = config.workflows?.find((x) => x.workflow === workflow_id)
         if (workflow) {
             const { requester_id } = workflow
@@ -474,6 +491,7 @@ export const connector = async () => {
     }
 
     const processOperation = async (account: StdAccountListOutput, op: string, schema?: AccountSchema) => {
+        logger.debug(`Processing operation ${op} for account ${account.uuid}`)
         let operation: any = config.operations?.find((x) => x.operation === op)
         if (!operation) {
             operation = config.profiles?.find((x) => x.name === op)
@@ -492,6 +510,7 @@ export const connector = async () => {
     }
 
     const stdTestConnection: StdTestConnectionHandler = async (context, input, res) => {
+        logger.debug('Testing connection')
         try {
             await isc.getPublicIdentityConfig()
             await nerm.listProfileTypes()
@@ -504,6 +523,7 @@ export const connector = async () => {
     }
 
     const stdAccountDiscoverSchema: StdAccountDiscoverSchemaHandler = async (context, input, res) => {
+        logger.debug('Discovering account schema')
         try {
             let schema: AccountSchema
             const profileEntitlements: SchemaAttribute[] = []
@@ -590,6 +610,7 @@ export const connector = async () => {
     }
 
     const stdAccountList: StdAccountListHandler = async (context, input, res) => {
+        logger.debug('Listing accounts')
         const interval = setInterval(() => {
             res.keepAlive()
         }, PROCESSINGWAIT)
@@ -697,6 +718,7 @@ export const connector = async () => {
     }
 
     const stdAccountCreate: StdAccountCreateHandler = async (context, input, res) => {
+        logger.debug(`Creating account with input: ${JSON.stringify(input)}`)
         const operations = ['create']
         logger.info(input)
         if (!input.schema) {
@@ -746,6 +768,7 @@ export const connector = async () => {
     }
 
     const stdAccountUpdate: StdAccountUpdateHandler = async (context, input, res) => {
+        logger.debug(`Updating account ${input.identity} with changes: ${JSON.stringify(input.changes)}`)
         const operations = ['update']
         logger.info(input)
         if (!input.schema) {
@@ -827,6 +850,7 @@ export const connector = async () => {
     }
 
     const stdAccountEnable: StdAccountEnableHandler = async (context, input, res) => {
+        logger.debug(`Enabling account ${input.identity}`)
         const attribute = 'status'
         const value = 'Active'
         const operation = 'enable'
@@ -843,6 +867,7 @@ export const connector = async () => {
     }
 
     const stdAccountDisable: StdAccountDisableHandler = async (context, input, res) => {
+        logger.debug(`Disabling account ${input.identity}`)
         const attribute = 'status'
         const value = 'Inactive'
         const operation = 'disable'
@@ -857,6 +882,7 @@ export const connector = async () => {
     }
 
     const stdAccountDelete: StdAccountDeleteHandler = async (context, input, res) => {
+        logger.debug(`Deleting account ${input.identity}`)
         const operation = 'delete'
         logger.info(input)
         const account = await getAccount(input.identity, input.schema)
@@ -880,6 +906,7 @@ export const connector = async () => {
     }
 
     const pushContents: CommandHandler = async (context, input, res) => {
+        logger.debug('Pushing contents')
         const mappings = config.mappings!.sort((a, b) => (a.nested ? (b.nested ? 0 : 1) : -1)) ?? []
         const masterProfileMap: Map<string, any[]> = new Map()
         const masterEntityMap: Map<string, SearchDocument[]> = new Map()
@@ -953,6 +980,24 @@ export const connector = async () => {
         }
     }
 
+    const stdChangePassword: StdChangePasswordHandler = async (context, input, res) => {
+        let message = ''
+        if (config.account_type === 'NeaccessUser') {
+            try {
+                logger.debug(`Getting user ${input.identity}`)
+                const account = await nerm.getUser(input.identity)
+                logger.debug(`Changing password for account ${input.identity}`)
+                await setAttribute(account, 'password', input.password)
+                send(res, {})
+            } catch (error) {
+                message = `User not found: ${input.identity}.`
+            }
+        } else {
+            message = 'Password changes are only supported for portal users.'
+        }
+        throw new ConnectorError(message)
+    }
+
     return createConnector()
         .stdTestConnection(stdTestConnection)
         .stdAccountDiscoverSchema(stdAccountDiscoverSchema)
@@ -964,5 +1009,6 @@ export const connector = async () => {
         .stdAccountEnable(stdAccountEnable)
         .stdAccountDisable(stdAccountDisable)
         .stdAccountDelete(stdAccountDelete)
+        .stdChangePassword(stdChangePassword)
         .command('custom:push:contents', pushContents)
 }
