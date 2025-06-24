@@ -1,5 +1,6 @@
 {
     "name": "Non-Employee Risk Management+",
+    "description": "SailPoint Non-Employee Risk Management connector that provides full provisioning support for profiles, users and portal users with seamless combined profile/user management.",
     "supportsCustomSchemas": true,
     "showDebugLoggingOption": true,
     "sourceConfigInitialValues": {
@@ -15,6 +16,7 @@
         "std:account:update",
         "std:entitlement:list",
         "std:account:discover-schema",
+        "std:change-password",
         "custom:push:contents"
     ],
     "sourceConfig": [

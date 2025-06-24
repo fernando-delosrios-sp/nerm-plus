@@ -2,6 +2,12 @@
 
 ## Changelog
 
+-   0.1.7 (2025-06-24):
+    -   More bug fixes
+    -   Added password change support for portal users
+-   0.1.6 (2025-06-03):
+    -   More bug fixes
+    -   Added Status mapping between profiles and users
 -   0.1.5 (2025-04-02):
     -   Countless bug fixes
     -   Added account create template

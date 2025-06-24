@@ -1,6 +1,6 @@
 {
-    "name": "nerm",
-    "version": "0.1.6",
+    "name": "nerm-plus",
+    "version": "0.1.7",
     "main": "dist/index.js",
     "scripts": {
         "clean": "shx rm -rf ./dist",
@@ -8,7 +8,6 @@
         "build": "npx ncc build ./src/index.ts -o ./dist -m -C",
         "dev": "cross-env NODE_OPTIONS=--enable-source-maps spcx run dist/index.js",
         "debug": "spcx run dist/index.js",
-        "iiq": "npx tsc ./src/iiq-run.ts --watch",
         "prettier": "npx prettier --write .",
         "prepack-zip": "npm ci && npm run build",
         "pack-zip": "spcx package"
@@ -21,7 +20,7 @@
         "axios-request-throttle": "^1.0.0",
         "axios-retry": "^4.5.0",
         "form-data": "^4.0.1",
-        "nerm": "file:"
+        "nerm-plus": "file:"
     },
     "devDependencies": {
         "@types/express": "^5.0.1",

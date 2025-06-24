@@ -7,6 +7,30 @@ import { AccountType, Mapping } from './model/config'
 
 const typesMap: Map<string, string> = new Map([['STRING', 'string']])
 
+const statusMap: Map<AccountType, Map<string, string>> = new Map([
+    ['Profile', new Map([['Disabled', 'Inactive']])],
+    [
+        'NeprofileUser',
+        new Map([
+            ['Inactive', 'Disabled'],
+            ['On Leave', 'Disabled'],
+            ['Terminated', 'Disabled'],
+        ]),
+    ],
+    [
+        'NeaccessUser',
+        new Map([
+            ['Inactive', 'Disabled'],
+            ['On Leave', 'Disabled'],
+            ['Terminated', 'Disabled'],
+        ]),
+    ],
+])
+
+export const getStatus = (status: string, type: AccountType): string => {
+    return statusMap.get(type)?.get(status) ?? status
+}
+
 export const genericEntitlement2StdEntitlementListOutput = (
     type: string,
     genericEntitlement: GenericEntitlement
