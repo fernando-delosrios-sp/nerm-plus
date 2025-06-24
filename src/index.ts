@@ -125,7 +125,7 @@ export const connector = async () => {
                 }
                 break
             case 'NeaccessUser':
-                if (!attributes.login) {
+                if (!config.login_attribute || !attributes[config.login_attribute]) {
                     const message = 'Cannot create user without login'
                     throw new ConnectorError(message)
                 }
@@ -188,12 +188,14 @@ export const connector = async () => {
             case 'NeprofileUser':
                 account = new NeprofileUserAccount(nermObject)
                 attributes = resolveUserAttributes(nermObject, schema)
+                account.attributes[config.login_attribute] = nermObject.login
                 // account.attributes.user_id = account.identity as string
                 id = account.identity
                 break
             case 'NeaccessUser':
                 account = new NeaccessUserAccount(nermObject)
                 attributes = resolveUserAttributes(nermObject, schema)
+                account.attributes[config.login_attribute] = nermObject.login
                 // account.attributes.user_id = account.identity as string
                 id = account.identity
                 break
@@ -979,20 +981,21 @@ export const connector = async () => {
     }
 
     const stdChangePassword: StdChangePasswordHandler = async (context, input, res) => {
-        let account
-        try {
-            logger.debug(`Getting user ${input.identity}`)
-            account = await nerm.getUser(input.identity)
-        } catch (error) {
-            account = {}
+        let message = ''
+        if (config.account_type === 'NeaccessUser') {
+            try {
+                logger.debug(`Getting user ${input.identity}`)
+                const account = await nerm.getUser(input.identity)
+                logger.debug(`Changing password for account ${input.identity}`)
+                await setAttribute(account, 'password', input.password)
+                send(res, {})
+            } catch (error) {
+                message = `User not found: ${input.identity}.`
+            }
+        } else {
+            message = 'Password changes are only supported for portal users.'
         }
-        if (account.attributes?.account_type !== 'NeaccessUser') {
-            const message = `User not found: ${input.identity}. Password changes are only supported for portal users.`
-            throw new ConnectorError(message)
-        }
-        logger.debug(`Changing password for account ${input.identity}`)
-        await setAttribute(account, 'password', input.password)
-        send(res, {})
+        throw new ConnectorError(message)
     }
 
     return createConnector()

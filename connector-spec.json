@@ -4,7 +4,8 @@
     "supportsCustomSchemas": true,
     "showDebugLoggingOption": true,
     "sourceConfigInitialValues": {
-        "nerm_admin": "System User"
+        "nerm_admin": "System User",
+        "login_attribute": "login"
     },
     "commands": [
         "std:test-connection",
