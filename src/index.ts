@@ -72,16 +72,16 @@ export const connector = async () => {
                 body.profile_type_id = profileType.id
                 body.attributes = {}
                 for (const attribute of schema!.attributes) {
-                    if (ENTITLEMENT_ATTRIBUTES.includes(attribute.name)) {
-                        continue
-                    }
-
-                    let finalValue
-                    const key = attribute.name.split('.').reverse().pop()!
-                    const attributeType = await nerm.getAttribute(key!)
                     const value = attributes[attribute.name]
-                    let ids = []
                     if (value) {
+                        if (ENTITLEMENT_ATTRIBUTES.includes(attribute.name)) {
+                            continue
+                        }
+
+                        let finalValue
+                        let ids = []
+                        const key = attribute.name.split('.').reverse().pop()!
+                        const attributeType = await nerm.getAttribute(key!)
                         let values = [value].flat()
                         if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
                             for (const value of values) {

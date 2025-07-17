@@ -146,14 +146,7 @@ Content-Type: application/json
 {
   "type": "std:account:create",
   "input": {
-    "attributes":{"email":"gast2@inagaddavida.de","last_name":"gast2","login":"gast2@inagaddavida.de","login_name":"gast2@inagaddavida.de","name":"gast2","person_id":"gast2_inagaddavida.de#EXT#@vj42.onmicrosoft.com","status":"Inactive","workflows":"b33ca9cc-c9a0-4eb7-91c8-3d6320419a81"}
+    "attributes":{"email":"fernando.delosrios+guest@sailpoint.com","first_name":"Mark","last_name":"Smith","login":"mark.smith_sailpointdemo.com#EXT#","name":"mark.smith_sailpointdemo.com#EXT#","sponsor":"57e2f841-337f-4878-97c8-74daf2eaa267","status":"Inactive","workflows":"1340a5f3-371e-4652-84e9-bb64a4f79a48"}
   },
   "config": {{config}}
 }
-
-HTTP/1.1 200  - OK
-x-powered-by: Express
-content-type: application/x-ndjson
-date: Mon, 02 Jun 2025 12:05:01 GMT
-connection: close
-transfer-encoding: chunked
