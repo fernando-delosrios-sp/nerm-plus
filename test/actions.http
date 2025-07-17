@@ -39,7 +39,7 @@ POST {{url}}
 Content-Type: application/json
 
 {
-  "type": "std:push:contents",
+  "type": "custom:push:contents",
   "input": {},
   "config": {{config}}
 }
@@ -68,17 +68,10 @@ Content-Type: application/json
 {
   "type": "std:account:read",
   "input": {
-    "identity": "a58188c4-3cb0-4620-bbcd-065850837446"
+    "identity":"c09b8572-0045-489f-b4fd-2a5b7217814d"
   },
   "config": {{config}}
 }
-
-HTTP/1.1 200  - OK
-x-powered-by: Express
-content-type: application/x-ndjson
-date: Wed, 18 Jun 2025 08:54:48 GMT
-connection: close
-transfer-encoding: chunked
 ###
 # Entitlement list
 POST {{url}}
@@ -135,9 +128,16 @@ Content-Type: application/json
 
 {
   "type": "std:account:update",
-  "input": {"changes":[{"attribute":"workflows","op":"Add","value":"dc1b7eef-52cb-4784-b1c5-d9dd2550962d"}], "identity": "87f9f303-70b4-4b21-a4f9-7b4515755e9f"},
+  "input": {"changes":[{"attribute":"roles","metadata":{"IdnAccessRequestAttributes":{"accessRequestType":"REVOKE_ACCESS","deniedCommentsRequired":false,"identityRequestIds":["2cfe00d32e1244d895e700b5b94dd122"],"requestedAccounts":[{"accountId":"ea29ca56-7410-4866-a3e2-25b6ec5d6df6","name":"Amanda Ross","sourceName":"NERM+ People","type":"ACCOUNT"}],"requestedObjectId":"ad6b7ae62a2f41c387776773cfa78653","requestedObjectName":"NERM Administrator","requestedObjectType":"ENTITLEMENT"},"assignment":true,"comments":"dfghjkl","requestedObjectId":"ad6b7ae62a2f41c387776773cfa78653","requestedObjectType":"ENTITLEMENT"},"op":"Remove","value":"c0c847df-c086-4707-a424-6bfe65ad17fe"}], "identity": "ea29ca56-7410-4866-a3e2-25b6ec5d6df6"},
   "config": {{config}}
 }
+
+HTTP/1.1 200  - OK
+x-powered-by: Express
+content-type: application/x-ndjson
+date: Wed, 06 Aug 2025 09:05:58 GMT
+connection: close
+transfer-encoding: chunked
 ###
 # Account create
 POST {{url}}
@@ -146,14 +146,7 @@ Content-Type: application/json
 {
   "type": "std:account:create",
   "input": {
-    "attributes":{"email":"gast2@inagaddavida.de","last_name":"gast2","login":"gast2@inagaddavida.de","login_name":"gast2@inagaddavida.de","name":"gast2","person_id":"gast2_inagaddavida.de#EXT#@vj42.onmicrosoft.com","status":"Inactive","workflows":"b33ca9cc-c9a0-4eb7-91c8-3d6320419a81"}
+    "attributes":{"email":"fernando.delosrios+guest@sailpoint.com","first_name":"Mark","last_name":"Smith","login":"mark.smith_sailpointdemo.com#EXT#","name":"mark.smith_sailpointdemo.com#EXT#","sponsor":"57e2f841-337f-4878-97c8-74daf2eaa267","status":"Inactive","workflows":"1340a5f3-371e-4652-84e9-bb64a4f79a48"}
   },
   "config": {{config}}
 }
-
-HTTP/1.1 200  - OK
-x-powered-by: Express
-content-type: application/x-ndjson
-date: Mon, 02 Jun 2025 12:05:01 GMT
-connection: close
-transfer-encoding: chunked

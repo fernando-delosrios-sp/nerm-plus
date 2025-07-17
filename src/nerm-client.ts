@@ -20,6 +20,7 @@ type UserType = 'NeprofileUser' | 'NeaccessUser'
 export class NERMClient {
     private client: AxiosCacheInstance
     private attributes?: Map<string, any>
+    private instanceId?: string
 
     constructor(config: any) {
         const baseConfig: AxiosRequestConfig = {
@@ -33,6 +34,32 @@ export class NERMClient {
         axiosRetry(client, retriesConfig)
         axiosThrottle.use(client, throttleConfig)
         this.client = setupCache(client)
+        this.instanceId = config.spConnectorInstanceId
+    }
+
+    private toLogString(value: any): string {
+        if (typeof value === 'string') return value
+        try {
+            return JSON.stringify(value)
+        } catch {
+            return String(value)
+        }
+    }
+
+    private logDebug(fnName: string, message: any) {
+        logger.debug(`  NERMClient.${fnName}: ${this.toLogString(message)}`)
+    }
+
+    private logInfo(fnName: string, message: any) {
+        logger.info(`  NERMClient.${fnName}: ${this.toLogString(message)}`)
+    }
+
+    private logWarn(fnName: string, message: any) {
+        logger.warn(`  NERMClient.${fnName}: ${this.toLogString(message)}`)
+    }
+
+    private logError(fnName: string, message: any) {
+        logger.error(`  NERMClient.${fnName}: ${this.toLogString(message)}`)
     }
 
     private getProfileAttribute(profile: any, attribute: string): any {
@@ -75,7 +102,7 @@ export class NERMClient {
             }
         } catch (error) {
             const e = error as any
-            logger.error(e.response.data.error ?? e.message ?? e)
+            this.logError('listRequest', e.response?.data?.error ?? e.message ?? `${e}`)
         }
     }
 
@@ -91,7 +118,7 @@ export class NERMClient {
             const response = await this.client.request(request)
             item = type ? response.data[type] : response.data
         } catch (error) {
-            logger.error((error as any).response.data.error ?? error)
+            this.logError('getRequest', (error as any).response?.data?.error ?? `${error}`)
         } finally {
             return item
         }
@@ -110,7 +137,7 @@ export class NERMClient {
             response = await this.client.request(request)
             item = response.data[type]
         } catch (error) {
-            logger.error((error as any).response.data.error ?? error)
+            this.logError('createRequest', (error as any).response?.data?.error ?? `${error}`)
             item = response
         } finally {
             return item
@@ -130,7 +157,7 @@ export class NERMClient {
             response = await this.client.request(request)
             item = response.data[type]
         } catch (error) {
-            logger.error((error as any).response.data.error ?? error)
+            this.logError('updateRequest', (error as any).response?.data?.error ?? `${error}`)
             item = response
         } finally {
             return item
@@ -148,7 +175,7 @@ export class NERMClient {
             const response = await this.client.request(request)
             item = response.data
         } catch (error) {
-            logger.error((error as any).response.data.error ?? error)
+            this.logError('deleteRequest', (error as any).response?.data?.error ?? `${error}`)
         } finally {
             return item
         }
@@ -203,7 +230,7 @@ export class NERMClient {
                 response = profile
             } else {
                 const message = `Multiple profiles found for "${name}" name`
-                logger.warn(message)
+                this.logWarn('getProfileByName', message)
                 break
             }
         }
@@ -220,7 +247,7 @@ export class NERMClient {
                 response = profile
             } else {
                 const message = `Multiple profiles found for "${name}" name`
-                logger.warn(message)
+                this.logWarn('getProfileByNameAndType', message)
                 break
             }
         }
@@ -315,7 +342,7 @@ export class NERMClient {
             return response
         } else {
             const message = `Failed to delete "${profile_id}" user`
-            logger.error(message)
+            this.logError('deleteProfile', message)
         }
     }
 
@@ -327,7 +354,7 @@ export class NERMClient {
             return response
         } else {
             const message = `Failed to delete "${user_id}" user`
-            logger.error(message)
+            this.logError('deleteUser', message)
         }
     }
 
@@ -554,7 +581,7 @@ export class NERMClient {
                     attributes[attr.name!] = finalValue
                 } else {
                     const message = `"${attr.name}" attribute not found on profile "${profile.name}"`
-                    logger.debug(message)
+                    this.logDebug('resolveProfileAttributes', message)
                 }
             }
         }
@@ -644,7 +671,7 @@ export class NERMClient {
             }
         } catch (error) {
             const message = `Failed to remove "${role_id}" role_id from "${user_id}" user_id`
-            logger.error(message)
+            this.logError('removeRole', message)
         }
     }
 }

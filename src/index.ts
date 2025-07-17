@@ -48,6 +48,7 @@ import {
 } from './data/constants'
 import { NeaccessUserAccount, NeprofileUserAccount, ProfileAccount } from './model/account'
 import { SearchDocument } from 'sailpoint-api-client'
+import { fnLog, opEnd, opStart, toLogString } from './logging'
 
 // Connector must be exported as module property named connector
 export const connector = async () => {
@@ -72,16 +73,16 @@ export const connector = async () => {
                 body.profile_type_id = profileType.id
                 body.attributes = {}
                 for (const attribute of schema!.attributes) {
-                    if (ENTITLEMENT_ATTRIBUTES.includes(attribute.name)) {
-                        continue
-                    }
-
-                    let finalValue
-                    const key = attribute.name.split('.').reverse().pop()!
-                    const attributeType = await nerm.getAttribute(key!)
                     const value = attributes[attribute.name]
-                    let ids = []
                     if (value) {
+                        if (ENTITLEMENT_ATTRIBUTES.includes(attribute.name)) {
+                            continue
+                        }
+
+                        let finalValue
+                        let ids = []
+                        const key = attribute.name.split('.').reverse().pop()!
+                        const attributeType = await nerm.getAttribute(key!)
                         let values = [value].flat()
                         if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
                             for (const value of values) {
@@ -346,7 +347,7 @@ export const connector = async () => {
 
     const removeRole = async (account: StdAccountListOutput, role_id: string) => {
         logger.info(`Removing ${role_id} role to ${account.uuid}`)
-        let id
+        let id: string
         const role = await nerm.getRole(role_id)
         const type = getRoleType(role)
         switch (config.account_type) {
@@ -358,7 +359,8 @@ export const connector = async () => {
                         addType(account, 'NeaccessUser')
                     }
                 }
-                id = account.attributes.user_id!
+                id = account.attributes.user_id as string
+                break
             default:
                 id = account.identity!
                 break
@@ -505,25 +507,28 @@ export const connector = async () => {
     }
 
     const send = async <T>(res: Response<T>, output: T) => {
-        logger.debug(output)
+        logger.debug(`send output=${toLogString(output)}`)
         res.send(output)
     }
 
     const stdTestConnection: StdTestConnectionHandler = async (context, input, res) => {
-        logger.debug('Testing connection')
+        opStart('stdTestConnection', input)
+        logger.debug(fnLog('stdTestConnection', 'Testing connection'))
         try {
             await isc.getPublicIdentityConfig()
             await nerm.listProfileTypes()
 
             send(res, {})
+            opEnd('stdTestConnection', {})
         } catch (error) {
-            logger.error(error)
+            logger.error(`stdTestConnection error=${toLogString(error)}`)
             throw new ConnectorError(error as string)
         }
     }
 
     const stdAccountDiscoverSchema: StdAccountDiscoverSchemaHandler = async (context, input, res) => {
-        logger.debug('Discovering account schema')
+        opStart('stdAccountDiscoverSchema', input)
+        logger.debug(fnLog('stdAccountDiscoverSchema', 'Discovering account schema'))
         try {
             let schema: AccountSchema
             const profileEntitlements: SchemaAttribute[] = []
@@ -603,14 +608,16 @@ export const connector = async () => {
             }
 
             send(res, schema!)
+            opEnd('stdAccountDiscoverSchema', schema!)
         } catch (error) {
-            logger.error(error)
+            logger.error(`stdAccountDiscoverSchema error=${toLogString(error)}`)
             throw new ConnectorError(error as string)
         }
     }
 
     const stdAccountList: StdAccountListHandler = async (context, input, res) => {
-        logger.debug('Listing accounts')
+        opStart('stdAccountList', input)
+        logger.debug(fnLog('stdAccountList', 'Listing accounts'))
         const interval = setInterval(() => {
             res.keepAlive()
         }, PROCESSINGWAIT)
@@ -661,13 +668,15 @@ export const connector = async () => {
                 await pushContents(context, input, res)
             }
         } catch (error) {
-            logger.error(error)
+            logger.error(`stdAccountList error=${toLogString(error)}`)
         } finally {
             clearInterval(interval)
+            opEnd('stdAccountList', 'stream')
         }
     }
 
     const stdAccountRead: StdAccountReadHandler = async (context, input, res) => {
+        opStart('stdAccountRead', input)
         logger.info(input)
         if (!input.schema) {
             const schema = await getSchema()
@@ -675,9 +684,11 @@ export const connector = async () => {
         }
         const account = await getAccount(input.identity, input.schema)
         send(res, account)
+        opEnd('stdAccountRead', account)
     }
 
     const stdEntitlementList: StdEntitlementListHandler = async (context, input, res) => {
+        opStart('stdEntitlementList', input)
         logger.info(input)
         switch (input.type) {
             case 'type':
@@ -715,9 +726,11 @@ export const connector = async () => {
                     }
                 }
         }
+        opEnd('stdEntitlementList', 'stream')
     }
 
     const stdAccountCreate: StdAccountCreateHandler = async (context, input, res) => {
+        opStart('stdAccountCreate', input)
         logger.debug(`Creating account with input: ${JSON.stringify(input)}`)
         const operations = ['create']
         logger.info(input)
@@ -764,10 +777,12 @@ export const connector = async () => {
                 await processOperation(account, operation, input.schema)
             }
             send(res, account)
+            opEnd('stdAccountCreate', account)
         }
     }
 
     const stdAccountUpdate: StdAccountUpdateHandler = async (context, input, res) => {
+        opStart('stdAccountUpdate', input)
         logger.debug(`Updating account ${input.identity} with changes: ${JSON.stringify(input.changes)}`)
         const operations = ['update']
         logger.info(input)
@@ -845,11 +860,13 @@ export const connector = async () => {
                     await processOperation(account, operation, input.schema)
                 }
                 send(res, account)
+                opEnd('stdAccountUpdate', account)
             }
         }
     }
 
     const stdAccountEnable: StdAccountEnableHandler = async (context, input, res) => {
+        opStart('stdAccountEnable', input)
         logger.debug(`Enabling account ${input.identity}`)
         const attribute = 'status'
         const value = 'Active'
@@ -863,10 +880,12 @@ export const connector = async () => {
         if (account) {
             await processOperation(account, operation, input.schema)
             send(res, account)
+            opEnd('stdAccountEnable', account)
         }
     }
 
     const stdAccountDisable: StdAccountDisableHandler = async (context, input, res) => {
+        opStart('stdAccountDisable', input)
         logger.debug(`Disabling account ${input.identity}`)
         const attribute = 'status'
         const value = 'Inactive'
@@ -878,10 +897,12 @@ export const connector = async () => {
         if (account) {
             await processOperation(account, operation, input.schema)
             send(res, account)
+            opEnd('stdAccountDisable', account)
         }
     }
 
     const stdAccountDelete: StdAccountDeleteHandler = async (context, input, res) => {
+        opStart('stdAccountDelete', input)
         logger.debug(`Deleting account ${input.identity}`)
         const operation = 'delete'
         logger.info(input)
@@ -902,11 +923,13 @@ export const connector = async () => {
             await processOperation(account, operation, input.schema)
             delete account.identity
             send(res, undefined)
+            opEnd('stdAccountDelete', undefined)
         }
     }
 
     const pushContents: CommandHandler = async (context, input, res) => {
-        logger.debug('Pushing contents')
+        opStart('pushContents', input)
+        logger.debug(fnLog('pushContents', 'Pushing contents'))
         const mappings = config.mappings!.sort((a, b) => (a.nested ? (b.nested ? 0 : 1) : -1)) ?? []
         const masterProfileMap: Map<string, any[]> = new Map()
         const masterEntityMap: Map<string, SearchDocument[]> = new Map()
@@ -978,9 +1001,11 @@ export const connector = async () => {
                 }
             }
         }
+        opEnd('pushContents', 'done')
     }
 
     const stdChangePassword: StdChangePasswordHandler = async (context, input, res) => {
+        opStart('stdChangePassword', input)
         let message = ''
         if (config.account_type === 'NeaccessUser') {
             try {
@@ -989,6 +1014,7 @@ export const connector = async () => {
                 logger.debug(`Changing password for account ${input.identity}`)
                 await setAttribute(account, 'password', input.password)
                 send(res, {})
+                opEnd('stdChangePassword', {})
             } catch (error) {
                 message = `User not found: ${input.identity}.`
             }
