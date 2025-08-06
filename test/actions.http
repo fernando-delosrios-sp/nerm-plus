@@ -135,7 +135,7 @@ Content-Type: application/json
 
 {
   "type": "std:account:update",
-  "input": {"changes":[{"attribute":"workflows","op":"Add","value":"dc1b7eef-52cb-4784-b1c5-d9dd2550962d"}], "identity": "87f9f303-70b4-4b21-a4f9-7b4515755e9f"},
+  "input": {"changes":[{"attribute":"roles","metadata":{"IdnAccessRequestAttributes":{"accessRequestType":"REVOKE_ACCESS","deniedCommentsRequired":false,"identityRequestIds":["2cfe00d32e1244d895e700b5b94dd122"],"requestedAccounts":[{"accountId":"ea29ca56-7410-4866-a3e2-25b6ec5d6df6","name":"Amanda Ross","sourceName":"NERM+ People","type":"ACCOUNT"}],"requestedObjectId":"ad6b7ae62a2f41c387776773cfa78653","requestedObjectName":"NERM Administrator","requestedObjectType":"ENTITLEMENT"},"assignment":true,"comments":"dfghjkl","requestedObjectId":"ad6b7ae62a2f41c387776773cfa78653","requestedObjectType":"ENTITLEMENT"},"op":"Remove","value":"c0c847df-c086-4707-a424-6bfe65ad17fe"}], "identity": "ea29ca56-7410-4866-a3e2-25b6ec5d6df6"},
   "config": {{config}}
 }
 ###

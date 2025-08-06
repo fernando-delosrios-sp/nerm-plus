@@ -346,7 +346,7 @@ export const connector = async () => {
 
     const removeRole = async (account: StdAccountListOutput, role_id: string) => {
         logger.info(`Removing ${role_id} role to ${account.uuid}`)
-        let id
+        let id: string
         const role = await nerm.getRole(role_id)
         const type = getRoleType(role)
         switch (config.account_type) {
@@ -358,7 +358,8 @@ export const connector = async () => {
                         addType(account, 'NeaccessUser')
                     }
                 }
-                id = account.attributes.user_id!
+                id = account.attributes.user_id as string
+                break
             default:
                 id = account.identity!
                 break
