@@ -4,6 +4,15 @@ import { logger } from '@sailpoint/connector-sdk'
 import { AxiosResponseHeaders } from 'axios'
 import axiosRetry from 'axios-retry'
 
+const toLogString = (value: any): string => {
+    if (typeof value === 'string') return value
+    try {
+        return JSON.stringify(value)
+    } catch {
+        return String(value)
+    }
+}
+
 export const retriesConfig: IAxiosRetryConfig = {
     retries: RETRIES,
     retryDelay: (retryCount, error) => {
@@ -19,9 +28,11 @@ export const retriesConfig: IAxiosRetryConfig = {
     },
     onRetry: (retryCount, error, requestConfig) => {
         logger.debug(
-            `Retrying API [${requestConfig.url}] due to request error: [${error}]. Retry number [${retryCount}]`
+            `axios onRetry: Retrying API [${requestConfig.url}] due to request error: [${toLogString(
+                error
+            )}]. Retry number [${retryCount}]`
         )
-        logger.error(error)
+        logger.error(`axios onRetry error: ${toLogString(error)}`)
     },
 }
 

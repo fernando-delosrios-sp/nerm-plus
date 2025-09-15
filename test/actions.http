@@ -39,7 +39,7 @@ POST {{url}}
 Content-Type: application/json
 
 {
-  "type": "std:push:contents",
+  "type": "custom:push:contents",
   "input": {},
   "config": {{config}}
 }
@@ -68,17 +68,10 @@ Content-Type: application/json
 {
   "type": "std:account:read",
   "input": {
-    "identity": "a58188c4-3cb0-4620-bbcd-065850837446"
+    "identity":"c09b8572-0045-489f-b4fd-2a5b7217814d"
   },
   "config": {{config}}
 }
-
-HTTP/1.1 200  - OK
-x-powered-by: Express
-content-type: application/x-ndjson
-date: Wed, 18 Jun 2025 08:54:48 GMT
-connection: close
-transfer-encoding: chunked
 ###
 # Entitlement list
 POST {{url}}
@@ -138,6 +131,13 @@ Content-Type: application/json
   "input": {"changes":[{"attribute":"roles","metadata":{"IdnAccessRequestAttributes":{"accessRequestType":"REVOKE_ACCESS","deniedCommentsRequired":false,"identityRequestIds":["2cfe00d32e1244d895e700b5b94dd122"],"requestedAccounts":[{"accountId":"ea29ca56-7410-4866-a3e2-25b6ec5d6df6","name":"Amanda Ross","sourceName":"NERM+ People","type":"ACCOUNT"}],"requestedObjectId":"ad6b7ae62a2f41c387776773cfa78653","requestedObjectName":"NERM Administrator","requestedObjectType":"ENTITLEMENT"},"assignment":true,"comments":"dfghjkl","requestedObjectId":"ad6b7ae62a2f41c387776773cfa78653","requestedObjectType":"ENTITLEMENT"},"op":"Remove","value":"c0c847df-c086-4707-a424-6bfe65ad17fe"}], "identity": "ea29ca56-7410-4866-a3e2-25b6ec5d6df6"},
   "config": {{config}}
 }
+
+HTTP/1.1 200  - OK
+x-powered-by: Express
+content-type: application/x-ndjson
+date: Wed, 06 Aug 2025 09:05:58 GMT
+connection: close
+transfer-encoding: chunked
 ###
 # Account create
 POST {{url}}
