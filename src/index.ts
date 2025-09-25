@@ -190,14 +190,15 @@ export const connector = async () => {
                 account = new NeprofileUserAccount(nermObject)
                 attributes = resolveUserAttributes(nermObject, schema)
                 account.attributes[config.login_attribute] = nermObject.login
-                // account.attributes.user_id = account.identity as string
+                if (account.attributes.workflows) {
+                    account.attributes.workflows = (account.attributes.workflows as string).split(',')
+                }
                 id = account.identity
                 break
             case 'NeaccessUser':
                 account = new NeaccessUserAccount(nermObject)
                 attributes = resolveUserAttributes(nermObject, schema)
                 account.attributes[config.login_attribute] = nermObject.login
-                // account.attributes.user_id = account.identity as string
                 id = account.identity
                 break
         }
@@ -379,7 +380,12 @@ export const connector = async () => {
         logger.debug(`Setting attribute ${attribute} to value ${value} for account ${account.uuid}`)
         switch (config.account_type) {
             case 'Profile':
-                await nerm.setProfileAttribute(account.identity!, attribute, value)
+                if (attribute === 'workflows') {
+                    const serialized = (value as string[]).join(',')
+                    await nerm.setProfileAttribute(account.identity!, attribute, serialized)
+                } else {
+                    await nerm.setProfileAttribute(account.identity!, attribute, value)
+                }
                 const id = account.attributes.user_id as string
                 if (id) {
                     if (attribute === config.login_attribute) {
@@ -415,6 +421,8 @@ export const connector = async () => {
         } else if (attribute === 'name') {
             account.uuid = value
             account.attributes.name = value
+        } else {
+            account.attributes[attribute] = value
         }
     }
 
@@ -480,12 +488,25 @@ export const connector = async () => {
         }
     }
 
-    const addWorkflow = async (account: StdAccountListOutput, workflow_id: string) => {
+    const removeWorkflow = async (account: StdAccountListOutput, workflow_id: string) => {
+        logger.debug(`Removing workflow ${workflow_id} from account ${account.uuid}`)
+        const current = (account.attributes.workflows as string[]) ?? []
+        current.splice(current.indexOf(workflow_id), 1)
+        await setAttribute(account, 'workflows', current)
+    }
+
+    const addWorkflow = async (account: StdAccountListOutput, workflow_id: string, waitFlag: boolean = false) => {
         logger.debug(`Adding workflow ${workflow_id} to account ${account.uuid}`)
         const workflow = config.workflows?.find((x) => x.workflow === workflow_id)
         if (workflow) {
             const { requester_id } = workflow
-            await runWorkflow(account, workflow_id, requester_id)
+            await runWorkflow(account, workflow_id, requester_id, waitFlag)
+            const persistent = config.workflows?.find((x) => x.workflow === workflow_id)?.persistent ?? false
+            if (persistent) {
+                const current = (account.attributes.workflows as string[]) ?? []
+                current.push(workflow_id)
+                await setAttribute(account, 'workflows', current)
+            }
         } else {
             const message = `Unable to find configuration for workflow ${workflow_id}`
             throw new ConnectorError(message)
@@ -754,10 +775,15 @@ export const connector = async () => {
             }
         }
 
-        if (input.attributes.workflows) {
+        if (input.attributes.workflows && config.account_type === 'Profile') {
             const workflows = [input.attributes.workflows].flat()
+            let wait = false
             for (const workflow of workflows) {
-                await addWorkflow(account, workflow)
+                wait = config.workflows?.find((x) => x.workflow === workflow)?.wait || wait
+                await addWorkflow(account, workflow, wait)
+            }
+            if (wait) {
+                account = await buildAccount(account, input.schema)
             }
         }
 
@@ -772,7 +798,7 @@ export const connector = async () => {
             }
         }
 
-        if (account) {
+        if (account && config.account_type === 'Profile') {
             for (const operation of operations) {
                 await processOperation(account, operation, input.schema)
             }
@@ -792,7 +818,13 @@ export const connector = async () => {
         }
 
         if (input.changes) {
+            let wait = false
             let account = await getAccount(input.identity, input.schema)
+            const types = account.attributes.types as string[]
+            account.attributes.roles = account.attributes.roles ?? []
+            const roles = account.attributes.roles as string[]
+            const isProfile = config.account_type === 'Profile'
+            let isUser = types.includes('NeprofileUser') || types.includes('NeaccessUser') || roles.length > 0
             for (const change of input.changes) {
                 const values = [change.value].flat()
                 for (const value of values) {
@@ -803,21 +835,27 @@ export const connector = async () => {
                                     if (value !== 'Profile') {
                                         await addType(account, value)
                                         account = await getAccount(input.identity, input.schema)
+                                        isUser = true
                                     } else {
                                         await addType(account, value)
                                     }
                                     break
                                 case 'roles':
-                                    await addRole(account, value)
+                                    if (isUser) {
+                                        await addRole(account, value)
+                                    }
                                     break
                                 case 'workflows':
-                                    await addWorkflow(account, value)
+                                    if (isProfile) {
+                                        wait = config.workflows?.find((x) => x.workflow === value)?.wait || wait
+                                        await addWorkflow(account, value, wait)
+                                    }
                                     break
                                 default:
                                     const entitlementSchema = input.schema?.attributes.find(
                                         (x) => x.name === change.attribute && x.schemaObjectType
                                     )
-                                    if (entitlementSchema) {
+                                    if (entitlementSchema && isProfile) {
                                         operations.push(entitlementSchema.schemaObjectType as string)
                                         await profileAttributeOp(account, change.attribute, change.value, 'add')
                                     } else {
@@ -835,13 +873,10 @@ export const connector = async () => {
                                     await removeRole(account, value)
                                     break
                                 case 'workflows':
-                                    throw new ConnectorError('Operation not supported')
+                                    await removeWorkflow(account, value)
+                                    break
                                 default:
-                                    if (
-                                        input.schema?.attributes.find(
-                                            (x) => x.name === change.attribute && x.schemaObjectType
-                                        )
-                                    ) {
+                                    if (input.schema?.attributes.find((x) => x.name === change.attribute && x.schemaObjectType)) {
                                         await profileAttributeOp(account, change.attribute, change.value, 'remove')
                                     } else {
                                         const message = `"${change.attribute}" entitlement attribute not supported`
@@ -858,6 +893,9 @@ export const connector = async () => {
             if (account) {
                 for (const operation of operations) {
                     await processOperation(account, operation, input.schema)
+                }
+                if (wait) {
+                    account = await buildAccount(account, input.schema)
                 }
                 send(res, account)
                 opEnd('stdAccountUpdate', account)
