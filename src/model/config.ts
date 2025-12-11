@@ -34,6 +34,8 @@ export type Workflow = {
     entitlement: string
     workflow: string
     requester_id: RequesterType
+    wait?: boolean
+    persistent?: boolean
 }
 
 export interface Config {
