@@ -492,7 +492,15 @@ export class NERMClient {
 
         const profileAttribute = this.getProfileAttribute(profile, parent)
         if (profileAttribute) {
-            if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
+            if (USERTYPE_ATTRIBUTES.includes(attributeType?.type)) {
+                const email = getEmailFromUserAttribute(profileAttribute)
+                if (email) {
+                    const user = await this.getUserByEmail(email)
+                    if (user) {
+                        values = [user[children]]
+                    }
+                }
+            } else {
                 const profileNames: string[] = profileAttribute.split(', ')
                 if (hierarchy.length > 0) {
                     if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
@@ -524,14 +532,6 @@ export class NERMClient {
                         values = referencedProfiles
                     } else {
                         values = [profileAttribute].flat()
-                    }
-                }
-            } else if (USERTYPE_ATTRIBUTES.includes(attributeType?.type)) {
-                const email = getEmailFromUserAttribute(profileAttribute)
-                if (email) {
-                    const user = await this.getUserByEmail(email)
-                    if (user) {
-                        values = [user[children]]
                     }
                 }
             }
