@@ -11,9 +11,11 @@ import {
     QUERYLIMIT,
     QUERYORDER,
     RETRIES,
+    USERTYPE_ATTRIBUTES,
     WORKFLOW_PENDINGSTATUSES,
 } from './data/constants'
 import { AccountSchema, logger } from '@sailpoint/connector-sdk'
+import { getEmailFromUserAttribute } from './utils'
 
 type UserType = 'NeprofileUser' | 'NeaccessUser'
 
@@ -394,6 +396,17 @@ export class NERMClient {
         }
     }
 
+    async getUserByEmail(email: string): Promise<any> {
+        const url = `/users`
+        const type = 'users'
+
+        for await (const user of this.listRequest(url, type)) {
+            if (user.email === email) {
+                return user
+            }
+        }
+    }
+
     async getUserRoleAssignments(user_id: any) {
         const url = `/user_roles`
         const type = 'user_roles'
@@ -478,39 +491,48 @@ export class NERMClient {
         let values: any | any[] = []
 
         const profileAttribute = this.getProfileAttribute(profile, parent)
-
         if (profileAttribute) {
-            const profileNames: string[] = profileAttribute.split(', ')
-            if (hierarchy.length > 0) {
-                if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
-                    for (const profileName of profileNames) {
-                        const referencedProfile = await this.getProfileByNameAndType(
-                            profileName,
-                            attributeType.profile_type_id
-                        )
-                        const childrenProfiles = await this.getAttributeRecursively(referencedProfile, children)
-                        if (childrenProfiles) {
-                            if (Array.isArray(childrenProfiles)) {
-                                isMulti = true
-                                values = values.concat(childrenProfiles.filter((x) => x !== undefined))
-                            } else {
-                                values.push(childrenProfiles)
+            if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
+                const profileNames: string[] = profileAttribute.split(', ')
+                if (hierarchy.length > 0) {
+                    if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
+                        for (const profileName of profileNames) {
+                            const referencedProfile = await this.getProfileByNameAndType(
+                                profileName,
+                                attributeType.profile_type_id
+                            )
+                            const childrenProfiles = await this.getAttributeRecursively(referencedProfile, children)
+                            if (childrenProfiles) {
+                                if (Array.isArray(childrenProfiles)) {
+                                    isMulti = true
+                                    values = values.concat(childrenProfiles.filter((x) => x !== undefined))
+                                } else {
+                                    values.push(childrenProfiles)
+                                }
                             }
                         }
+                    } else {
+                        values = [profileAttribute].flat()
                     }
                 } else {
-                    values = [profileAttribute].flat()
+                    if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
+                        const referencedProfiles = await Promise.all(
+                            profileNames
+                                .map((x) => this.getProfileByNameAndType(x, attributeType.profile_type_id))
+                                .filter((x) => x !== undefined)
+                        )
+                        values = referencedProfiles
+                    } else {
+                        values = [profileAttribute].flat()
+                    }
                 }
-            } else {
-                if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
-                    const referencedProfiles = await Promise.all(
-                        profileNames
-                            .map((x) => this.getProfileByNameAndType(x, attributeType.profile_type_id))
-                            .filter((x) => x !== undefined)
-                    )
-                    values = referencedProfiles
-                } else {
-                    values = [profileAttribute].flat()
+            } else if (USERTYPE_ATTRIBUTES.includes(attributeType?.type)) {
+                const email = getEmailFromUserAttribute(profileAttribute)
+                if (email) {
+                    const user = await this.getUserByEmail(email)
+                    if (user) {
+                        values = [user[children]]
+                    }
                 }
             }
         }
