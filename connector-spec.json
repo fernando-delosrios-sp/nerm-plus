@@ -18,6 +18,7 @@
         "std:entitlement:list",
         "std:account:discover-schema",
         "std:change-password",
+        "std:config-options:read",
         "custom:push:contents"
     ],
     "sourceConfig": [
