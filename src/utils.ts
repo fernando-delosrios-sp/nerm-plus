@@ -199,3 +199,14 @@ export const resolveUserAttributes = (attributes: Attributes, schema?: AccountSc
 
     return userAttributes
 }
+
+export const getEmailFromUserAttribute = (userAttribute: string): string | undefined => {
+    if (typeof userAttribute === 'string') {
+        // Try to extract email in the format: Name (email)
+        const emailMatch = userAttribute.match(/\(([^\s@)]+@[^\s@)]+)\)/)
+        if (emailMatch) {
+            return emailMatch[1]
+        }
+    }
+    return undefined
+}

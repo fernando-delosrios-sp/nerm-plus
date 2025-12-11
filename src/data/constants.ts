@@ -28,6 +28,12 @@ export const USERONLY_ATTRIBUTES = [
     'avatar_url',
 ]
 export const PROFILETYPE_ATTRIBUTES = ['ProfileSearchAttribute', 'ProfileSelectAttribute']
+export const USERTYPE_ATTRIBUTES = [
+    'ContributorSearchAttribute',
+    'ContributorSelectAttribute',
+    'OwnerSearchAttribute',
+    'OwnerSelectAttribute',
+]
 export const WORKFLOW_PENDINGSTATUSES = ['pending request', 'pending set attribute']
 export const ENTITLEMENT_ATTRIBUTES = ['types', 'workflows', 'roles']
 export const BATCH_SIZE = 100

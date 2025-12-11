@@ -19,6 +19,7 @@ import {
     StdAccountReadHandler,
     StdAccountUpdateHandler,
     StdChangePasswordHandler,
+    StdConfigOptionsHandler,
     StdEntitlementListHandler,
     StdTestConnectionHandler,
 } from '@sailpoint/connector-sdk'
@@ -1024,6 +1025,13 @@ export const connector = async () => {
         throw new ConnectorError(message)
     }
 
+    const stdConfigOptionsHandler: StdConfigOptionsHandler = async (context, input, res) => {
+        opStart('stdConfigOptionsHandler', input)
+        logger.debug(fnLog('stdConfigOptionsHandler', 'Reading config options'))
+        send(res, null)
+        opEnd('stdConfigOptionsHandler', {})
+    }
+
     return createConnector()
         .stdTestConnection(stdTestConnection)
         .stdAccountDiscoverSchema(stdAccountDiscoverSchema)
@@ -1036,5 +1044,6 @@ export const connector = async () => {
         .stdAccountDisable(stdAccountDisable)
         .stdAccountDelete(stdAccountDelete)
         .stdChangePassword(stdChangePassword)
+        .stdConfigOptions(stdConfigOptionsHandler)
         .command('custom:push:contents', pushContents)
 }
