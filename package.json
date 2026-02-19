@@ -1,6 +1,6 @@
 {
     "name": "nerm-plus",
-    "version": "0.1.9",
+    "version": "0.1.10",
     "main": "dist/index.js",
     "scripts": {
         "clean": "shx rm -rf ./dist",
@@ -14,8 +14,8 @@
     },
     "private": true,
     "dependencies": {
-        "@sailpoint/connector-sdk": "1.1.24",
-        "sailpoint-api-client": "^1.6.1",
+        "@sailpoint/connector-sdk": "1.1.38",
+        "sailpoint-api-client": "1.7.1",
         "axios-cache-interceptor": "^1.6.2",
         "axios-request-throttle": "^1.0.0",
         "axios-retry": "^4.5.0",

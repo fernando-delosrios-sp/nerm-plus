@@ -1,15 +1,7 @@
-import { AccountSchema, Attributes, StdAccountListOutput } from '@sailpoint/connector-sdk'
+import { Attributes, StdAccountListOutput } from '@sailpoint/connector-sdk'
 
 export type AccountAttributes = {
     [key: string]: string | number | boolean | null | undefined
-}
-
-const processAttributes = (attrs: { [key: string]: any }, schema: AccountSchema): { [key: string]: any } => {
-    const attributeNames: string[] = schema.attributes.map((x) => x.name)
-    let attributes: { [key: string]: any } = {}
-    attributeNames.forEach((x) => (attributes[x] = attrs[x]))
-
-    return attributes
 }
 
 export class ProfileAccount implements StdAccountListOutput {

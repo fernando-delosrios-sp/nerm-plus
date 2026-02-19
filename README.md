@@ -2,6 +2,15 @@
 
 ## Changelog
 
+-   0.1.10 (2026-02-19):
+    -   Improved performance and stability through schema discovery batching and parallelization
+    -   Streamlined user retrieval logic by refactoring NERMClient attribute handling
+-   0.1.9 (2025-12-11):
+    -   Added persistent workflows option
+    -   Enhanced error handling and connector specification with account creation template
+-   0.1.8 (2025-07-17):
+    -   Added support for configurable login attribute in user creation
+    -   Refactored attribute handling in user creation logic and fixed removeRole bug
 -   0.1.7 (2025-06-24):
     -   More bug fixes
     -   Added password change support for portal users

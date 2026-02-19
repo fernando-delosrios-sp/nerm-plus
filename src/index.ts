@@ -39,6 +39,8 @@ import {
 import { defaultAccountSchema } from './data/schema'
 import { Profile, Role, Type, Workflow } from './model/entitlement'
 import {
+    ACCOUNT_CONCURRENCY,
+    BATCH_SIZE,
     ENTITLEMENT_ATTRIBUTES,
     PROCESSINGWAIT,
     PROFILE_ROOTATTRIBUTES,
@@ -56,6 +58,7 @@ export const connector = async () => {
     const isc = new ISCClient(config)
     const nerm = new NERMClient(config)
     const spConnectorInstanceId = config.spConnectorInstanceId
+    let cachedAdminUserId: string | undefined
 
     const buildNERMAccountBody = async (
         attributes: Attributes,
@@ -72,41 +75,34 @@ export const connector = async () => {
                 const profileType = await nerm.getProfileTypeByName(config.profile_name)
                 body.profile_type_id = profileType.id
                 body.attributes = {}
-                for (const attribute of schema!.attributes) {
-                    const value = attributes[attribute.name]
-                    if (value) {
-                        if (ENTITLEMENT_ATTRIBUTES.includes(attribute.name)) {
-                            continue
-                        }
-
-                        let finalValue
-                        let ids = []
+                const relevantAttrs = schema!.attributes.filter(
+                    (attr) => attributes[attr.name] && !ENTITLEMENT_ATTRIBUTES.includes(attr.name)
+                )
+                const attrResults = await Promise.all(
+                    relevantAttrs.map(async (attribute) => {
+                        const value = attributes[attribute.name]
                         const key = attribute.name.split('.').reverse().pop()!
-                        const attributeType = await nerm.getAttribute(key!)
-                        let values = [value].flat()
+                        const attributeType = await nerm.getAttribute(key)
+                        const values = [value].flat()
+                        let finalValue
                         if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
-                            for (const value of values) {
-                                const referencedProfile = await nerm.getProfileByNameAndType(
-                                    value as string,
-                                    attributeType.profile_type_id
+                            const profiles = await Promise.all(
+                                values.map((v) =>
+                                    nerm.getProfileByNameAndType(v as string, attributeType.profile_type_id)
                                 )
-                                if (referencedProfile) {
-                                    ids.push(referencedProfile.id)
-                                }
-                            }
-                            finalValue = ids
+                            )
+                            finalValue = profiles.filter((p) => p).map((p) => p.id)
                         } else {
-                            if (attribute.multi) {
-                                finalValue = values
-                            } else {
-                                finalValue = values[0]
-                            }
+                            finalValue = attribute.multi ? values : values[0]
                         }
-                        if (PROFILE_ROOTATTRIBUTES.includes(key)) {
-                            body[key] = finalValue
-                        } else {
-                            body.attributes[key] = finalValue
-                        }
+                        return { key, finalValue }
+                    })
+                )
+                for (const { key, finalValue } of attrResults) {
+                    if (PROFILE_ROOTATTRIBUTES.includes(key)) {
+                        body[key] = finalValue
+                    } else {
+                        body.attributes[key] = finalValue
                     }
                 }
                 break
@@ -121,8 +117,6 @@ export const connector = async () => {
                     if (value) {
                         body[attribute] = value
                     }
-                }
-                if (config.account_type === 'Profile') {
                 }
                 break
             case 'NeaccessUser':
@@ -207,18 +201,23 @@ export const connector = async () => {
 
         if (id) {
             if (config.account_type === 'Profile') {
-                const user = await nerm.getUser(id)
-                const type = user.type as AccountType
-                if (config.login_attribute) {
-                    updateTypes(account.attributes, type, { [config.login_attribute]: user.login })
-                } else {
-                    updateTypes(account.attributes, type)
+                const [user, roleAssignments] = await Promise.all([nerm.getUser(id), nerm.getUserRoleAssignments(id)])
+                if (user) {
+                    const type = user.type as AccountType
+                    if (config.login_attribute) {
+                        updateTypes(account.attributes, type, { [config.login_attribute]: user.login })
+                    } else {
+                        updateTypes(account.attributes, type)
+                    }
                 }
-            }
-
-            const roleAssignments = await nerm.getUserRoleAssignments(id)
-            if (roleAssignments) {
-                account.attributes.roles = roleAssignments.map((x: { role_id: any }) => x.role_id)
+                if (roleAssignments) {
+                    account.attributes.roles = roleAssignments.map((x: { role_id: any }) => x.role_id)
+                }
+            } else {
+                const roleAssignments = await nerm.getUserRoleAssignments(id)
+                if (roleAssignments) {
+                    account.attributes.roles = roleAssignments.map((x: { role_id: any }) => x.role_id)
+                }
             }
         }
 
@@ -355,9 +354,9 @@ export const connector = async () => {
             case 'Profile':
                 if (!account.attributes.user_id) {
                     if (type === 'NeprofileUser') {
-                        addType(account, 'NeprofileUser')
+                        await addType(account, 'NeprofileUser')
                     } else {
-                        addType(account, 'NeaccessUser')
+                        await addType(account, 'NeaccessUser')
                     }
                 }
                 id = account.attributes.user_id as string
@@ -404,7 +403,7 @@ export const connector = async () => {
             case 'NeprofileUser':
                 await nerm.setUserAttribute(account.identity!, attribute, value)
                 break
-            case 'NeprofileUser':
+            case 'NeaccessUser':
                 await nerm.setUserAttribute(account.identity!, attribute, value)
         }
 
@@ -439,7 +438,7 @@ export const connector = async () => {
             newValue = currentValue.filter((x: { id: string }) => x.id !== value).map((x: { id: string }) => x.id)
         }
 
-        setAttribute(account, attribute, newValue)
+        await setAttribute(account, attribute, newValue)
     }
 
     const getSchema = async () => {
@@ -447,7 +446,12 @@ export const connector = async () => {
         const sources = await isc.listSources()
         const source = sources.find(
             (x) => (x.connectorAttributes as any).spConnectorInstanceId === spConnectorInstanceId
-        )!
+        )
+        if (!source) {
+            const error = `Unable to find source with spConnectorInstanceId "${spConnectorInstanceId}"`
+            throw new ConnectorError(error)
+        }
+
         const schemas = await isc.listSourceSchemas(source.id!)
         const accountSchema = schemas.find((x) => x.nativeObjectType === 'User')!
 
@@ -464,8 +468,11 @@ export const connector = async () => {
         let requester_id
         const requester_type = 'NeprofileUser'
         if (requester === 'admin') {
-            const admin = await nerm.getUserByNameAndType(config.nerm_admin, 'NeprofileUser')
-            requester_id = admin?.id
+            if (!cachedAdminUserId) {
+                const admin = await nerm.getUserByNameAndType(config.nerm_admin, 'NeprofileUser')
+                cachedAdminUserId = admin?.id
+            }
+            requester_id = cachedAdminUserId
         } else {
             requester_id = account.attributes[requester]
         }
@@ -522,9 +529,10 @@ export const connector = async () => {
         if (operation) {
             const response = await runWorkflow(account, operation.workflow, operation.requester_id, operation.wait)
             if (response && operation.wait) {
-                account = await buildAccount(account, schema)
+                account = await getAccount(account.identity as string, schema)
             }
         }
+        return account
     }
 
     const send = async <T>(res: Response<T>, output: T) => {
@@ -537,7 +545,8 @@ export const connector = async () => {
         logger.debug(fnLog('stdTestConnection', 'Testing connection'))
         try {
             await isc.getPublicIdentityConfig()
-            await nerm.listProfileTypes()
+            const iterator = nerm.listProfileTypes()
+            await iterator.next()
 
             send(res, {})
             opEnd('stdTestConnection', {})
@@ -566,9 +575,18 @@ export const connector = async () => {
             const schemas = await isc.listSourceSchemas(source.id!)
             if (config.profiles && config.account_type === 'Profile') {
                 const schemaNames = schemas.map((x) => x.name)
-                for (const profile of config.profiles) {
-                    const profileType = await nerm.getProfileTypeByName(profile.name)
-                    const profileAttribute = await nerm.getAttribute(profile.attribute)
+
+                const profilePromises = config.profiles.map(async (profile: any) => {
+                    const [profileType, profileAttribute] = await Promise.all([
+                        nerm.getProfileTypeByName(profile.name),
+                        nerm.getAttribute(profile.attribute),
+                    ])
+                    return { profile, profileType, profileAttribute }
+                })
+
+                const resolvedProfiles = await Promise.all(profilePromises)
+
+                for (const { profile, profileType, profileAttribute } of resolvedProfiles) {
                     if (profileType) {
                         if (!schemaNames.includes(profile.name)) {
                             const profileData = { ...profileType, attributes: profile.attributes }
@@ -583,7 +601,7 @@ export const connector = async () => {
                             schemaObjectType: profile.name,
                             entitlement: true,
                             managed: true,
-                            multi: profileAttribute.allow_multiple_selections ? true : false,
+                            multi: profileAttribute?.allow_multiple_selections ? true : false,
                         }
                         profileEntitlements.push(attribute)
                     } else {
@@ -649,37 +667,41 @@ export const connector = async () => {
                 input.schema = schema
             }
 
+            const processAccountBatch = async (items: any[]) => {
+                const results = await Promise.allSettled(items.map((item) => getAccount(item.id, input.schema)))
+                for (const result of results) {
+                    if (result.status === 'fulfilled') {
+                        send(res, result.value)
+                    } else {
+                        logger.error(result.reason)
+                    }
+                }
+            }
+
+            const listAndProcess = async (source: AsyncGenerator<any>) => {
+                let batch: any[] = []
+                for await (const item of source) {
+                    batch.push(item)
+                    if (batch.length >= ACCOUNT_CONCURRENCY) {
+                        await processAccountBatch(batch)
+                        batch = []
+                    }
+                }
+                if (batch.length > 0) {
+                    await processAccountBatch(batch)
+                }
+            }
+
             switch (config.account_type) {
                 case 'NeprofileUser':
-                    for await (const user of nerm.listUsers(config.account_type)) {
-                        try {
-                            const account = await getAccount(user.id, input.schema)
-                            send(res, account)
-                        } catch (error) {
-                            logger.error(error)
-                        }
-                    }
+                    await listAndProcess(nerm.listUsers(config.account_type))
                     break
                 case 'NeaccessUser':
-                    for await (const user of nerm.listUsers(config.account_type)) {
-                        try {
-                            const account = await getAccount(user.id, input.schema)
-                            send(res, account)
-                        } catch (error) {
-                            logger.error(error)
-                        }
-                    }
+                    await listAndProcess(nerm.listUsers(config.account_type))
                     break
                 case 'Profile':
                     const profileType = await nerm.getProfileTypeByName(config.profile_name)
-                    for await (const profile of nerm.listProfiles({ profile_type_id: profileType.id })) {
-                        try {
-                            const account = await getAccount(profile.id, input.schema)
-                            send(res, account)
-                        } catch (error) {
-                            logger.error(error)
-                        }
-                    }
+                    await listAndProcess(nerm.listProfiles({ profile_type_id: profileType.id }))
                     break
                 default:
                     throw new ConnectorError(`${config.account_type} account type not supported`)
@@ -783,7 +805,7 @@ export const connector = async () => {
                 await addWorkflow(account, workflow, wait)
             }
             if (wait) {
-                account = await buildAccount(account, input.schema)
+                account = await getAccount(account.identity as string, input.schema)
             }
         }
 
@@ -800,7 +822,7 @@ export const connector = async () => {
 
         if (account && config.account_type === 'Profile') {
             for (const operation of operations) {
-                await processOperation(account, operation, input.schema)
+                account = await processOperation(account, operation, input.schema)
             }
             send(res, account)
             opEnd('stdAccountCreate', account)
@@ -876,7 +898,11 @@ export const connector = async () => {
                                     await removeWorkflow(account, value)
                                     break
                                 default:
-                                    if (input.schema?.attributes.find((x) => x.name === change.attribute && x.schemaObjectType)) {
+                                    if (
+                                        input.schema?.attributes.find(
+                                            (x) => x.name === change.attribute && x.schemaObjectType
+                                        )
+                                    ) {
                                         await profileAttributeOp(account, change.attribute, change.value, 'remove')
                                     } else {
                                         const message = `"${change.attribute}" entitlement attribute not supported`
@@ -892,10 +918,10 @@ export const connector = async () => {
 
             if (account) {
                 for (const operation of operations) {
-                    await processOperation(account, operation, input.schema)
+                    account = await processOperation(account, operation, input.schema)
                 }
                 if (wait) {
-                    account = await buildAccount(account, input.schema)
+                    account = await getAccount(account.identity as string, input.schema)
                 }
                 send(res, account)
                 opEnd('stdAccountUpdate', account)
@@ -910,13 +936,11 @@ export const connector = async () => {
         const value = 'Active'
         const operation = 'enable'
         logger.info(input)
-        const account = await getAccount(input.identity, input.schema)
+        let account = await getAccount(input.identity, input.schema)
         await setAttribute(account, attribute, value)
-        if (account.attributes.user_id) {
-        }
 
         if (account) {
-            await processOperation(account, operation, input.schema)
+            account = await processOperation(account, operation, input.schema)
             send(res, account)
             opEnd('stdAccountEnable', account)
         }
@@ -929,11 +953,11 @@ export const connector = async () => {
         const value = 'Inactive'
         const operation = 'disable'
         logger.info(input)
-        const account = await getAccount(input.identity, input.schema)
+        let account = await getAccount(input.identity, input.schema)
         await setAttribute(account, attribute, value)
 
         if (account) {
-            await processOperation(account, operation, input.schema)
+            account = await processOperation(account, operation, input.schema)
             send(res, account)
             opEnd('stdAccountDisable', account)
         }
@@ -947,14 +971,14 @@ export const connector = async () => {
         const account = await getAccount(input.identity, input.schema)
         switch (config.account_type) {
             case 'Profile':
-                nerm.deleteProfile(input.identity)
+                await nerm.deleteProfile(input.identity)
                 if (account.attributes.user_id) {
-                    nerm.deleteUser(account.attributes.user_id as string)
+                    await nerm.deleteUser(account.attributes.user_id as string)
                 }
                 break
 
             default:
-                nerm.deleteUser(input.identity)
+                await nerm.deleteUser(input.identity)
         }
 
         if (account) {
@@ -1017,11 +1041,11 @@ export const connector = async () => {
                 }
                 const pendingProfiles = [...profileMap.values()]
                 if (nested) {
-                    const responses: Promise<any>[] = []
-                    for (const profile of pendingProfiles) {
-                        responses.push(nerm.createProfile(profile))
+                    for (let offset = 0; offset < pendingProfiles.length; offset += BATCH_SIZE) {
+                        const batchItems = pendingProfiles.slice(offset, offset + BATCH_SIZE)
+                        const responses: Promise<any>[] = batchItems.map((profile) => nerm.createProfile(profile))
+                        await Promise.all(responses)
                     }
-                    await Promise.all(responses)
                 } else {
                     await nerm.createProfiles(pendingProfiles)
                 }
@@ -1044,22 +1068,36 @@ export const connector = async () => {
 
     const stdChangePassword: StdChangePasswordHandler = async (context, input, res) => {
         opStart('stdChangePassword', input)
-        let message = ''
-        if (config.account_type === 'NeaccessUser') {
-            try {
+        try {
+            if (config.account_type === 'NeaccessUser' || config.account_type === 'NeprofileUser') {
                 logger.debug(`Getting user ${input.identity}`)
-                const account = await nerm.getUser(input.identity)
-                logger.debug(`Changing password for account ${input.identity}`)
-                await setAttribute(account, 'password', input.password)
-                send(res, {})
-                opEnd('stdChangePassword', {})
-            } catch (error) {
-                message = `User not found: ${input.identity}.`
+                await nerm.getUser(input.identity)
+                logger.debug(`Changing password for user ${input.identity}`)
+                await nerm.setUserAttribute(input.identity, 'password', input.password)
+            } else if (config.account_type === 'Profile') {
+                let schema = (input as any).schema
+                if (!schema) {
+                    schema = await getSchema()
+                }
+                const account = await getAccount(input.identity, schema)
+                const user_id = account.attributes.user_id as string
+                if (user_id) {
+                    logger.debug(`Changing password for portal user ${user_id} associated with profile ${input.identity}`)
+                    await nerm.setUserAttribute(user_id, 'password', input.password)
+                } else {
+                    throw new ConnectorError('Password changes are only supported for portal users.')
+                }
+            } else {
+                throw new ConnectorError('Password changes are only supported for portal users.')
             }
-        } else {
-            message = 'Password changes are only supported for portal users.'
+            send(res, {})
+            opEnd('stdChangePassword', {})
+        } catch (error) {
+            if (error instanceof ConnectorError) {
+                throw error
+            }
+            throw new ConnectorError(`Unable to change password: ${toLogString(error)}`)
         }
-        throw new ConnectorError(message)
     }
 
     return createConnector()
