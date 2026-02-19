@@ -1068,19 +1068,35 @@ export const connector = async () => {
 
     const stdChangePassword: StdChangePasswordHandler = async (context, input, res) => {
         opStart('stdChangePassword', input)
-        if (config.account_type === 'NeaccessUser') {
-            try {
+        try {
+            if (config.account_type === 'NeaccessUser' || config.account_type === 'NeprofileUser') {
                 logger.debug(`Getting user ${input.identity}`)
-                const account = await nerm.getUser(input.identity)
-                logger.debug(`Changing password for account ${input.identity}`)
-                await setAttribute(account, 'password', input.password)
-                send(res, {})
-                opEnd('stdChangePassword', {})
-            } catch (error) {
-                throw new ConnectorError(`User not found: ${input.identity}.`)
+                await nerm.getUser(input.identity)
+                logger.debug(`Changing password for user ${input.identity}`)
+                await nerm.setUserAttribute(input.identity, 'password', input.password)
+            } else if (config.account_type === 'Profile') {
+                let schema = (input as any).schema
+                if (!schema) {
+                    schema = await getSchema()
+                }
+                const account = await getAccount(input.identity, schema)
+                const user_id = account.attributes.user_id as string
+                if (user_id) {
+                    logger.debug(`Changing password for portal user ${user_id} associated with profile ${input.identity}`)
+                    await nerm.setUserAttribute(user_id, 'password', input.password)
+                } else {
+                    throw new ConnectorError('Password changes are only supported for portal users.')
+                }
+            } else {
+                throw new ConnectorError('Password changes are only supported for portal users.')
             }
-        } else {
-            throw new ConnectorError('Password changes are only supported for portal users.')
+            send(res, {})
+            opEnd('stdChangePassword', {})
+        } catch (error) {
+            if (error instanceof ConnectorError) {
+                throw error
+            }
+            throw new ConnectorError(`Unable to change password: ${toLogString(error)}`)
         }
     }
 
