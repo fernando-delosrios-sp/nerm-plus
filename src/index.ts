@@ -40,6 +40,7 @@ import { defaultAccountSchema } from './data/schema'
 import { Profile, Role, Type, Workflow } from './model/entitlement'
 import {
     ACCOUNT_CONCURRENCY,
+    BATCH_SIZE,
     ENTITLEMENT_ATTRIBUTES,
     PROCESSINGWAIT,
     PROFILE_ROOTATTRIBUTES,
@@ -445,7 +446,12 @@ export const connector = async () => {
         const sources = await isc.listSources()
         const source = sources.find(
             (x) => (x.connectorAttributes as any).spConnectorInstanceId === spConnectorInstanceId
-        )!
+        )
+        if (!source) {
+            const error = `Unable to find source with spConnectorInstanceId "${spConnectorInstanceId}"`
+            throw new ConnectorError(error)
+        }
+
         const schemas = await isc.listSourceSchemas(source.id!)
         const accountSchema = schemas.find((x) => x.nativeObjectType === 'User')!
 
@@ -523,9 +529,10 @@ export const connector = async () => {
         if (operation) {
             const response = await runWorkflow(account, operation.workflow, operation.requester_id, operation.wait)
             if (response && operation.wait) {
-                account = await buildAccount(account, schema)
+                account = await getAccount(account.identity as string, schema)
             }
         }
+        return account
     }
 
     const send = async <T>(res: Response<T>, output: T) => {
@@ -538,7 +545,8 @@ export const connector = async () => {
         logger.debug(fnLog('stdTestConnection', 'Testing connection'))
         try {
             await isc.getPublicIdentityConfig()
-            await nerm.listProfileTypes()
+            const iterator = nerm.listProfileTypes()
+            await iterator.next()
 
             send(res, {})
             opEnd('stdTestConnection', {})
@@ -567,9 +575,18 @@ export const connector = async () => {
             const schemas = await isc.listSourceSchemas(source.id!)
             if (config.profiles && config.account_type === 'Profile') {
                 const schemaNames = schemas.map((x) => x.name)
-                for (const profile of config.profiles) {
-                    const profileType = await nerm.getProfileTypeByName(profile.name)
-                    const profileAttribute = await nerm.getAttribute(profile.attribute)
+
+                const profilePromises = config.profiles.map(async (profile: any) => {
+                    const [profileType, profileAttribute] = await Promise.all([
+                        nerm.getProfileTypeByName(profile.name),
+                        nerm.getAttribute(profile.attribute),
+                    ])
+                    return { profile, profileType, profileAttribute }
+                })
+
+                const resolvedProfiles = await Promise.all(profilePromises)
+
+                for (const { profile, profileType, profileAttribute } of resolvedProfiles) {
                     if (profileType) {
                         if (!schemaNames.includes(profile.name)) {
                             const profileData = { ...profileType, attributes: profile.attributes }
@@ -584,7 +601,7 @@ export const connector = async () => {
                             schemaObjectType: profile.name,
                             entitlement: true,
                             managed: true,
-                            multi: profileAttribute.allow_multiple_selections ? true : false,
+                            multi: profileAttribute?.allow_multiple_selections ? true : false,
                         }
                         profileEntitlements.push(attribute)
                     } else {
@@ -788,7 +805,7 @@ export const connector = async () => {
                 await addWorkflow(account, workflow, wait)
             }
             if (wait) {
-                account = await buildAccount(account, input.schema)
+                account = await getAccount(account.identity as string, input.schema)
             }
         }
 
@@ -805,7 +822,7 @@ export const connector = async () => {
 
         if (account && config.account_type === 'Profile') {
             for (const operation of operations) {
-                await processOperation(account, operation, input.schema)
+                account = await processOperation(account, operation, input.schema)
             }
             send(res, account)
             opEnd('stdAccountCreate', account)
@@ -901,10 +918,10 @@ export const connector = async () => {
 
             if (account) {
                 for (const operation of operations) {
-                    await processOperation(account, operation, input.schema)
+                    account = await processOperation(account, operation, input.schema)
                 }
                 if (wait) {
-                    account = await buildAccount(account, input.schema)
+                    account = await getAccount(account.identity as string, input.schema)
                 }
                 send(res, account)
                 opEnd('stdAccountUpdate', account)
@@ -919,11 +936,11 @@ export const connector = async () => {
         const value = 'Active'
         const operation = 'enable'
         logger.info(input)
-        const account = await getAccount(input.identity, input.schema)
+        let account = await getAccount(input.identity, input.schema)
         await setAttribute(account, attribute, value)
 
         if (account) {
-            await processOperation(account, operation, input.schema)
+            account = await processOperation(account, operation, input.schema)
             send(res, account)
             opEnd('stdAccountEnable', account)
         }
@@ -936,11 +953,11 @@ export const connector = async () => {
         const value = 'Inactive'
         const operation = 'disable'
         logger.info(input)
-        const account = await getAccount(input.identity, input.schema)
+        let account = await getAccount(input.identity, input.schema)
         await setAttribute(account, attribute, value)
 
         if (account) {
-            await processOperation(account, operation, input.schema)
+            account = await processOperation(account, operation, input.schema)
             send(res, account)
             opEnd('stdAccountDisable', account)
         }
@@ -1024,11 +1041,11 @@ export const connector = async () => {
                 }
                 const pendingProfiles = [...profileMap.values()]
                 if (nested) {
-                    const responses: Promise<any>[] = []
-                    for (const profile of pendingProfiles) {
-                        responses.push(nerm.createProfile(profile))
+                    for (let offset = 0; offset < pendingProfiles.length; offset += BATCH_SIZE) {
+                        const batchItems = pendingProfiles.slice(offset, offset + BATCH_SIZE)
+                        const responses: Promise<any>[] = batchItems.map((profile) => nerm.createProfile(profile))
+                        await Promise.all(responses)
                     }
-                    await Promise.all(responses)
                 } else {
                     await nerm.createProfiles(pendingProfiles)
                 }

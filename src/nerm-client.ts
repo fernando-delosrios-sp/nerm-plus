@@ -496,12 +496,16 @@ export class NERMClient {
                 const profileNames: string[] = profileAttribute.split(', ')
                 if (hierarchy.length > 0) {
                     if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
-                        for (const profileName of profileNames) {
+                        const profilePromises = profileNames.map(async (profileName) => {
                             const referencedProfile = await this.getProfileByNameAndType(
                                 profileName,
                                 attributeType.profile_type_id
                             )
-                            const childrenProfiles = await this.getAttributeRecursively(referencedProfile, children)
+                            return this.getAttributeRecursively(referencedProfile, children)
+                        })
+                        const childrenProfilesArray = await Promise.all(profilePromises)
+
+                        for (const childrenProfiles of childrenProfilesArray) {
                             if (childrenProfiles) {
                                 if (Array.isArray(childrenProfiles)) {
                                     isMulti = true
@@ -517,11 +521,9 @@ export class NERMClient {
                 } else {
                     if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
                         const referencedProfiles = await Promise.all(
-                            profileNames
-                                .map((x) => this.getProfileByNameAndType(x, attributeType.profile_type_id))
-                                .filter((x) => x !== undefined)
+                            profileNames.map((x) => this.getProfileByNameAndType(x, attributeType.profile_type_id))
                         )
-                        values = referencedProfiles
+                        values = referencedProfiles.filter((x) => x !== undefined)
                     } else {
                         values = [profileAttribute].flat()
                     }
