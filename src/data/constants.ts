@@ -37,6 +37,7 @@ export const USERTYPE_ATTRIBUTES = [
 export const WORKFLOW_PENDINGSTATUSES = ['pending request', 'pending set attribute']
 export const ENTITLEMENT_ATTRIBUTES = ['types', 'workflows', 'roles']
 export const BATCH_SIZE = 100
+export const ACCOUNT_CONCURRENCY = 5
 export const TYPES: { [key: string]: string } = {
     roles: 'ROLE',
     accessprofiles: 'ACCESS_PROFILE',

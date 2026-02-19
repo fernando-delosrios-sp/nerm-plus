@@ -16,12 +16,13 @@ import {
 } from './data/constants'
 import { AccountSchema, logger } from '@sailpoint/connector-sdk'
 import { getEmailFromUserAttribute } from './utils'
+import { toLogString } from './logging'
 
 type UserType = 'NeprofileUser' | 'NeaccessUser'
 
 export class NERMClient {
     private client: AxiosCacheInstance
-    private attributes?: Map<string, any>
+    private attributesPromise?: Promise<Map<string, any>>
     private instanceId?: string
 
     constructor(config: any) {
@@ -39,29 +40,20 @@ export class NERMClient {
         this.instanceId = config.spConnectorInstanceId
     }
 
-    private toLogString(value: any): string {
-        if (typeof value === 'string') return value
-        try {
-            return JSON.stringify(value)
-        } catch {
-            return String(value)
-        }
-    }
-
     private logDebug(fnName: string, message: any) {
-        logger.debug(`  NERMClient.${fnName}: ${this.toLogString(message)}`)
+        logger.debug(`  NERMClient.${fnName}: ${toLogString(message)}`)
     }
 
     private logInfo(fnName: string, message: any) {
-        logger.info(`  NERMClient.${fnName}: ${this.toLogString(message)}`)
+        logger.info(`  NERMClient.${fnName}: ${toLogString(message)}`)
     }
 
     private logWarn(fnName: string, message: any) {
-        logger.warn(`  NERMClient.${fnName}: ${this.toLogString(message)}`)
+        logger.warn(`  NERMClient.${fnName}: ${toLogString(message)}`)
     }
 
     private logError(fnName: string, message: any) {
-        logger.error(`  NERMClient.${fnName}: ${this.toLogString(message)}`)
+        logger.error(`  NERMClient.${fnName}: ${toLogString(message)}`)
     }
 
     private getProfileAttribute(profile: any, attribute: string): any {
@@ -73,7 +65,7 @@ export class NERMClient {
     }
 
     private async *paginate(request: AxiosRequestConfig): any {
-        let req = JSON.parse(JSON.stringify(request))
+        const req = { ...request, params: { ...request.params } }
         let remaining = 1
         req.params['query[limit]'] = QUERYLIMIT
         req.params['query[order]'] = QUERYORDER
@@ -260,8 +252,9 @@ export class NERMClient {
     async *listUsers(userType?: UserType) {
         const url = `/users`
         const type = 'users'
+        const params = userType ? { type: userType } : undefined
 
-        for await (const user of this.listRequest(url, type)) {
+        for await (const user of this.listRequest(url, type, params)) {
             if (!userType || user.type === userType) {
                 yield user
             }
@@ -306,27 +299,26 @@ export class NERMClient {
     async createProfiles(profiles: any[]) {
         const url = `/profiles`
         const type = 'profiles'
-        let pendingItems = profiles.length
-        const jobList = []
-        while (pendingItems > 0) {
-            const batchSize = pendingItems < BATCH_SIZE ? pendingItems : BATCH_SIZE
-            pendingItems -= batchSize
-            const batchItems = profiles.splice(0, batchSize)
+        const jobList: string[] = []
+        for (let offset = 0; offset < profiles.length; offset += BATCH_SIZE) {
+            const batchItems = profiles.slice(offset, offset + BATCH_SIZE)
             const response = await this.createRequest(url, type, batchItems)
-            if (response.job_status && response.job_status.job_id) {
+            if (response?.job_status?.job_id) {
                 jobList.push(response.job_status.job_id)
             }
         }
 
-        while (jobList.length > 0) {
-            const jobId = jobList.pop()!
-            let status = 'pending'
-            do {
+        const pollJob = async (jobId: string) => {
+            let delay = 1000
+            while (true) {
                 const response = await this.getJobStatus(jobId)
-                status = response.status
-                await new Promise((r) => setTimeout(r, 2000))
-            } while (status === 'pending' || status === 'queued' || status === 'working')
+                const status = response?.status
+                if (status !== 'pending' && status !== 'queued' && status !== 'working') break
+                await new Promise((r) => setTimeout(r, delay))
+                delay = Math.min(delay * 2, 10000)
+            }
         }
+        await Promise.all(jobList.map(pollJob))
     }
 
     async updateProfile(id: string, body: any) {
@@ -378,8 +370,8 @@ export class NERMClient {
         const url = `/users`
         const type = 'users'
 
-        for await (const user of this.listRequest(url, type)) {
-            if (user.login === login && user.type === userType) {
+        for await (const user of this.listRequest(url, type, { login })) {
+            if (user.type === userType) {
                 return user
             }
         }
@@ -389,8 +381,8 @@ export class NERMClient {
         const url = `/users`
         const type = 'users'
 
-        for await (const user of this.listRequest(url, type)) {
-            if (user.name === name && user.type === userType) {
+        for await (const user of this.listRequest(url, type, { name })) {
+            if (user.type === userType) {
                 return user
             }
         }
@@ -400,10 +392,8 @@ export class NERMClient {
         const url = `/users`
         const type = 'users'
 
-        for await (const user of this.listRequest(url, type)) {
-            if (user.email === email) {
-                return user
-            }
+        for await (const user of this.listRequest(url, type, { email })) {
+            return user
         }
     }
 
@@ -434,9 +424,8 @@ export class NERMClient {
             while (count++ < RETRIES && response) {
                 const { id, status } = response
                 if (WORKFLOW_PENDINGSTATUSES.includes(status)) {
-                    setTimeout(async () => {
-                        response = await this.getWorkflowSession(id)
-                    }, 1000)
+                    await new Promise((r) => setTimeout(r, 1000))
+                    response = await this.getWorkflowSession(id)
                 } else {
                     return response
                 }
@@ -449,14 +438,17 @@ export class NERMClient {
 
     async getAttribute(name: string): Promise<any> {
         if (!PROFILE_ROOTATTRIBUTES.includes(name)) {
-            if (!this.attributes) {
-                this.attributes = new Map()
-                for await (const attribute of this.listAttributes()) {
-                    this.attributes.set(attribute.uid, attribute)
-                }
+            if (!this.attributesPromise) {
+                this.attributesPromise = (async () => {
+                    const map = new Map<string, any>()
+                    for await (const attribute of this.listAttributes()) {
+                        map.set(attribute.uid, attribute)
+                    }
+                    return map
+                })()
             }
-
-            return this.attributes!.get(name)
+            const attributes = await this.attributesPromise
+            return attributes.get(name)
         }
     }
 

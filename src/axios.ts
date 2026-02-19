@@ -1,38 +1,30 @@
 import { IAxiosRetryConfig } from 'axios-retry'
 import { REQUESTSPERSECOND, RETRIES } from './data/constants'
 import { logger } from '@sailpoint/connector-sdk'
-import { AxiosResponseHeaders } from 'axios'
 import axiosRetry from 'axios-retry'
-
-const toLogString = (value: any): string => {
-    if (typeof value === 'string') return value
-    try {
-        return JSON.stringify(value)
-    } catch {
-        return String(value)
-    }
-}
+import { toLogString } from './logging'
 
 export const retriesConfig: IAxiosRetryConfig = {
     retries: RETRIES,
     retryDelay: (retryCount, error) => {
-        type NewType = AxiosResponseHeaders
-
-        const headers = error.response!.headers as NewType
-        const retryAfter = headers.get('retry-after') as number
-
-        return retryAfter ? retryAfter : 10 * 1000
+        if (error.response?.headers) {
+            const retryAfter = Number(error.response.headers['retry-after'])
+            if (retryAfter > 0) return retryAfter * 1000
+        }
+        return Math.min(1000 * Math.pow(2, retryCount - 1), 30000)
     },
     retryCondition: (error) => {
         return axiosRetry.isNetworkError(error) || axiosRetry.isRetryableError(error) || error.response?.status === 429
     },
     onRetry: (retryCount, error, requestConfig) => {
-        logger.debug(
-            `axios onRetry: Retrying API [${requestConfig.url}] due to request error: [${toLogString(
-                error
-            )}]. Retry number [${retryCount}]`
+        const is429 = error.response?.status === 429
+        const logFn = is429 ? logger.warn : logger.error
+        logFn.call(
+            logger,
+            `axios onRetry: Retrying API [${requestConfig.url}] due to [${
+                is429 ? '429 rate limit' : toLogString(error)
+            }]. Retry number [${retryCount}]`
         )
-        logger.error(`axios onRetry error: ${toLogString(error)}`)
     },
 }
 
