@@ -14,11 +14,75 @@ import {
     USERTYPE_ATTRIBUTES,
     WORKFLOW_PENDINGSTATUSES,
 } from './data/constants'
-import { AccountSchema, logger } from '@sailpoint/connector-sdk'
+import { AccountSchema, ConnectorError, logger } from '@sailpoint/connector-sdk'
 import { getEmailFromUserAttribute } from './utils'
 import { toLogString } from './logging'
 
 type UserType = 'NeprofileUser' | 'NeaccessUser'
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function looksLikeUuid(value: string): boolean {
+    return UUID_PATTERN.test(value.trim())
+}
+
+/** NERM often returns only `error: "The Profile failed to create/update"`; merge status + full body for debugging. */
+function formatHttpError(err: any): string {
+    const res = err.response
+    if (!res) {
+        return err.message ?? String(err)
+    }
+    const status = res.status
+    const data = res.data
+    const prefix = status != null ? `HTTP ${status}` : 'Request failed'
+    if (data == null || data === '') {
+        return `${prefix}: ${err.message ?? ''}`.trim()
+    }
+    if (typeof data === 'string') {
+        return `${prefix}: ${data}`
+    }
+    const pieces: string[] = []
+    if (typeof data.error === 'string') {
+        pieces.push(data.error)
+    } else if (data.error != null) {
+        try {
+            pieces.push(`error: ${JSON.stringify(data.error)}`)
+        } catch {
+            pieces.push(`error: ${String(data.error)}`)
+        }
+    }
+    if (data.message != null && String(data.message) !== String(data.error)) {
+        pieces.push(String(data.message))
+    }
+    if (data.errors != null) {
+        try {
+            pieces.push(`errors: ${JSON.stringify(data.errors)}`)
+        } catch {
+            pieces.push(`errors: ${String(data.errors)}`)
+        }
+    }
+    if (data.base != null) {
+        try {
+            pieces.push(`base: ${JSON.stringify(data.base)}`)
+        } catch {
+            pieces.push(`base: ${String(data.base)}`)
+        }
+    }
+    if (pieces.length > 0) {
+        return `${prefix}: ${pieces.join(' | ')}`
+    }
+    let full: string
+    try {
+        full = JSON.stringify(data)
+    } catch {
+        full = String(data)
+    }
+    const max = 4000
+    if (full.length > max) {
+        full = full.slice(0, max) + '…'
+    }
+    return `${prefix}: ${full}`
+}
 
 export class NERMClient {
     private client: AxiosCacheInstance
@@ -125,16 +189,14 @@ export class NERMClient {
             data: { [type]: data },
         }
 
-        let item: any
-        let response: any
         try {
-            response = await this.client.request(request)
-            item = response.data[type]
+            const response = await this.client.request(request)
+            return response.data[type]
         } catch (error) {
-            this.logError('createRequest', (error as any).response?.data?.error ?? `${error}`)
-            item = response
-        } finally {
-            return item
+            const err = error as any
+            const message = formatHttpError(err)
+            this.logError('createRequest', message)
+            throw new ConnectorError(message)
         }
     }
 
@@ -145,16 +207,14 @@ export class NERMClient {
             data: { [type]: data },
         }
 
-        let item: any
-        let response: any
         try {
-            response = await this.client.request(request)
-            item = response.data[type]
+            const response = await this.client.request(request)
+            return response.data[type]
         } catch (error) {
-            this.logError('updateRequest', (error as any).response?.data?.error ?? `${error}`)
-            item = response
-        } finally {
-            return item
+            const err = error as any
+            const message = formatHttpError(err)
+            this.logError('updateRequest', message)
+            throw new ConnectorError(message)
         }
     }
 
@@ -229,6 +289,9 @@ export class NERMClient {
             }
         }
 
+        if (!response) {
+            this.logWarn('getProfileByName', `No profile found for name="${name}"`)
+        }
         return response
     }
 
@@ -237,16 +300,84 @@ export class NERMClient {
         const type = 'profiles'
         let response
         for await (const profile of this.listRequest(url, type, { name })) {
-            if (!response && profile.profile_type_id === profile_type_id) {
+            if (profile.profile_type_id !== profile_type_id) {
+                continue
+            }
+            if (!response) {
                 response = profile
             } else {
-                const message = `Multiple profiles found for "${name}" name`
+                const message = `Multiple profiles found for "${name}" with profile_type_id=${profile_type_id}`
                 this.logWarn('getProfileByNameAndType', message)
                 break
             }
         }
 
+        if (!response) {
+            this.logWarn(
+                'getProfileByNameAndType',
+                `No profile found for name="${name}" with profile_type_id=${profile_type_id}`
+            )
+        }
         return response
+    }
+
+    /**
+     * Resolves a profile reference whether ISC sent a profile ID (UUID) or a display name.
+     * Name-only lookup fails when the value is an entitlement/profile ID.
+     */
+    async resolveProfileByValueOrName(value: string, profile_type_id: string): Promise<any> {
+        const v = typeof value === 'string' ? value.trim() : String(value)
+        if (looksLikeUuid(v)) {
+            const byId = await this.getProfile(v)
+            if (byId?.profile_type_id === profile_type_id) {
+                return byId
+            }
+            if (!byId) {
+                this.logWarn(
+                    'resolveProfileByValueOrName',
+                    `No profile exists for id=${v} (expected profile_type_id=${profile_type_id})`
+                )
+            } else {
+                this.logWarn(
+                    'resolveProfileByValueOrName',
+                    `Profile id=${v} has profile_type_id=${byId.profile_type_id}, expected ${profile_type_id}`
+                )
+            }
+            return undefined
+        }
+        return this.getProfileByNameAndType(v, profile_type_id)
+    }
+
+    /**
+     * NERM user-reference attributes (Owner/Contributor Search/Select) expect the user id (UUID).
+     * UUIDs are sent as-is; `Name (email)` or bare email is resolved to a user id when possible.
+     */
+    async resolveUserReferenceValueForApi(value: string): Promise<string | undefined> {
+        const v = typeof value === 'string' ? value.trim() : String(value).trim()
+        if (!v) {
+            this.logWarn('resolveUserReferenceValueForApi', 'Empty value after trim (cannot resolve user reference)')
+            return undefined
+        }
+        if (looksLikeUuid(v)) {
+            return v
+        }
+        const email = getEmailFromUserAttribute(v) ?? (v.includes('@') ? v.trim() : undefined)
+        if (email) {
+            const user = await this.getUserByEmail(email)
+            if (!user?.id) {
+                this.logWarn(
+                    'resolveUserReferenceValueForApi',
+                    `No user found for email=${email} (from value=${toLogString(value)})`
+                )
+                return undefined
+            }
+            return user.id
+        }
+        this.logWarn(
+            'resolveUserReferenceValueForApi',
+            `Could not parse email or UUID from value=${toLogString(value)}; passing through unchanged`
+        )
+        return v
     }
 
     async *listUsers(userType?: UserType) {
@@ -293,6 +424,7 @@ export class NERMClient {
         const url = `/profile`
         const type = 'profile'
 
+        this.logDebug('createProfile', `POST ${url} body=${toLogString(body)}`)
         return await this.createRequest(url, type, body)
     }
 
@@ -497,7 +629,7 @@ export class NERMClient {
                 if (hierarchy.length > 0) {
                     if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
                         const profilePromises = profileNames.map(async (profileName) => {
-                            const referencedProfile = await this.getProfileByNameAndType(
+                            const referencedProfile = await this.resolveProfileByValueOrName(
                                 profileName,
                                 attributeType.profile_type_id
                             )
@@ -521,7 +653,7 @@ export class NERMClient {
                 } else {
                     if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
                         const referencedProfiles = await Promise.all(
-                            profileNames.map((x) => this.getProfileByNameAndType(x, attributeType.profile_type_id))
+                            profileNames.map((x) => this.resolveProfileByValueOrName(x, attributeType.profile_type_id))
                         )
                         values = referencedProfiles.filter((x) => x !== undefined)
                     } else {

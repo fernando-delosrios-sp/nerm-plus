@@ -47,6 +47,7 @@ import {
     PROFILEONLY_ATTRIBUTES,
     PROFILETYPE_ATTRIBUTES,
     USERONLY_ATTRIBUTES,
+    USERTYPE_ATTRIBUTES,
 } from './data/constants'
 import { NeaccessUserAccount, NeprofileUserAccount, ProfileAccount } from './model/account'
 import { SearchDocument } from 'sailpoint-api-client'
@@ -75,29 +76,70 @@ export const connector = async () => {
                 const profileType = await nerm.getProfileTypeByName(config.profile_name)
                 body.profile_type_id = profileType.id
                 body.attributes = {}
-                const relevantAttrs = schema!.attributes.filter(
-                    (attr) => attributes[attr.name] && !ENTITLEMENT_ATTRIBUTES.includes(attr.name)
-                )
-                const attrResults = await Promise.all(
-                    relevantAttrs.map(async (attribute) => {
-                        const value = attributes[attribute.name]
-                        const key = attribute.name.split('.').reverse().pop()!
-                        const attributeType = await nerm.getAttribute(key)
-                        const values = [value].flat()
-                        let finalValue
-                        if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
-                            const profiles = await Promise.all(
-                                values.map((v) =>
-                                    nerm.getProfileByNameAndType(v as string, attributeType.profile_type_id)
+
+                const relevantAttrs = schema!.attributes.filter((attr) => {
+                    if (ENTITLEMENT_ATTRIBUTES.includes(attr.name)) return false
+                    const leaf = attr.name.split('.').pop()!
+                    const hasExact = attributes[attr.name] !== undefined && attributes[attr.name] !== null
+                    const hasLeaf = attributes[leaf] !== undefined && attributes[leaf] !== null
+                    return hasExact || hasLeaf
+                })
+
+                const attrResults = (
+                    await Promise.all(
+                        relevantAttrs.map(async (attribute) => {
+                            const leaf = attribute.name.split('.').pop()!
+                            const rawValue =
+                                attributes[attribute.name] !== undefined && attributes[attribute.name] !== null
+                                    ? attributes[attribute.name]
+                                    : attributes[leaf]
+                            if (rawValue === undefined || rawValue === null) {
+                                return null
+                            }
+
+                            const key = leaf
+                            const attributeType = await nerm.getAttribute(key)
+                            const values = [rawValue].flat()
+                            const isMulti = attribute.multi ?? Array.isArray(rawValue)
+
+                            let finalValue
+                            if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
+                                const profiles = await Promise.all(
+                                    values.map((v) =>
+                                        nerm.resolveProfileByValueOrName(v as string, attributeType.profile_type_id)
+                                    )
                                 )
-                            )
-                            finalValue = profiles.filter((p) => p).map((p) => p.id)
-                        } else {
-                            finalValue = attribute.multi ? values : values[0]
-                        }
-                        return { key, finalValue }
-                    })
-                )
+                                const unresolvedProfileValues = values.filter((_, i) => !profiles[i])
+                                if (unresolvedProfileValues.length > 0) {
+                                    logger.warn(
+                                        `buildNERMAccountBody: profile reference not resolved for attribute "${attribute.name}" (key=${key}, profile_type_id=${attributeType.profile_type_id}): ${unresolvedProfileValues
+                                            .map((v) => toLogString(v))
+                                            .join('; ')}`
+                                    )
+                                }
+                                finalValue = profiles.filter((p) => p).map((p) => p.id)
+                            } else if (USERTYPE_ATTRIBUTES.includes(attributeType?.type)) {
+                                const ids = await Promise.all(
+                                    values.map((v) => nerm.resolveUserReferenceValueForApi(String(v)))
+                                )
+                                const unresolvedUserValues = values.filter((_, i) => !ids[i])
+                                if (unresolvedUserValues.length > 0) {
+                                    logger.warn(
+                                        `buildNERMAccountBody: user reference not resolved to a user id for attribute "${attribute.name}" (key=${key}): ${unresolvedUserValues
+                                            .map((v) => toLogString(v))
+                                            .join('; ')}`
+                                    )
+                                }
+                                const resolved = ids.filter((id): id is string => Boolean(id))
+                                finalValue = isMulti ? resolved : resolved[0]
+                            } else {
+                                finalValue = isMulti ? values : values[0]
+                            }
+
+                            return { key, finalValue }
+                        })
+                    )
+                ).filter((r): r is { key: string; finalValue: any } => r !== null)
                 for (const { key, finalValue } of attrResults) {
                     if (PROFILE_ROOTATTRIBUTES.includes(key)) {
                         body[key] = finalValue
@@ -168,6 +210,9 @@ export const connector = async () => {
     }
 
     const buildAccount = async (nermObject: any, schema?: AccountSchema): Promise<StdAccountListOutput> => {
+        if (nermObject == null) {
+            throw new ConnectorError('Cannot build account: missing NERM response data')
+        }
         logger.debug(`Building account from NERM object: ${JSON.stringify(nermObject)}`)
         let account: StdAccountListOutput
         let id: string | undefined
