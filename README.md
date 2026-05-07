@@ -2,6 +2,11 @@
 
 ## Changelog
 
+- 0.1.11 (2026-05-07):
+    - Updated attribute resolution to support descriptions and nullable values
+    - Fixed N+1 query when resolving profiles and user references
+    - Added Jest testing support with tests for nerm-client.ts
+    - Implemented AI-driven review workflows and CodeQL security analysis in GitHub Actions
 - 0.1.10 (2026-02-19):
     - Improved performance and stability through schema discovery batching and parallelization
     - Streamlined user retrieval logic by refactoring NERMClient attribute handling
