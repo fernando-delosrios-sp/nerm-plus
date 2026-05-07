@@ -432,9 +432,13 @@ export class NERMClient {
         const url = `/profiles`
         const type = 'profiles'
         const jobList: string[] = []
+        const requests = []
         for (let offset = 0; offset < profiles.length; offset += BATCH_SIZE) {
             const batchItems = profiles.slice(offset, offset + BATCH_SIZE)
-            const response = await this.createRequest(url, type, batchItems)
+            requests.push(this.createRequest(url, type, batchItems))
+        }
+        const responses = await Promise.all(requests)
+        for (const response of responses) {
             if (response?.job_status?.job_id) {
                 jobList.push(response.job_status.job_id)
             }
