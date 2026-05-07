@@ -11,8 +11,6 @@ export class ProfileAccount implements StdAccountListOutput {
     attributes: Attributes
 
     constructor(input: any) {
-        // const attributes = { ...input, ...input.attributes }
-        // delete attributes.attributes
         this.disabled = input.status === 'Active' ? false : true
         this.identity = input.id
         this.uuid = input.name ?? ''
