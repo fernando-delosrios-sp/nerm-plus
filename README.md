@@ -2,47 +2,47 @@
 
 ## Changelog
 
--   0.1.10 (2026-02-19):
-    -   Improved performance and stability through schema discovery batching and parallelization
-    -   Streamlined user retrieval logic by refactoring NERMClient attribute handling
--   0.1.9 (2025-12-11):
-    -   Added persistent workflows option
-    -   Enhanced error handling and connector specification with account creation template
--   0.1.8 (2025-07-17):
-    -   Added support for configurable login attribute in user creation
-    -   Refactored attribute handling in user creation logic and fixed removeRole bug
--   0.1.7 (2025-06-24):
-    -   More bug fixes
-    -   Added password change support for portal users
--   0.1.6 (2025-06-03):
-    -   More bug fixes
-    -   Added Status mapping between profiles and users
--   0.1.5 (2025-04-02):
-    -   Countless bug fixes
-    -   Added account create template
--   0.1.3 (2025-01-13):
-    -   Schema discovery and user management fixes
--   0.1.2 (2025-01-10):
-    -   Minor fixes
--   0.1.1 (2024-12-27):
-    -   Documentation
-    -   Minor fixes
--   0.1.0 (2024-12-24):
-    -   Initial draft
+- 0.1.10 (2026-02-19):
+    - Improved performance and stability through schema discovery batching and parallelization
+    - Streamlined user retrieval logic by refactoring NERMClient attribute handling
+- 0.1.9 (2025-12-11):
+    - Added persistent workflows option
+    - Enhanced error handling and connector specification with account creation template
+- 0.1.8 (2025-07-17):
+    - Added support for configurable login attribute in user creation
+    - Refactored attribute handling in user creation logic and fixed removeRole bug
+- 0.1.7 (2025-06-24):
+    - More bug fixes
+    - Added password change support for portal users
+- 0.1.6 (2025-06-03):
+    - More bug fixes
+    - Added Status mapping between profiles and users
+- 0.1.5 (2025-04-02):
+    - Countless bug fixes
+    - Added account create template
+- 0.1.3 (2025-01-13):
+    - Schema discovery and user management fixes
+- 0.1.2 (2025-01-10):
+    - Minor fixes
+- 0.1.1 (2024-12-27):
+    - Documentation
+    - Minor fixes
+- 0.1.0 (2024-12-24):
+    - Initial draft
 
 ## Introduction
 
 This is an SaaS connector for SailPoint Non-Employee Risk Management. It was built to address most common integration challenges based on my experience. The most significant features of this connector are:
 
--   Full provisioning support for profiles, users and portal users.
--   Seamless combined profile/user management (i.e. manage a People profile and its associated user as a single account).
--   Run custom NERM workflows on account operations (e.g. run Terminate Assignment workflow upon disable operation).
--   Trigger workflow executions on ephemeral access requests (i.e. request access profile with workflow entitlement that runs on provisioning, but it does not assign the entitlement).
--   Manage user roles as entitlements.
--   Manage associated profiles as entitlements (e.g. add/remove locations to an assignment as ISC entitlements).
--   Profile attribute traversing (e.g. read all job titles of a People profile's assignments).
--   Dynamic multi-valued attribute management (i.e. the connector concatenates values if multiple are found and the attribute is not multi-valued).
--   Optional push mode (i.e. push search results to NERM and persist them as profiles, with the ability of keeping nesting relationships like roles to entitlements).
+- Full provisioning support for profiles, users and portal users.
+- Seamless combined profile/user management (i.e. manage a People profile and its associated user as a single account).
+- Run custom NERM workflows on account operations (e.g. run Terminate Assignment workflow upon disable operation).
+- Trigger workflow executions on ephemeral access requests (i.e. request access profile with workflow entitlement that runs on provisioning, but it does not assign the entitlement).
+- Manage user roles as entitlements.
+- Manage associated profiles as entitlements (e.g. add/remove locations to an assignment as ISC entitlements).
+- Profile attribute traversing (e.g. read all job titles of a People profile's assignments).
+- Dynamic multi-valued attribute management (i.e. the connector concatenates values if multiple are found and the attribute is not multi-valued).
+- Optional push mode (i.e. push search results to NERM and persist them as profiles, with the ability of keeping nesting relationships like roles to entitlements).
 
 ## Configuration
 
@@ -74,10 +74,10 @@ You must select the account type you want to manage. If selecting profile, you n
 
 Account operations on profiles also support optional workflow executions. You need to register the workflow with the account operation you want to trigger it. The name is for reference only but the ID needs to match NERM's workflow ID. The workflow needs a requester. Possible values are:
 
--   **Admin**: user determined by source configuration.
--   **Sponsor**: user determined by profile's sponsor_user_id attribute.
--   **User**: user determined by profile's user_id attribute.
--   **Approver**: user determined by profile's approver_user_id attribute.
+- **Admin**: user determined by source configuration.
+- **Sponsor**: user determined by profile's sponsor_user_id attribute.
+- **User**: user determined by profile's user_id attribute.
+- **Approver**: user determined by profile's approver_user_id attribute.
 
 Finally, you can determine whether the operation should wait for the workflow to finish before reading the results back. If the workflow is interactive, you must not select this option. Otherwise, it depends on how long you think the workflow may take to finish.
 
@@ -85,11 +85,11 @@ Finally, you can determine whether the operation should wait for the workflow to
 
 **Entitlements configuration**
 
--   **Workflows**: similar to previous operation configuration, here you can define workflows that will be run on entitlement assignment. Please note these entitlements are not to be assigned as a persistent attribute. These entitlements must be wrapped into access profiles and requested since a workflow is not something you would assign to a profile. This is just a convenient way to trigger a workflow on demand.
+- **Workflows**: similar to previous operation configuration, here you can define workflows that will be run on entitlement assignment. Please note these entitlements are not to be assigned as a persistent attribute. These entitlements must be wrapped into access profiles and requested since a workflow is not something you would assign to a profile. This is just a convenient way to trigger a workflow on demand.
 
 ![Workflow entitlements](assets/images/entitlement_workflow.jpg)
 
--   **Profiles**: again, similar concept as before. This configuration will determine the profile type name to read from and the ISC account attribute to store assignments. You need to add the NERM attributes to collect metadata from for your entitlements. Ultimately, you need to discover the account schema to update it based on these settings and make sure the account attribute points to the dedicated entitlement schema.
+- **Profiles**: again, similar concept as before. This configuration will determine the profile type name to read from and the ISC account attribute to store assignments. You need to add the NERM attributes to collect metadata from for your entitlements. Ultimately, you need to discover the account schema to update it based on these settings and make sure the account attribute points to the dedicated entitlement schema.
 
 ![Profile entitlements](assets/images/entitlement_profile.jpg)
 
@@ -101,13 +101,13 @@ Push mode is an optional feature that helps syncing ISC objects with NERM profil
 
 There are multiple configuration settings to properly configure push mode. Each profile mapping can be independent of each other or keep the existing relationships like identity to role or role to entitlement. These relationships must be set on the children element type.
 
--   **Search index**: search index to use to pull contents from.
--   **Search**: search string as you would use on the search UI.
--   **ID attribute**: NERM attribute name to store ISC object ID to avoid object duplication.
--   **Profile type name**: NERM profile type name to map to.
--   **Attribute mapping**: NERM to ISC attribute mapping. Note an ISC attribute like _source.name_ effectively fetches the name element from the source object.
--   **Nest elements?**: check if this is a child element of a previously defined mapping.
--   **Only sync nested elements**: only push those elements that can be found associated to a parent object.
--   **Parent index search**: parent search index. Must have been defined before as a mapping.
+- **Search index**: search index to use to pull contents from.
+- **Search**: search string as you would use on the search UI.
+- **ID attribute**: NERM attribute name to store ISC object ID to avoid object duplication.
+- **Profile type name**: NERM profile type name to map to.
+- **Attribute mapping**: NERM to ISC attribute mapping. Note an ISC attribute like _source.name_ effectively fetches the name element from the source object.
+- **Nest elements?**: check if this is a child element of a previously defined mapping.
+- **Only sync nested elements**: only push those elements that can be found associated to a parent object.
+- **Parent index search**: parent search index. Must have been defined before as a mapping.
 
 ![Push mode profile configuration](assets/images/push_mode_profile.jpg)

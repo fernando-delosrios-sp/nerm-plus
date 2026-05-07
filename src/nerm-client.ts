@@ -4,6 +4,7 @@ import axiosRetry from 'axios-retry'
 import { AxiosCacheInstance, setupCache } from 'axios-cache-interceptor'
 import { retriesConfig, throttleConfig } from './axios'
 import {
+    ACCOUNT_CONCURRENCY,
     BATCH_SIZE,
     ENTITLEMENT_ATTRIBUTES,
     PROFILE_ROOTATTRIBUTES,
@@ -130,17 +131,32 @@ export class NERMClient {
 
     private async *paginate(request: AxiosRequestConfig): any {
         const req = { ...request, params: { ...request.params } }
-        let remaining = 1
         req.params['query[limit]'] = QUERYLIMIT
         req.params['query[order]'] = QUERYORDER
         req.params.metadata = true
 
-        while (remaining > 0) {
-            const response = await this.client.request(req)
-            const { total, limit, offset } = response!.data._metadata
-            remaining = total - offset - limit
-            req.params['query[offset]'] = offset + limit
-            yield response
+        const firstResponse = await this.client.request(req)
+        yield firstResponse
+
+        const { total, limit, offset } = firstResponse!.data._metadata
+        let currentOffset = offset + limit
+
+        const offsets: number[] = []
+        while (currentOffset < total) {
+            offsets.push(currentOffset)
+            currentOffset += limit
+        }
+
+        for (let i = 0; i < offsets.length; i += ACCOUNT_CONCURRENCY) {
+            const batch = offsets.slice(i, i + ACCOUNT_CONCURRENCY)
+            const promises = batch.map((off) => {
+                const batchReq = { ...req, params: { ...req.params, 'query[offset]': off } }
+                return this.client.request(batchReq)
+            })
+            const responses = await Promise.all(promises)
+            for (const response of responses) {
+                yield response
+            }
         }
     }
 

@@ -1127,7 +1127,9 @@ export const connector = async () => {
                 const account = await getAccount(input.identity, schema)
                 const user_id = account.attributes.user_id as string
                 if (user_id) {
-                    logger.debug(`Changing password for portal user ${user_id} associated with profile ${input.identity}`)
+                    logger.debug(
+                        `Changing password for portal user ${user_id} associated with profile ${input.identity}`
+                    )
                     await nerm.setUserAttribute(user_id, 'password', input.password)
                 } else {
                     throw new ConnectorError('Password changes are only supported for portal users.')
