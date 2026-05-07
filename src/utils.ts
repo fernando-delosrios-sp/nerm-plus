@@ -141,6 +141,9 @@ export const parents2children = (parents: SearchDocument[], type: string): Map<s
 }
 
 export const getAttribute = (object: { [key: string]: any }, attribute: string): any => {
+    if (!object) {
+        return undefined
+    }
     let o = object
     const attributes = attribute.split('.').reverse()
     const a = attributes.pop()!

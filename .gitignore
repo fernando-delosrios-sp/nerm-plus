@@ -19,4 +19,4 @@ dist/
 coverage/
 .httpyac.json
 package-lock.json
-test/
+test/*.http
