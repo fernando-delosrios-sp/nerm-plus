@@ -104,30 +104,40 @@ export const connector = async () => {
 
                             let finalValue
                             if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
-                                const profiles = await Promise.all(
-                                    values.map((v) =>
+                                const uniqueValues = Array.from(new Set(values))
+                                const uniqueProfiles = await Promise.all(
+                                    uniqueValues.map((v) =>
                                         nerm.resolveProfileByValueOrName(v as string, attributeType.profile_type_id)
                                     )
                                 )
+                                const profileMap = new Map(uniqueValues.map((v, i) => [v, uniqueProfiles[i]]))
+                                const profiles = values.map((v) => profileMap.get(v))
+
                                 const unresolvedProfileValues = values.filter((_, i) => !profiles[i])
                                 if (unresolvedProfileValues.length > 0) {
                                     logger.warn(
-                                        `buildNERMAccountBody: profile reference not resolved for attribute "${attribute.name}" (key=${key}, profile_type_id=${attributeType.profile_type_id}): ${unresolvedProfileValues
-                                            .map((v) => toLogString(v))
-                                            .join('; ')}`
+                                        `buildNERMAccountBody: profile reference not resolved for attribute "${
+                                            attribute.name
+                                        }" (key=${key}, profile_type_id=${
+                                            attributeType.profile_type_id
+                                        }): ${unresolvedProfileValues.map((v) => toLogString(v)).join('; ')}`
                                     )
                                 }
                                 finalValue = profiles.filter((p) => p).map((p) => p.id)
                             } else if (USERTYPE_ATTRIBUTES.includes(attributeType?.type)) {
-                                const ids = await Promise.all(
-                                    values.map((v) => nerm.resolveUserReferenceValueForApi(String(v)))
+                                const uniqueUserValues = Array.from(new Set(values))
+                                const uniqueIds = await Promise.all(
+                                    uniqueUserValues.map((v) => nerm.resolveUserReferenceValueForApi(String(v)))
                                 )
+                                const userMap = new Map(uniqueUserValues.map((v, i) => [v, uniqueIds[i]]))
+                                const ids = values.map((v) => userMap.get(v))
+
                                 const unresolvedUserValues = values.filter((_, i) => !ids[i])
                                 if (unresolvedUserValues.length > 0) {
                                     logger.warn(
-                                        `buildNERMAccountBody: user reference not resolved to a user id for attribute "${attribute.name}" (key=${key}): ${unresolvedUserValues
-                                            .map((v) => toLogString(v))
-                                            .join('; ')}`
+                                        `buildNERMAccountBody: user reference not resolved to a user id for attribute "${
+                                            attribute.name
+                                        }" (key=${key}): ${unresolvedUserValues.map((v) => toLogString(v)).join('; ')}`
                                     )
                                 }
                                 const resolved = ids.filter((id): id is string => Boolean(id))
@@ -1127,7 +1137,9 @@ export const connector = async () => {
                 const account = await getAccount(input.identity, schema)
                 const user_id = account.attributes.user_id as string
                 if (user_id) {
-                    logger.debug(`Changing password for portal user ${user_id} associated with profile ${input.identity}`)
+                    logger.debug(
+                        `Changing password for portal user ${user_id} associated with profile ${input.identity}`
+                    )
                     await nerm.setUserAttribute(user_id, 'password', input.password)
                 } else {
                     throw new ConnectorError('Password changes are only supported for portal users.')
