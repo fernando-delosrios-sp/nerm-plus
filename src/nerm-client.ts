@@ -592,8 +592,6 @@ export class NERMClient {
 
         //Need to check other multi-valued attribute types like tags
         if (attributeType?.allow_multiple_selections) {
-            // const message = `Unsupported operation: Cannot update multivalued attribute ${path}`
-            // logger.error(message)
             return { profile, path }
         }
 
