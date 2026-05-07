@@ -3,7 +3,6 @@
     "version": "0.1.11",
     "main": "dist/index.js",
     "scripts": {
-        "test": "jest",
         "clean": "shx rm -rf ./dist",
         "prebuild": "npm run clean",
         "build": "npx ncc build ./src/index.ts -o ./dist -m -C",
@@ -11,8 +10,7 @@
         "debug": "spcx run dist/index.js",
         "prettier": "npx prettier --write .",
         "prepack-zip": "npm ci && npm run build",
-        "pack-zip": "spcx package",
-        "test": "jest"
+        "pack-zip": "spcx package"
     },
     "private": true,
     "dependencies": {
@@ -29,6 +27,7 @@
         "@types/jest": "^30.0.0",
         "@types/node": "^20.11.17",
         "@vercel/ncc": "^0.34.0",
+        "axios-mock-adapter": "^2.1.0",
         "jest": "^30.3.0",
         "prettier": "^2.3.2",
         "shx": "^0.3.3",
