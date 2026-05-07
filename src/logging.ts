@@ -2,10 +2,20 @@
 
 import { logger } from '@sailpoint/connector-sdk'
 
+const redactReplacer = (key: string, value: any) => {
+    if (key === 'password') {
+        return '********'
+    }
+    if (value && typeof value === 'object' && value.attribute === 'password' && 'value' in value) {
+        return { ...value, value: '********' }
+    }
+    return value
+}
+
 export const toLogString = (value: any): string => {
     if (typeof value === 'string') return value
     try {
-        return JSON.stringify(value)
+        return JSON.stringify(value, redactReplacer)
     } catch {
         return String(value)
     }
