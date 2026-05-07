@@ -2,7 +2,7 @@ import { AccountSchema, Attributes, SchemaAttribute, StdEntitlementListOutput } 
 import { GenericEntitlement } from './model/entitlement'
 import { Schema as ApiSchema, AttributeDefinition, SearchDocument } from 'sailpoint-api-client'
 import { defaultEntitlementSchema } from './data/schema'
-import { ACCESSTYPE_MAPPING, PARENTCHILD_ATTRIBUTES } from './data/constants'
+import { ACCESSTYPE_MAPPING, PARENTCHILD_ATTRIBUTES, TYPES } from './data/constants'
 import { AccountType, Mapping } from './model/config'
 
 const typesMap: Map<string, string> = new Map([['STRING', 'string']])
@@ -114,23 +114,25 @@ export const parents2children = (parents: SearchDocument[], type: string): Map<s
     const childrenMap: Map<string, Set<string>> = new Map()
     const parent_type = parents[0] ? (parents[0] as any)._type : undefined
     if (parent_type) {
-        const attribute = PARENTCHILD_ATTRIBUTES[parent_type][type]
+        const attribute = PARENTCHILD_ATTRIBUTES[parent_type]?.[type]
         if (attribute) {
             for (const parent of parents as any[]) {
                 const children = parent[attribute]
                 for (const child of children) {
                     let include = true
                     if (attribute === 'access') {
-                        const accessType = ACCESSTYPE_MAPPING[type]
+                        const accessType = TYPES[type] || ACCESSTYPE_MAPPING[type]
                         if (child.type !== accessType) {
                             include = false
                         }
                     }
 
-                    if (childrenMap.has(child.id)) {
-                        childrenMap.get(child.id)?.add(parent.id)
-                    } else {
-                        childrenMap.set(child.id, new Set([parent.id]))
+                    if (include) {
+                        if (childrenMap.has(child.id)) {
+                            childrenMap.get(child.id)?.add(parent.id)
+                        } else {
+                            childrenMap.set(child.id, new Set([parent.id]))
+                        }
                     }
                 }
             }
