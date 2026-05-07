@@ -112,9 +112,11 @@ export const connector = async () => {
                                 const unresolvedProfileValues = values.filter((_, i) => !profiles[i])
                                 if (unresolvedProfileValues.length > 0) {
                                     logger.warn(
-                                        `buildNERMAccountBody: profile reference not resolved for attribute "${attribute.name}" (key=${key}, profile_type_id=${attributeType.profile_type_id}): ${unresolvedProfileValues
-                                            .map((v) => toLogString(v))
-                                            .join('; ')}`
+                                        `buildNERMAccountBody: profile reference not resolved for attribute "${
+                                            attribute.name
+                                        }" (key=${key}, profile_type_id=${
+                                            attributeType.profile_type_id
+                                        }): ${unresolvedProfileValues.map((v) => toLogString(v)).join('; ')}`
                                     )
                                 }
                                 finalValue = profiles.filter((p) => p).map((p) => p.id)
@@ -125,9 +127,9 @@ export const connector = async () => {
                                 const unresolvedUserValues = values.filter((_, i) => !ids[i])
                                 if (unresolvedUserValues.length > 0) {
                                     logger.warn(
-                                        `buildNERMAccountBody: user reference not resolved to a user id for attribute "${attribute.name}" (key=${key}): ${unresolvedUserValues
-                                            .map((v) => toLogString(v))
-                                            .join('; ')}`
+                                        `buildNERMAccountBody: user reference not resolved to a user id for attribute "${
+                                            attribute.name
+                                        }" (key=${key}): ${unresolvedUserValues.map((v) => toLogString(v)).join('; ')}`
                                     )
                                 }
                                 const resolved = ids.filter((id): id is string => Boolean(id))
@@ -213,7 +215,7 @@ export const connector = async () => {
         if (nermObject == null) {
             throw new ConnectorError('Cannot build account: missing NERM response data')
         }
-        logger.debug(`Building account from NERM object: ${JSON.stringify(nermObject)}`)
+        logger.debug(`Building account from NERM object: ${toLogString(nermObject)}`)
         let account: StdAccountListOutput
         let id: string | undefined
         let attributes: Attributes = {}
@@ -270,7 +272,7 @@ export const connector = async () => {
     }
 
     const createAccount = async (input: StdAccountCreateInput): Promise<StdAccountListOutput> => {
-        logger.debug(`Creating account with input: ${JSON.stringify(input)}`)
+        logger.debug(`Creating account with input: ${toLogString(input)}`)
         const body = await buildNERMAccountBody(input.attributes, config.account_type, input.schema)
         let rawAccount
         switch (config.account_type) {
@@ -765,7 +767,7 @@ export const connector = async () => {
 
     const stdAccountRead: StdAccountReadHandler = async (context, input, res) => {
         opStart('stdAccountRead', input)
-        logger.info(input)
+        logger.info(toLogString(input))
         if (!input.schema) {
             const schema = await getSchema()
             input.schema = schema
@@ -777,7 +779,7 @@ export const connector = async () => {
 
     const stdEntitlementList: StdEntitlementListHandler = async (context, input, res) => {
         opStart('stdEntitlementList', input)
-        logger.info(input)
+        logger.info(toLogString(input))
         switch (input.type) {
             case 'type':
                 for await (const type of typeEntitlements) {
@@ -819,9 +821,9 @@ export const connector = async () => {
 
     const stdAccountCreate: StdAccountCreateHandler = async (context, input, res) => {
         opStart('stdAccountCreate', input)
-        logger.debug(`Creating account with input: ${JSON.stringify(input)}`)
+        logger.debug(`Creating account with input: ${toLogString(input)}`)
         const operations = ['create']
-        logger.info(input)
+        logger.info(toLogString(input))
         if (!input.schema) {
             const schema = await getSchema()
             input.schema = schema
@@ -876,9 +878,9 @@ export const connector = async () => {
 
     const stdAccountUpdate: StdAccountUpdateHandler = async (context, input, res) => {
         opStart('stdAccountUpdate', input)
-        logger.debug(`Updating account ${input.identity} with changes: ${JSON.stringify(input.changes)}`)
+        logger.debug(`Updating account ${input.identity} with changes: ${toLogString(input.changes)}`)
         const operations = ['update']
-        logger.info(input)
+        logger.info(toLogString(input))
         if (!input.schema) {
             const schema = await getSchema()
             input.schema = schema
@@ -980,7 +982,7 @@ export const connector = async () => {
         const attribute = 'status'
         const value = 'Active'
         const operation = 'enable'
-        logger.info(input)
+        logger.info(toLogString(input))
         let account = await getAccount(input.identity, input.schema)
         await setAttribute(account, attribute, value)
 
@@ -997,7 +999,7 @@ export const connector = async () => {
         const attribute = 'status'
         const value = 'Inactive'
         const operation = 'disable'
-        logger.info(input)
+        logger.info(toLogString(input))
         let account = await getAccount(input.identity, input.schema)
         await setAttribute(account, attribute, value)
 
@@ -1012,7 +1014,7 @@ export const connector = async () => {
         opStart('stdAccountDelete', input)
         logger.debug(`Deleting account ${input.identity}`)
         const operation = 'delete'
-        logger.info(input)
+        logger.info(toLogString(input))
         const account = await getAccount(input.identity, input.schema)
         switch (config.account_type) {
             case 'Profile':
@@ -1127,7 +1129,9 @@ export const connector = async () => {
                 const account = await getAccount(input.identity, schema)
                 const user_id = account.attributes.user_id as string
                 if (user_id) {
-                    logger.debug(`Changing password for portal user ${user_id} associated with profile ${input.identity}`)
+                    logger.debug(
+                        `Changing password for portal user ${user_id} associated with profile ${input.identity}`
+                    )
                     await nerm.setUserAttribute(user_id, 'password', input.password)
                 } else {
                     throw new ConnectorError('Password changes are only supported for portal users.')
