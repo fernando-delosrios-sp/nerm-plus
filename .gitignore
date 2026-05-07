@@ -18,5 +18,3 @@ node_modules/
 dist/
 coverage/
 .httpyac.json
-package-lock.json
-test/
