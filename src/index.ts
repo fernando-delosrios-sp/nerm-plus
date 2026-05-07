@@ -112,9 +112,11 @@ export const connector = async () => {
                                 const unresolvedProfileValues = values.filter((_, i) => !profiles[i])
                                 if (unresolvedProfileValues.length > 0) {
                                     logger.warn(
-                                        `buildNERMAccountBody: profile reference not resolved for attribute "${attribute.name}" (key=${key}, profile_type_id=${attributeType.profile_type_id}): ${unresolvedProfileValues
-                                            .map((v) => toLogString(v))
-                                            .join('; ')}`
+                                        `buildNERMAccountBody: profile reference not resolved for attribute "${
+                                            attribute.name
+                                        }" (key=${key}, profile_type_id=${
+                                            attributeType.profile_type_id
+                                        }): ${unresolvedProfileValues.map((v) => toLogString(v)).join('; ')}`
                                     )
                                 }
                                 finalValue = profiles.filter((p) => p).map((p) => p.id)
@@ -125,9 +127,9 @@ export const connector = async () => {
                                 const unresolvedUserValues = values.filter((_, i) => !ids[i])
                                 if (unresolvedUserValues.length > 0) {
                                     logger.warn(
-                                        `buildNERMAccountBody: user reference not resolved to a user id for attribute "${attribute.name}" (key=${key}): ${unresolvedUserValues
-                                            .map((v) => toLogString(v))
-                                            .join('; ')}`
+                                        `buildNERMAccountBody: user reference not resolved to a user id for attribute "${
+                                            attribute.name
+                                        }" (key=${key}): ${unresolvedUserValues.map((v) => toLogString(v)).join('; ')}`
                                     )
                                 }
                                 const resolved = ids.filter((id): id is string => Boolean(id))
@@ -845,10 +847,15 @@ export const connector = async () => {
         if (input.attributes.workflows && config.account_type === 'Profile') {
             const workflows = [input.attributes.workflows].flat()
             let wait = false
-            for (const workflow of workflows) {
-                wait = config.workflows?.find((x) => x.workflow === workflow)?.wait || wait
-                await addWorkflow(account, workflow, wait)
-            }
+            const workflowPromises = workflows.map(async (workflow) => {
+                const workflowWait = config.workflows?.find((x) => x.workflow === workflow)?.wait || false
+                if (workflowWait) {
+                    wait = true
+                }
+                return addWorkflow(account, workflow, workflowWait)
+            })
+            await Promise.all(workflowPromises)
+
             if (wait) {
                 account = await getAccount(account.identity as string, input.schema)
             }
@@ -1127,7 +1134,9 @@ export const connector = async () => {
                 const account = await getAccount(input.identity, schema)
                 const user_id = account.attributes.user_id as string
                 if (user_id) {
-                    logger.debug(`Changing password for portal user ${user_id} associated with profile ${input.identity}`)
+                    logger.debug(
+                        `Changing password for portal user ${user_id} associated with profile ${input.identity}`
+                    )
                     await nerm.setUserAttribute(user_id, 'password', input.password)
                 } else {
                     throw new ConnectorError('Password changes are only supported for portal users.')
