@@ -6,14 +6,28 @@
         "rootDir": "src",
         "strict": true,
         "moduleResolution": "node",
-        "types": ["node"],
+        "types": [
+            "node",
+            "jest"
+        ],
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "sourceMap": true,
-        "lib": ["esnext", "dom", "dom.iterable"],
+        "lib": [
+            "esnext",
+            "dom",
+            "dom.iterable"
+        ],
         "resolveJsonModule": true
     },
-    "include": ["src/**/*"],
-    "exclude": ["node_modules", "**/*.spec.ts", "**/*.spec.js"]
+    "include": [
+        "src/**/*",
+        "test/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "**/*.spec.ts",
+        "**/*.spec.js"
+    ]
 }
