@@ -9,6 +9,7 @@
         "dev": "cross-env NODE_OPTIONS=--enable-source-maps spcx run dist/index.js",
         "debug": "spcx run dist/index.js",
         "prettier": "npx prettier --write .",
+        "test": "jest",
         "prepack-zip": "npm ci && npm run build",
         "pack-zip": "spcx package"
     },
@@ -25,10 +26,12 @@
     "devDependencies": {
         "@types/express": "^5.0.1",
         "@types/jest": "^30.0.0",
+        "@types/nock": "^10.0.3",
         "@types/node": "^20.11.17",
         "@vercel/ncc": "^0.34.0",
         "axios-mock-adapter": "^2.1.0",
         "jest": "^30.3.0",
+        "nock": "^14.0.15",
         "prettier": "^2.3.2",
         "shx": "^0.3.3",
         "ts-jest": "^29.4.9",

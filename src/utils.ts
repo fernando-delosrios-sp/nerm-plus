@@ -198,7 +198,7 @@ export const resolveUserAttributes = (attributes: Attributes, schema?: AccountSc
     let userAttributes: Attributes = {}
     if (schema) {
         for (const att of schema.attributes) {
-            userAttributes[att.name] = attributes[att.name]
+            userAttributes[att.name] = attributes[att.name] ?? null
         }
     }
 
