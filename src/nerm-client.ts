@@ -690,7 +690,8 @@ export class NERMClient {
 
     async resolveProfileAttributes(profile: any, schema: AccountSchema): Promise<any> {
         const attributes: { [key: string]: any } = {}
-        for (const attr of schema.attributes!) {
+        // ⚡ Bolt Optimization: Parallelize attribute resolution to reduce latency by resolving all attributes concurrently
+        const attributePromises = schema.attributes!.map(async (attr) => {
             let finalValue
             if (ENTITLEMENT_ATTRIBUTES.includes(attr.name)) {
                 if (attr.name === 'types') {
@@ -701,7 +702,7 @@ export class NERMClient {
                             finalValue.push(user.type)
                         }
                     }
-                    attributes[attr.name] = finalValue
+                    return { key: attr.name, value: finalValue }
                 }
             } else {
                 const value = await this.getAttributeRecursively(profile, attr.name!)
@@ -744,11 +745,19 @@ export class NERMClient {
                             finalValue = isArray ? names.map((x) => `[${x}]`).join(' ') : names[0]
                         }
                     }
-                    attributes[attr.name!] = finalValue
+                    return { key: attr.name!, value: finalValue }
                 } else {
                     const message = `"${attr.name}" attribute not found on profile "${profile.name}"`
                     this.logDebug('resolveProfileAttributes', message)
                 }
+            }
+            return null
+        })
+
+        const resolvedAttributes = await Promise.all(attributePromises)
+        for (const result of resolvedAttributes) {
+            if (result && result.value !== undefined) {
+                attributes[result.key] = result.value
             }
         }
 

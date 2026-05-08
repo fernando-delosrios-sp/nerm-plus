@@ -1,0 +1,3 @@
+## 2026-05-08 - Parallelize Independent Schema Attribute Resolutions
+**Learning:** Found a loop resolving independent profile schema attributes iteratively using `await` within `for...of` in `resolveProfileAttributes` in `src/nerm-client.ts`. Each attribute resolution involved complex caching/network calls (`getAttributeRecursively`, `getUser`, etc.) and resolving sequentially caused an artificial bottleneck.
+**Action:** Use `Array.prototype.map` to create an array of promises for independent asynchronous tasks, then `Promise.all` to resolve them concurrently, significantly reducing the overall latency for multi-attribute operations.
