@@ -17,10 +17,11 @@ describe('resolveUserAttributes', () => {
         const schema: AccountSchema = {
             identityAttribute: 'internalId',
             displayAttribute: 'email',
+            groupAttribute: 'types',
             attributes: [
-                { name: 'firstname', type: 'string' },
-                { name: 'lastname', type: 'string' },
-                { name: 'email', type: 'string' },
+                { name: 'firstname', type: 'string', description: '' },
+                { name: 'lastname', type: 'string', description: '' },
+                { name: 'email', type: 'string', description: '' },
             ],
         }
         const expected: Attributes = {
@@ -38,12 +39,13 @@ describe('resolveUserAttributes', () => {
         const schema: AccountSchema = {
             identityAttribute: 'id',
             displayAttribute: 'firstname',
+            groupAttribute: 'types',
             attributes: [
-                { name: 'firstname', type: 'string' },
-                { name: 'lastname', type: 'string' },
+                { name: 'firstname', type: 'string', description: '' },
+                { name: 'lastname', type: 'string', description: '' },
             ],
         }
-        const expected: Attributes = {
+        const expected = {
             firstname: 'John',
             lastname: undefined,
         }
@@ -55,6 +57,7 @@ describe('resolveUserAttributes', () => {
         const schema: AccountSchema = {
             identityAttribute: 'foo',
             displayAttribute: 'foo',
+            groupAttribute: 'types',
             attributes: [],
         }
         expect(resolveUserAttributes(attributes, schema)).toEqual({})
