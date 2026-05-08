@@ -15,12 +15,13 @@ describe('resolveUserAttributes', () => {
             internalId: '12345',
         }
         const schema: AccountSchema = {
+            groupAttribute: '',
             identityAttribute: 'internalId',
             displayAttribute: 'email',
             attributes: [
-                { name: 'firstname', type: 'string' },
-                { name: 'lastname', type: 'string' },
-                { name: 'email', type: 'string' },
+                { name: 'firstname', type: 'string', description: '' },
+                { name: 'lastname', type: 'string', description: '' },
+                { name: 'email', type: 'string', description: '' },
             ],
         }
         const expected: Attributes = {
@@ -36,16 +37,17 @@ describe('resolveUserAttributes', () => {
             firstname: 'John',
         }
         const schema: AccountSchema = {
+            groupAttribute: '',
             identityAttribute: 'id',
             displayAttribute: 'firstname',
             attributes: [
-                { name: 'firstname', type: 'string' },
-                { name: 'lastname', type: 'string' },
+                { name: 'firstname', type: 'string', description: '' },
+                { name: 'lastname', type: 'string', description: '' },
             ],
         }
         const expected: Attributes = {
             firstname: 'John',
-            lastname: undefined,
+            lastname: undefined as any,
         }
         expect(resolveUserAttributes(attributes, schema)).toEqual(expected)
     })
@@ -53,6 +55,7 @@ describe('resolveUserAttributes', () => {
     test('should return empty object if schema has no attributes', () => {
         const attributes: Attributes = { foo: 'bar' }
         const schema: AccountSchema = {
+            groupAttribute: '',
             identityAttribute: 'foo',
             displayAttribute: 'foo',
             attributes: [],

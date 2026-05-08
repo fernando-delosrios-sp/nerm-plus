@@ -10,7 +10,8 @@ const redact = (obj: any): any => {
     const redacted: any = { ...obj }
     for (const key in redacted) {
         if (Object.prototype.hasOwnProperty.call(redacted, key)) {
-            if (key.toLowerCase().includes('password')) {
+            const lowerKey = key.toLowerCase()
+            if (lowerKey.includes('password') || lowerKey.includes('token') || lowerKey.includes('secret')) {
                 redacted[key] = '[REDACTED]'
             } else if (typeof redacted[key] === 'object') {
                 redacted[key] = redact(redacted[key])
@@ -18,8 +19,15 @@ const redact = (obj: any): any => {
             // Handling changes array specific format: { attribute: 'password', value: 'secret' }
             if (key === 'changes' && Array.isArray(redacted[key])) {
                 redacted[key] = redacted[key].map((change: any) => {
-                    if (change && change.attribute && change.attribute.toLowerCase().includes('password')) {
-                        return { ...change, value: '[REDACTED]' }
+                    if (change && change.attribute) {
+                        const attrLower = change.attribute.toLowerCase()
+                        if (
+                            attrLower.includes('password') ||
+                            attrLower.includes('token') ||
+                            attrLower.includes('secret')
+                        ) {
+                            return { ...change, value: '[REDACTED]' }
+                        }
                     }
                     return change
                 })
