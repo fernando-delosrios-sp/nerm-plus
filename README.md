@@ -2,6 +2,11 @@
 
 ## Changelog
 
+- 0.1.12 (2026-05-08):
+    - Refactored monolith `index.ts` into layered architecture: operations, services, clients
+    - Extracted 12 connector operations into individual files under `src/operations/`
+    - Moved domain logic from handlers into `src/services/` (AccountService, EntitlementService, SchemaService, PushService)
+    - Operations no longer access NERM/ISC clients directly — all API calls go through services
 - 0.1.11 (2026-05-07):
     - Updated attribute resolution to support descriptions and nullable values
     - Fixed N+1 query when resolving profiles and user references
@@ -100,7 +105,7 @@ Finally, you can determine whether the operation should wait for the workflow to
 
 ### Push Mode Configuration
 
-Push mode is an optional feature that helps syncing ISC objects with NERM profiles. These objects in question are roles, access profiles, entitlements and identities. It can be run alongside with account aggregation or invoking _std:push:contents_ custom operation.
+Push mode is an optional feature that helps syncing ISC objects with NERM profiles. These objects in question are roles, access profiles, entitlements and identities. It can be run alongside with account aggregation or invoking _custom:push:contents_ custom operation.
 
 ![Push mode](assets/images/push_mode.jpg)
 

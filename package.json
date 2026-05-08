@@ -1,6 +1,6 @@
 {
     "name": "nerm-plus",
-    "version": "0.1.11",
+    "version": "0.1.12",
     "main": "dist/index.js",
     "scripts": {
         "clean": "shx rm -rf ./dist",

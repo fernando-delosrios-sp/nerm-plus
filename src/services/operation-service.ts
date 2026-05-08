@@ -1,0 +1,33 @@
+import { AccountSchema, logger, StdAccountListOutput } from '@sailpoint/connector-sdk'
+import { ConnectorContext } from '../connector-context'
+import { AccountService } from './account-service'
+import { EntitlementService } from './entitlement-service'
+import { toLogString } from '../logging'
+
+export class OperationService {
+    constructor(
+        private ctx: ConnectorContext,
+        private accountService: AccountService,
+        private entitlementService: EntitlementService
+    ) {}
+
+    async processOperation(account: StdAccountListOutput, op: string, schema?: AccountSchema) {
+        logger.debug(`Processing operation ${op} for account ${account.uuid}`)
+        let operation: any = this.ctx.config.operations?.find((x) => x.operation === op)
+        if (!operation) {
+            operation = this.ctx.config.profiles?.find((x) => x.name === op)
+        }
+        if (operation) {
+            const response = await this.entitlementService.runWorkflow(
+                account,
+                operation.workflow,
+                operation.requester_id,
+                operation.wait
+            )
+            if (response && operation.wait) {
+                account = await this.accountService.getAccount(account.identity as string, schema)
+            }
+        }
+        return account
+    }
+}
