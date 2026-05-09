@@ -1,0 +1,4 @@
+## 2024-05-30 - [Parallelizing Profile Attribute Resolution]
+
+**Learning:** In the NERM connector, resolving profile attributes iterates over the connector schema definition attributes (`schema.attributes`), doing multiple async HTTP requests for each (`getAttributeRecursively`, `getUser`, etc). If done sequentially using a standard `for...of` loop with `await`, this is an N+1 query pattern that is O(n) based on the number of schema attributes configured.
+**Action:** Used `Promise.all` over `schema.attributes.map` to trigger parallel resolution for each schema attribute. Rate limiting concerns are mitigated since the application uses `axios-request-throttle` to globally throttle HTTP traffic anyway, so resolving everything in parallel correctly builds maximum concurrent throughput up to the configured throttle limit, leading to dramatically faster initial account loads.
