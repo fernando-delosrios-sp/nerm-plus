@@ -38,10 +38,24 @@ export const connector = async () => {
         .stdAccountRead(createStdAccountRead(accountService, schemaService))
         .stdEntitlementList(createStdEntitlementList(ctx, entitlementService))
         .stdAccountCreate(
-            createStdAccountCreate(ctx, accountService, attributeService, entitlementService, operationService, schemaService)
+            createStdAccountCreate(
+                ctx,
+                accountService,
+                attributeService,
+                entitlementService,
+                operationService,
+                schemaService
+            )
         )
         .stdAccountUpdate(
-            createStdAccountUpdate(ctx, accountService, attributeService, entitlementService, operationService, schemaService)
+            createStdAccountUpdate(
+                ctx,
+                accountService,
+                attributeService,
+                entitlementService,
+                operationService,
+                schemaService
+            )
         )
         .stdAccountEnable(createStdAccountEnable(accountService, attributeService, operationService))
         .stdAccountDisable(createStdAccountDisable(accountService, attributeService, operationService))

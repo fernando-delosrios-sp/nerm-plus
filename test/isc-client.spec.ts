@@ -1,12 +1,6 @@
 import { ISCClient } from '../src/isc-client'
 import { Config } from '../src/model/config'
-import {
-    Configuration,
-    PublicIdentitiesConfigApi,
-    SourcesApi,
-    SearchApi,
-    Paginator,
-} from 'sailpoint-api-client'
+import { Configuration, PublicIdentitiesConfigApi, SourcesApi, SearchApi, Paginator } from 'sailpoint-api-client'
 import axiosThrottle from 'axios-request-throttle'
 import axios from 'axios'
 import { retriesConfig, throttleConfig } from '../src/axios'
@@ -99,7 +93,10 @@ describe('ISCClient', () => {
                 const result = await client.listSources()
 
                 expect(SourcesApi).toHaveBeenCalledTimes(1)
-                expect(Paginator.paginate).toHaveBeenCalledWith(mockSourcesApiInstance, mockSourcesApiInstance.listSources)
+                expect(Paginator.paginate).toHaveBeenCalledWith(
+                    mockSourcesApiInstance,
+                    mockSourcesApiInstance.listSources
+                )
                 expect(result).toBeInstanceOf(Array)
                 expect(result[0]).toBe('mock-paginated-source')
             })

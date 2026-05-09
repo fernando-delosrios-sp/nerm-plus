@@ -99,9 +99,7 @@ export class AccountService {
                                     logger.warn(
                                         `buildNERMAccountBody: user reference not resolved to a user id for attribute "${
                                             attribute.name
-                                        }" (key=${key}): ${unresolvedUserValues
-                                            .map((v) => toLogString(v))
-                                            .join('; ')}`
+                                        }" (key=${key}): ${unresolvedUserValues.map((v) => toLogString(v)).join('; ')}`
                                     )
                                 }
                                 const resolved = ids.filter((id): id is string => Boolean(id))
@@ -305,9 +303,7 @@ export class AccountService {
             const account = await this.getAccount(identity, schema)
             const user_id = account.attributes.user_id as string
             if (user_id) {
-                logger.debug(
-                    `Changing password for portal user ${user_id} associated with profile ${identity}`
-                )
+                logger.debug(`Changing password for portal user ${user_id} associated with profile ${identity}`)
                 await this.ctx.nerm.setUserAttribute(user_id, 'password', password)
             } else {
                 throw new ConnectorError('Password changes are only supported for portal users.')

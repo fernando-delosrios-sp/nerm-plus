@@ -9,8 +9,7 @@ export class PushService {
 
     pushContents: CommandHandler = async (context, input, res) => {
         logger.debug(fnLog('pushContents', 'Pushing contents'))
-        const mappings =
-            this.ctx.config.mappings!.sort((a, b) => (a.nested ? (b.nested ? 0 : 1) : -1)) ?? []
+        const mappings = this.ctx.config.mappings!.sort((a, b) => (a.nested ? (b.nested ? 0 : 1) : -1)) ?? []
         const masterProfileMap: Map<string, any[]> = new Map()
         const masterEntityMap: Map<string, any[]> = new Map()
 

@@ -7,7 +7,7 @@ import { opEnd, opStart, toLogString } from '../logging'
 export function createStdAccountDisable(
     accountService: AccountService,
     attributeService: AttributeService,
-    operationService: OperationService,
+    operationService: OperationService
 ): StdAccountDisableHandler {
     return async (context, input, res) => {
         opStart('stdAccountDisable', input)

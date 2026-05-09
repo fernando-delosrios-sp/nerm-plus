@@ -7,7 +7,7 @@ import { opEnd, opStart, toLogString } from '../logging'
 export function createStdAccountEnable(
     accountService: AccountService,
     attributeService: AttributeService,
-    operationService: OperationService,
+    operationService: OperationService
 ): StdAccountEnableHandler {
     return async (context, input, res) => {
         opStart('stdAccountEnable', input)

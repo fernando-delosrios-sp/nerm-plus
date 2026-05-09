@@ -146,15 +146,18 @@ export const getAttribute = (object: { [key: string]: any }, attribute: string):
     if (!object) {
         return undefined
     }
-    let o = object
-    const attributes = attribute.split('.').reverse()
-    const a = attributes.pop()!
-    o = o[a]
-    if (attributes.length > 0) {
-        o = getAttribute(o, attributes.reverse().join('.'))
+
+    let current = object
+    const keys = attribute.split('.')
+
+    for (const key of keys) {
+        if (current === undefined || current === null) {
+            return undefined
+        }
+        current = current[key]
     }
 
-    return o
+    return current
 }
 
 export const entity2profile = (entity: SearchDocument, profile_type_id: string, conf: Mapping): any => {
