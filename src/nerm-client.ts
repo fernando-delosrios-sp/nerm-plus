@@ -690,67 +690,71 @@ export class NERMClient {
 
     async resolveProfileAttributes(profile: any, schema: AccountSchema): Promise<any> {
         const attributes: { [key: string]: any } = {}
-        for (const attr of schema.attributes!) {
-            let finalValue
-            if (ENTITLEMENT_ATTRIBUTES.includes(attr.name)) {
-                if (attr.name === 'types') {
-                    finalValue = ['Profile']
-                    if (profile.attributes.user_id) {
-                        const user = await this.getUser(profile.attributes.user_id)
-                        if (user) {
-                            finalValue.push(user.type)
-                        }
-                    }
-                    attributes[attr.name] = finalValue
-                }
-            } else {
-                const value = await this.getAttributeRecursively(profile, attr.name!)
-                const isArray = Array.isArray(value)
-                if (value) {
-                    const isObject = isArray ? typeof value[0] === 'object' : typeof value === 'object'
-                    let profile_type_id
-                    let referencedProfileType
-                    if (isObject) {
-                        profile_type_id = isArray ? value[0].profile_type_id : value.profile_type_id
-                        referencedProfileType = profile_type_id
-                    }
-
-                    if (attr.entitlement) {
-                        if (attr.schemaObjectType === referencedProfileType?.name) {
-                            //Is profile entitlement
-                            const ids = [value].flat().map((x) => x.id)
-                            if (attr.multi) {
-                                finalValue = ids
-                            } else {
-                                finalValue = ids[0]
-                            }
-                        } else {
-                            //Is not profile entitlement
-                            const names = [value].flat().map((x) => x.name)
-                            if (attr.multi) {
-                                finalValue = value
-                            } else {
-                                finalValue = isArray ? names.map((x) => `[${x}]`).join(' ') : names
+        // Use Promise.all to fetch and resolve all profile attributes in parallel instead of sequentially
+        // Since rate limiting is handled by axios-request-throttle, we can safely fire off these requests
+        await Promise.all(
+            schema.attributes!.map(async (attr) => {
+                let finalValue
+                if (ENTITLEMENT_ATTRIBUTES.includes(attr.name)) {
+                    if (attr.name === 'types') {
+                        finalValue = ['Profile']
+                        if (profile.attributes.user_id) {
+                            const user = await this.getUser(profile.attributes.user_id)
+                            if (user) {
+                                finalValue.push(user.type)
                             }
                         }
-                    } else {
-                        let names = [value].flat()
-                        if (referencedProfileType) {
-                            names = [value].flat().map((x) => x.name)
-                        }
-                        if (attr.multi) {
-                            finalValue = isArray ? names : names[0]
-                        } else {
-                            finalValue = isArray ? names.map((x) => `[${x}]`).join(' ') : names[0]
-                        }
+                        attributes[attr.name] = finalValue
                     }
-                    attributes[attr.name!] = finalValue
                 } else {
-                    const message = `"${attr.name}" attribute not found on profile "${profile.name}"`
-                    this.logDebug('resolveProfileAttributes', message)
+                    const value = await this.getAttributeRecursively(profile, attr.name!)
+                    const isArray = Array.isArray(value)
+                    if (value) {
+                        const isObject = isArray ? typeof value[0] === 'object' : typeof value === 'object'
+                        let profile_type_id
+                        let referencedProfileType
+                        if (isObject) {
+                            profile_type_id = isArray ? value[0].profile_type_id : value.profile_type_id
+                            referencedProfileType = profile_type_id
+                        }
+
+                        if (attr.entitlement) {
+                            if (attr.schemaObjectType === referencedProfileType?.name) {
+                                //Is profile entitlement
+                                const ids = [value].flat().map((x) => x.id)
+                                if (attr.multi) {
+                                    finalValue = ids
+                                } else {
+                                    finalValue = ids[0]
+                                }
+                            } else {
+                                //Is not profile entitlement
+                                const names = [value].flat().map((x) => x.name)
+                                if (attr.multi) {
+                                    finalValue = value
+                                } else {
+                                    finalValue = isArray ? names.map((x) => `[${x}]`).join(' ') : names
+                                }
+                            }
+                        } else {
+                            let names = [value].flat()
+                            if (referencedProfileType) {
+                                names = [value].flat().map((x) => x.name)
+                            }
+                            if (attr.multi) {
+                                finalValue = isArray ? names : names[0]
+                            } else {
+                                finalValue = isArray ? names.map((x) => `[${x}]`).join(' ') : names[0]
+                            }
+                        }
+                        attributes[attr.name!] = finalValue
+                    } else {
+                        const message = `"${attr.name}" attribute not found on profile "${profile.name}"`
+                        this.logDebug('resolveProfileAttributes', message)
+                    }
                 }
-            }
-        }
+            })
+        )
 
         return attributes
     }
