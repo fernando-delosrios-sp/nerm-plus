@@ -142,19 +142,11 @@ export const parents2children = (parents: SearchDocument[], type: string): Map<s
     return childrenMap
 }
 
-export const getAttribute = (object: { [key: string]: any }, attribute: string): any => {
+export const getAttribute = (object: { [key: string]: any }, attributePath: string): any => {
     if (!object) {
         return undefined
     }
-    let o = object
-    const attributes = attribute.split('.').reverse()
-    const a = attributes.pop()!
-    o = o[a]
-    if (attributes.length > 0) {
-        o = getAttribute(o, attributes.reverse().join('.'))
-    }
-
-    return o
+    return attributePath.split('.').reduce((obj, key) => (obj ? obj[key] : undefined), object)
 }
 
 export const entity2profile = (entity: SearchDocument, profile_type_id: string, conf: Mapping): any => {
