@@ -9,8 +9,7 @@ export class PushService {
 
     pushContents: CommandHandler = async (context, input, res) => {
         logger.debug(fnLog('pushContents', 'Pushing contents'))
-        const mappings =
-            this.ctx.config.mappings!.sort((a, b) => (a.nested ? (b.nested ? 0 : 1) : -1)) ?? []
+        const mappings = this.ctx.config.mappings!.sort((a, b) => (a.nested ? (b.nested ? 0 : 1) : -1)) ?? []
         const masterProfileMap: Map<string, any[]> = new Map()
         const masterEntityMap: Map<string, any[]> = new Map()
 
@@ -72,9 +71,11 @@ export class PushService {
 
                 if (!nested) {
                     existingProfiles = this.ctx.nerm.listProfiles(params)
-                    const ids = entities.map((x) => x.id)
+                    // ⚡ Bolt: Convert ids array to a Set for O(1) lookups instead of O(N) array.includes() inside the loop
+                    // Impact: Reduces time complexity from O(N²) to O(N) when syncing profiles
+                    const ids = new Set(entities.map((x) => x.id))
                     for await (const profile of existingProfiles) {
-                        if (ids.includes(profile.attributes[id])) {
+                        if (ids.has(profile.attributes[id])) {
                             profiles.push(profile)
                         }
                     }
