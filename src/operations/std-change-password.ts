@@ -7,7 +7,7 @@ import { opEnd, opStart, toLogString } from '../logging'
 export function createStdChangePassword(
     ctx: ConnectorContext,
     accountService: AccountService,
-    schemaService: SchemaService,
+    schemaService: SchemaService
 ): StdChangePasswordHandler {
     return async (context, input, res) => {
         opStart('stdChangePassword', input)

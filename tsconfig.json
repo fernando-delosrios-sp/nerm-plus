@@ -11,11 +11,7 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "sourceMap": true,
-        "lib": [
-            "esnext",
-            "dom",
-            "dom.iterable"
-        ],
+        "lib": ["esnext", "dom", "dom.iterable"],
         "resolveJsonModule": true
     },
     "include": ["src/**/*", "test/**/*"],

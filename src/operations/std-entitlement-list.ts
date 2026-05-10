@@ -7,7 +7,7 @@ import { opEnd, opStart, toLogString } from '../logging'
 
 export function createStdEntitlementList(
     ctx: ConnectorContext,
-    entitlementService: EntitlementService,
+    entitlementService: EntitlementService
 ): StdEntitlementListHandler {
     return async (context, input, res) => {
         opStart('stdEntitlementList', input)
@@ -43,11 +43,7 @@ export function createStdEntitlementList(
                         const profileObject = await entitlementService.getProfileTypeByName(profileConf.name)
                         const profiles = await entitlementService.listProfiles(profileObject.id)
                         for await (const profile of profiles) {
-                            const entitlement = new Profile(
-                                profile,
-                                input.type,
-                                profileConf.attributes
-                            )
+                            const entitlement = new Profile(profile, input.type, profileConf.attributes)
                             res.send(entitlement)
                         }
                     }
