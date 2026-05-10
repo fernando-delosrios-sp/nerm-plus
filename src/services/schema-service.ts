@@ -1,9 +1,4 @@
-import {
-    AccountSchema,
-    ConnectorError,
-    logger,
-    SchemaAttribute,
-} from '@sailpoint/connector-sdk'
+import { AccountSchema, ConnectorError, logger, SchemaAttribute } from '@sailpoint/connector-sdk'
 import { ConnectorContext } from '../connector-context'
 import { apiSchema2Schema, profile2EntitlementSchema } from '../utils'
 import { defaultAccountSchema } from '../data/schema'

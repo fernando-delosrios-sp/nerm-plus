@@ -8,7 +8,7 @@ describe('genericEntitlement2StdEntitlementListOutput', () => {
         const genericEntitlement: GenericEntitlement = {
             id: 'test_id',
             name: 'test_name',
-            description: 'test description'
+            description: 'test description',
         }
 
         // Act
@@ -22,8 +22,8 @@ describe('genericEntitlement2StdEntitlementListOutput', () => {
             attributes: {
                 id: 'test_id',
                 name: 'test_name',
-                description: 'test description'
-            }
+                description: 'test description',
+            },
         })
     })
 
@@ -32,7 +32,7 @@ describe('genericEntitlement2StdEntitlementListOutput', () => {
         const type = 'another_type'
         const genericEntitlement: GenericEntitlement = {
             id: 'id_123',
-            name: 'name_123'
+            name: 'name_123',
         }
 
         // Act
@@ -45,8 +45,8 @@ describe('genericEntitlement2StdEntitlementListOutput', () => {
             uuid: 'name_123',
             attributes: {
                 id: 'id_123',
-                name: 'name_123'
-            }
+                name: 'name_123',
+            },
         })
     })
 
@@ -55,7 +55,7 @@ describe('genericEntitlement2StdEntitlementListOutput', () => {
         const type = 'role'
         const genericEntitlement: GenericEntitlement = {
             id: 'admin',
-            name: 'admin'
+            name: 'admin',
         }
 
         // Act
@@ -68,8 +68,8 @@ describe('genericEntitlement2StdEntitlementListOutput', () => {
             uuid: 'admin',
             attributes: {
                 id: 'admin',
-                name: 'admin'
-            }
+                name: 'admin',
+            },
         })
     })
 })

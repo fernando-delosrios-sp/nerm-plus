@@ -7,7 +7,7 @@ const send = <T>(res: { send(output: T): void }, output: T) => res.send(output)
 
 export function createStdAccountDelete(
     accountService: AccountService,
-    operationService: OperationService,
+    operationService: OperationService
 ): StdAccountDeleteHandler {
     return async (context, input, res) => {
         opStart('stdAccountDelete', input)
