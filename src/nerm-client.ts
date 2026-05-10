@@ -46,38 +46,21 @@ function formatHttpError(err: any): string {
     if (typeof data.error === 'string') {
         pieces.push(data.error)
     } else if (data.error != null) {
-        try {
-            pieces.push(`error: ${JSON.stringify(data.error)}`)
-        } catch {
-            pieces.push(`error: ${String(data.error)}`)
-        }
+        pieces.push(`error: ${toLogString(data.error)}`)
     }
     if (data.message != null && String(data.message) !== String(data.error)) {
         pieces.push(String(data.message))
     }
     if (data.errors != null) {
-        try {
-            pieces.push(`errors: ${JSON.stringify(data.errors)}`)
-        } catch {
-            pieces.push(`errors: ${String(data.errors)}`)
-        }
+        pieces.push(`errors: ${toLogString(data.errors)}`)
     }
     if (data.base != null) {
-        try {
-            pieces.push(`base: ${JSON.stringify(data.base)}`)
-        } catch {
-            pieces.push(`base: ${String(data.base)}`)
-        }
+        pieces.push(`base: ${toLogString(data.base)}`)
     }
     if (pieces.length > 0) {
         return `${prefix}: ${pieces.join(' | ')}`
     }
-    let full: string
-    try {
-        full = JSON.stringify(data)
-    } catch {
-        full = String(data)
-    }
+    let full: string = toLogString(data)
     const max = 4000
     if (full.length > max) {
         full = full.slice(0, max) + '…'
