@@ -71,6 +71,7 @@ function formatHttpError(err: any): string {
 export class NERMClient {
     private client: AxiosCacheInstance
     private attributesPromise?: Promise<Map<string, any>>
+    private profileTypePromises = new Map<string, Promise<any>>()
     private instanceId?: string
 
     constructor(config: any) {
@@ -255,9 +256,18 @@ export class NERMClient {
         return this.getRequest(url, type)
     }
 
+    // ⚡ Bolt: Cache getProfileTypeByName results using a Promise map.
+    // Impact: Avoids N identical requests when synchronizing multiple profiles or schemas
+    // that share the same ProfileType configuration, significantly reducing latency and overhead.
     async getProfileTypeByName(name: string): Promise<any> {
-        const response = this.listProfileTypes({ name })
-        return (await response.next()).value
+        if (!this.profileTypePromises.has(name)) {
+            const fetchProfileType = async () => {
+                const response = this.listProfileTypes({ name })
+                return (await response.next()).value
+            }
+            this.profileTypePromises.set(name, fetchProfileType())
+        }
+        return this.profileTypePromises.get(name)
     }
 
     async *listProfiles(params?: any) {
