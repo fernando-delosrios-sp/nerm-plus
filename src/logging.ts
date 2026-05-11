@@ -11,7 +11,14 @@ const redact = (obj: any): any => {
     for (const key in redacted) {
         if (Object.prototype.hasOwnProperty.call(redacted, key)) {
             const keyLower = key.toLowerCase()
-            if (keyLower.includes('password') || keyLower.includes('token') || keyLower.includes('secret')) {
+            if (
+                keyLower.includes('password') ||
+                keyLower.includes('token') ||
+                keyLower.includes('secret') ||
+                keyLower.includes('authorization') ||
+                keyLower.includes('api_key') ||
+                keyLower.includes('apikey')
+            ) {
                 redacted[key] = '[REDACTED]'
             } else if (typeof redacted[key] === 'object') {
                 redacted[key] = redact(redacted[key])
@@ -24,7 +31,10 @@ const redact = (obj: any): any => {
                         if (
                             attrLower.includes('password') ||
                             attrLower.includes('token') ||
-                            attrLower.includes('secret')
+                            attrLower.includes('secret') ||
+                            attrLower.includes('authorization') ||
+                            attrLower.includes('api_key') ||
+                            attrLower.includes('apikey')
                         ) {
                             return { ...change, value: '[REDACTED]' }
                         }
