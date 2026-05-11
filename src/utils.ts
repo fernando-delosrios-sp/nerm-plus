@@ -113,28 +113,24 @@ export const mergeProfileWithConfig = (profile: any, conf: any): any => {
 export const parents2children = (parents: SearchDocument[], type: string): Map<string, Set<string>> => {
     const childrenMap: Map<string, Set<string>> = new Map()
     const parent_type = parents[0] ? (parents[0] as any)._type : undefined
-    if (parent_type) {
-        const attribute = PARENTCHILD_ATTRIBUTES[parent_type]?.[type]
-        if (attribute) {
-            for (const parent of parents as any[]) {
-                const children = parent[attribute]
-                for (const child of children) {
-                    let include = true
-                    if (attribute === 'access') {
-                        const accessType = TYPES[type] || ACCESSTYPE_MAPPING[type]
-                        if (child.type !== accessType) {
-                            include = false
-                        }
-                    }
 
-                    if (include) {
-                        if (childrenMap.has(child.id)) {
-                            childrenMap.get(child.id)?.add(parent.id)
-                        } else {
-                            childrenMap.set(child.id, new Set([parent.id]))
-                        }
-                    }
-                }
+    if (!parent_type) return childrenMap
+
+    const attribute = PARENTCHILD_ATTRIBUTES[parent_type]?.[type]
+    if (!attribute) return childrenMap
+
+    for (const parent of parents as any[]) {
+        const children = parent[attribute]
+        for (const child of children) {
+            if (attribute === 'access') {
+                const accessType = TYPES[type] || ACCESSTYPE_MAPPING[type]
+                if (child.type !== accessType) continue
+            }
+
+            if (childrenMap.has(child.id)) {
+                childrenMap.get(child.id)?.add(parent.id)
+            } else {
+                childrenMap.set(child.id, new Set([parent.id]))
             }
         }
     }
