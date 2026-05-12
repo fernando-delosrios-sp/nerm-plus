@@ -2,6 +2,19 @@
 
 import { logger } from '@sailpoint/connector-sdk'
 
+const isSensitiveKey = (key: string): boolean => {
+    if (!key) return false
+    const keyLower = key.toLowerCase()
+    return (
+        keyLower.includes('password') ||
+        keyLower.includes('token') ||
+        keyLower.includes('secret') ||
+        keyLower.includes('authorization') ||
+        keyLower.includes('api_key') ||
+        keyLower.includes('apikey')
+    )
+}
+
 const redact = (obj: any): any => {
     if (obj == null) return obj
     if (typeof obj !== 'object') return obj
@@ -10,15 +23,7 @@ const redact = (obj: any): any => {
     const redacted: any = { ...obj }
     for (const key in redacted) {
         if (Object.prototype.hasOwnProperty.call(redacted, key)) {
-            const keyLower = key.toLowerCase()
-            if (
-                keyLower.includes('password') ||
-                keyLower.includes('token') ||
-                keyLower.includes('secret') ||
-                keyLower.includes('authorization') ||
-                keyLower.includes('api_key') ||
-                keyLower.includes('apikey')
-            ) {
+            if (isSensitiveKey(key)) {
                 redacted[key] = '[REDACTED]'
             } else if (typeof redacted[key] === 'object') {
                 redacted[key] = redact(redacted[key])
@@ -26,18 +31,8 @@ const redact = (obj: any): any => {
             // Handling changes array specific format: { attribute: 'password', value: 'secret' }
             if (key === 'changes' && Array.isArray(redacted[key])) {
                 redacted[key] = redacted[key].map((change: any) => {
-                    if (change && change.attribute) {
-                        const attrLower = change.attribute.toLowerCase()
-                        if (
-                            attrLower.includes('password') ||
-                            attrLower.includes('token') ||
-                            attrLower.includes('secret') ||
-                            attrLower.includes('authorization') ||
-                            attrLower.includes('api_key') ||
-                            attrLower.includes('apikey')
-                        ) {
-                            return { ...change, value: '[REDACTED]' }
-                        }
+                    if (change && isSensitiveKey(change.attribute)) {
+                        return { ...change, value: '[REDACTED]' }
                     }
                     return change
                 })
