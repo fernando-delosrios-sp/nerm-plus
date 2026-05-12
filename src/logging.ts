@@ -2,10 +2,13 @@
 
 import { logger } from '@sailpoint/connector-sdk'
 
-const redact = (obj: any): any => {
+const redact = (obj: any, seen: WeakSet<any> = new WeakSet()): any => {
     if (obj == null) return obj
     if (typeof obj !== 'object') return obj
-    if (Array.isArray(obj)) return obj.map(redact)
+    if (seen.has(obj)) return '[CIRCULAR]'
+    seen.add(obj)
+
+    if (Array.isArray(obj)) return obj.map((item) => redact(item, seen))
 
     const redacted: any = { ...obj }
     for (const key in redacted) {
@@ -21,7 +24,7 @@ const redact = (obj: any): any => {
             ) {
                 redacted[key] = '[REDACTED]'
             } else if (typeof redacted[key] === 'object') {
-                redacted[key] = redact(redacted[key])
+                redacted[key] = redact(redacted[key], seen)
             }
             // Handling changes array specific format: { attribute: 'password', value: 'secret' }
             if (key === 'changes' && Array.isArray(redacted[key])) {
