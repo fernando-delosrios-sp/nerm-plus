@@ -11,3 +11,10 @@
 ## 2024-05-11 - Cache ProfileType fetches with Promise map
 **Learning:** In highly concurrent architectures (like `PushService` iterating mappings or `SchemaService` resolving profiles), duplicate requests to the same endpoint (`/profile_types?name=X`) can stack up if they are triggered simultaneously. Caching the raw resolved value isn't enough to prevent redundant API calls during the initial burst.
 **Action:** Implemented caching for `getProfileTypeByName` using a `Map<string, Promise<any>>`. By caching the pending Promise itself immediately, subsequent concurrent calls for the same profile type await the exact same Promise, effectively coalescing duplicate requests and saving network latency.
+## 2024-05-12 - Cache Profile lookups with Promise map
+**Learning:** Similarly to ProfileTypes, redundant queries for specific profiles by name and type stack up in concurrent processes such as attribute resolution or data pushes.  and  were issuing N requests for the same dependent profile.
+**Action:** Implemented Promise map caching for profile queries by name and type to coalesce concurrent calls, reducing overhead and API requests.
+
+## 2024-05-12 - Cache Profile lookups with Promise map
+**Learning:** Similarly to ProfileTypes, redundant queries for specific profiles by name and type stack up in concurrent processes such as attribute resolution or data pushes. `getProfileByName` and `getProfileByNameAndType` were issuing N requests for the same dependent profile.
+**Action:** Implemented Promise map caching for profile queries by name and type to coalesce concurrent calls, reducing overhead and API requests.
