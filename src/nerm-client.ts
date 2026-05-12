@@ -72,6 +72,8 @@ export class NERMClient {
     private client: AxiosCacheInstance
     private attributesPromise?: Promise<Map<string, any>>
     private profileTypePromises = new Map<string, Promise<any>>()
+    private profilePromises = new Map<string, Promise<any>>()
+    private profileByNamePromises = new Map<string, Promise<any>>()
     private instanceId?: string
 
     constructor(config: any) {
@@ -284,50 +286,69 @@ export class NERMClient {
         return this.getRequest(url, type)
     }
 
+    // ⚡ Bolt: Cache getProfileByName results using a Promise map.
+    // Impact: Avoids N identical requests when synchronizing multiple profiles that
+    // reference the same target profile by name, reducing redundant API calls and overhead.
     async getProfileByName(name: string): Promise<any> {
-        const url = `/profiles`
-        const type = 'profiles'
-        let response
-        for await (const profile of this.listRequest(url, type, { name })) {
-            if (!response) {
-                response = profile
-            } else {
-                const message = `Multiple profiles found for "${name}" name`
-                this.logWarn('getProfileByName', message)
-                break
-            }
-        }
+        if (!this.profileByNamePromises.has(name)) {
+            const fetchProfile = async () => {
+                const url = `/profiles`
+                const type = 'profiles'
+                let response
+                for await (const profile of this.listRequest(url, type, { name })) {
+                    if (!response) {
+                        response = profile
+                    } else {
+                        const message = `Multiple profiles found for "${name}" name`
+                        this.logWarn('getProfileByName', message)
+                        break
+                    }
+                }
 
-        if (!response) {
-            this.logWarn('getProfileByName', `No profile found for name="${name}"`)
+                if (!response) {
+                    this.logWarn('getProfileByName', `No profile found for name="${name}"`)
+                }
+                return response
+            }
+            this.profileByNamePromises.set(name, fetchProfile())
         }
-        return response
+        return this.profileByNamePromises.get(name)
     }
 
+    // ⚡ Bolt: Cache getProfileByNameAndType results using a Promise map.
+    // Impact: Avoids N identical requests when multiple profiles reference the same dependent profile
+    // (e.g., manager or department) by name and type during attribute resolution.
     async getProfileByNameAndType(name: string, profile_type_id: string): Promise<any> {
-        const url = `/profiles`
-        const type = 'profiles'
-        let response
-        for await (const profile of this.listRequest(url, type, { name })) {
-            if (profile.profile_type_id !== profile_type_id) {
-                continue
-            }
-            if (!response) {
-                response = profile
-            } else {
-                const message = `Multiple profiles found for "${name}" with profile_type_id=${profile_type_id}`
-                this.logWarn('getProfileByNameAndType', message)
-                break
-            }
-        }
+        const cacheKey = `${name}:${profile_type_id}`
+        if (!this.profilePromises.has(cacheKey)) {
+            const fetchProfile = async () => {
+                const url = `/profiles`
+                const type = 'profiles'
+                let response
+                for await (const profile of this.listRequest(url, type, { name })) {
+                    if (profile.profile_type_id !== profile_type_id) {
+                        continue
+                    }
+                    if (!response) {
+                        response = profile
+                    } else {
+                        const message = `Multiple profiles found for "${name}" with profile_type_id=${profile_type_id}`
+                        this.logWarn('getProfileByNameAndType', message)
+                        break
+                    }
+                }
 
-        if (!response) {
-            this.logWarn(
-                'getProfileByNameAndType',
-                `No profile found for name="${name}" with profile_type_id=${profile_type_id}`
-            )
+                if (!response) {
+                    this.logWarn(
+                        'getProfileByNameAndType',
+                        `No profile found for name="${name}" with profile_type_id=${profile_type_id}`
+                    )
+                }
+                return response
+            }
+            this.profilePromises.set(cacheKey, fetchProfile())
         }
-        return response
+        return this.profilePromises.get(cacheKey)
     }
 
     /**
