@@ -34,81 +34,60 @@ export const getStatus = (status: string, type: AccountType): string => {
 export const genericEntitlement2StdEntitlementListOutput = (
     type: string,
     genericEntitlement: GenericEntitlement
-): StdEntitlementListOutput => {
-    const entitlement: StdEntitlementListOutput = {
-        type,
-        identity: genericEntitlement.id,
-        uuid: genericEntitlement.name,
-        attributes: genericEntitlement,
-    }
+): StdEntitlementListOutput => ({
+    type,
+    identity: genericEntitlement.id,
+    uuid: genericEntitlement.name,
+    attributes: genericEntitlement,
+})
 
-    return entitlement
-}
-
-export const name2Attribute = (name: string): SchemaAttribute => {
-    const attribute: SchemaAttribute = {
-        type: 'STRING',
-        name,
-        description: name,
-    }
-
-    return attribute
-}
+export const name2Attribute = (name: string): SchemaAttribute => ({
+    type: 'STRING',
+    name,
+    description: name,
+})
 
 export const profile2Entitlement = (profile: any, type: string, attrs: string[]): StdEntitlementListOutput => {
     const { id, name } = profile
     let attributes: Attributes = { id, name }
     attrs.forEach((x) => (attributes[x] = profile.attributes[x]))
 
-    const entitlement: StdEntitlementListOutput = {
+    return {
         type,
         uuid: name,
         identity: id,
         attributes,
     }
-
-    return entitlement
 }
 
-export const attributeDefinition2SchemaAttribute = (attribute: AttributeDefinition): SchemaAttribute => {
-    const schemaAttribute: SchemaAttribute = {
-        name: attribute.name!,
-        description: attribute.description ?? '',
-        multi: attribute.isMulti,
-        entitlement: attribute.isEntitlement,
-        managed: attribute.isGroup,
-        schemaObjectType: attribute.schema?.name,
-        type: typesMap.get(attribute.type!) ?? 'string',
-    }
+export const attributeDefinition2SchemaAttribute = (attribute: AttributeDefinition): SchemaAttribute => ({
+    name: attribute.name!,
+    description: attribute.description ?? '',
+    multi: attribute.isMulti,
+    entitlement: attribute.isEntitlement,
+    managed: attribute.isGroup,
+    schemaObjectType: attribute.schema?.name,
+    type: typesMap.get(attribute.type!) ?? 'string',
+})
 
-    return schemaAttribute
-}
+export const apiSchema2Schema = (apiSchema: ApiSchema): AccountSchema => ({
+    identityAttribute: apiSchema.identityAttribute!,
+    displayAttribute: apiSchema.displayAttribute!,
+    groupAttribute: 'types',
+    attributes: apiSchema.attributes!.map(attributeDefinition2SchemaAttribute),
+})
 
-export const apiSchema2Schema = (apiSchema: ApiSchema): AccountSchema => {
-    const schema: AccountSchema = {
-        identityAttribute: apiSchema.identityAttribute!,
-        displayAttribute: apiSchema.displayAttribute!,
-        groupAttribute: 'types',
-        attributes: apiSchema.attributes!.map(attributeDefinition2SchemaAttribute),
-    }
+export const profile2EntitlementSchema = (profile: any): ApiSchema => ({
+    ...defaultEntitlementSchema,
+    name: profile.name,
+    nativeObjectType: profile.name,
+    attributes: [...defaultEntitlementSchema.attributes!, ...profile.attributes.map(name2Attribute)],
+})
 
-    return schema
-}
-
-export const profile2EntitlementSchema = (profile: any): ApiSchema => {
-    const schema: ApiSchema = { ...defaultEntitlementSchema }
-    schema.name = profile.name
-    schema.nativeObjectType = profile.name
-    schema.attributes = [...schema.attributes!, ...profile.attributes.map(name2Attribute)]
-
-    return schema
-}
-
-export const mergeProfileWithConfig = (profile: any, conf: any): any => {
-    const result = { ...profile, attributes: conf.attributes ?? [] }
-
-    return result
-}
+export const mergeProfileWithConfig = (profile: any, conf: any): any => ({
+    ...profile,
+    attributes: conf.attributes ?? [],
+})
 
 export const parents2children = (parents: SearchDocument[], type: string): Map<string, Set<string>> => {
     const childrenMap: Map<string, Set<string>> = new Map()
