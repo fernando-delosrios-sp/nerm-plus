@@ -48,7 +48,9 @@ export class SchemaService {
 
         const schemas = await this.ctx.isc.listSourceSchemas(source.id!)
         if (this.ctx.config.profiles && this.ctx.config.account_type === 'Profile') {
-            const schemaNames = schemas.map((x) => x.name)
+            // ⚡ Bolt: Convert schemaNames array to a Set for O(1) lookups instead of O(N) array.includes() inside the loop
+            // Impact: Reduces time complexity from O(N*M) to O(N+M) when discovering schemas
+            const schemaNames = new Set(schemas.map((x) => x.name))
 
             const profilePromises = this.ctx.config.profiles.map(async (profile: any) => {
                 const [profileType, profileAttribute] = await Promise.all([
@@ -62,7 +64,7 @@ export class SchemaService {
 
             for (const { profile, profileType, profileAttribute } of resolvedProfiles) {
                 if (profileType) {
-                    if (!schemaNames.includes(profile.name)) {
+                    if (!schemaNames.has(profile.name)) {
                         const profileData = { ...profileType, attributes: profile.attributes }
                         const profileSchema = profile2EntitlementSchema(profileData)
                         this.ctx.isc.createSchema(profileSchema, source.id!)
