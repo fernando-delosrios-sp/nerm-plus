@@ -18,3 +18,8 @@
 ## 2024-05-12 - Cache Profile lookups with Promise map
 **Learning:** Similarly to ProfileTypes, redundant queries for specific profiles by name and type stack up in concurrent processes such as attribute resolution or data pushes. `getProfileByName` and `getProfileByNameAndType` were issuing N requests for the same dependent profile.
 **Action:** Implemented Promise map caching for profile queries by name and type to coalesce concurrent calls, reducing overhead and API requests.
+
+## 2024-05-31 - [Array includes in schema-service]
+
+**Learning:** Found another `Array.prototype.includes()` bottleneck inside a loop in `src/services/schema-service.ts`. `schemaNames` was an array of strings, and inside a `for` loop over `resolvedProfiles`, `!schemaNames.includes(profile.name)` was called. If there are many profiles and schemas, this creates an O(N*M) lookup.
+**Action:** Transformed `schemaNames` to a `Set` for O(1) lookups: `new Set(schemas.map((x) => x.name))` and used `!schemaNames.has(profile.name)`, improving performance without sacrificing readability.
