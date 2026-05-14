@@ -7,3 +7,6 @@
 
 **Learning:** Functions that solely exist to map one object shape to another often declare a temporary variable, assign the mapped object to it, and return the variable (e.g. `const schema = { ... }; return schema;`). This adds unnecessary vertical space and visual noise.
 **Action:** Use implicit returns with arrow functions `() => ({ ... })` to return mapped objects directly. This makes the mapping intention immediately obvious and removes the need for mental tracking of temporary variables.
+## 2024-05-20 - Flatten flow in entitlement-service with guard clauses
+**Learning:** Operations processing logic like `removeType` or `runWorkflow` can suffer from deep nesting and 'arrow code' when validating inputs or states (e.g., verifying if an account type can be removed, or a requester exists).
+**Action:** Use guard clauses to exit early (e.g., `return` or `throw new ConnectorError(...)`) when validation fails. This removes the need for large `else` blocks and allows the core logic to sit at the lowest possible indentation level, improving readability.
