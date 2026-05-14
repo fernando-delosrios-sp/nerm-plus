@@ -33,4 +33,17 @@ describe('logging', () => {
         expect(logged.changes[3].value).toBe('normalValue')
         expect(logged.changes[4].value.secret).toBe('[REDACTED]')
     })
+
+    it('redacts secrets from JSON strings', () => {
+        const input = {
+            config: {
+                data: '{"password":"mySecretPassword","nested":{"secret":"hidden"}}',
+            },
+            arr: '[{"password":"abc"}]',
+        }
+        const logStr = toLogString(input)
+        const logged = JSON.parse(logStr)
+        expect(logged.config.data).toBe('{"password":"[REDACTED]","nested":{"secret":"[REDACTED]"}}')
+        expect(logged.arr).toBe('[{"password":"[REDACTED]"}]')
+    })
 })

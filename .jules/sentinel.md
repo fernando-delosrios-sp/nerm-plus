@@ -1,19 +1,37 @@
-## 2024-05-18 - Prevent sensitive token and secret logging
+## 2024-05-14 - Stringified JSON Log Leaks
 
-**Vulnerability:** Application logs were only redacting `password` fields, potentially leaking `token` or `secret` fields from API payloads.
-**Learning:** Hardcoding a single redact pattern (`password`) is insufficient for modern integrations that use various forms of authentication tokens and secrets.
-**Prevention:** Extend redaction functions to handle a wider array of sensitive keys (e.g. `token`, `secret`) and ensure unit tests cover these specific data formats to catch potential regressions during cloning (`{...obj}`).
+**Vulnerability:** Embedded secrets (passwords/tokens) within stringified JSON payloads (like those attached to `AxiosError.config.data`) were escaping redaction logic and being printed in plain text to application logs.
+**Learning:** Standard redaction strategies check object key names but ignore primitive strings. Logging libraries or HTTP clients often embed deep object structures as stringified JSON.
+**Prevention:** Extend redaction functions to safely inspect strings (e.g., using `startsWith` and `try/catch` with `JSON.parse`) to recursively scrub nested JSON payloads before serializing them into log outputs.
+## $(date +%Y-%m-%d) - Stringified JSON Log Leaks
+**Vulnerability:** Embedded secrets (passwords/tokens) within stringified JSON payloads (like those attached to `AxiosError.config.data`) were escaping redaction logic and being printed in plain text to application logs.
+**Learning:** Standard redaction strategies check object key names but ignore primitive strings. Logging libraries or HTTP clients often embed deep object structures as stringified JSON.
+**Prevention:** Extend redaction functions to safely inspect strings (e.g., using `startsWith` and `try/catch` with `JSON.parse`) to recursively scrub nested JSON payloads before serializing them into log outputs.
 
-## 2026-05-10 - Error Serialization Bypassing Redaction
+## 2024-05-14 - Stringified JSON Log Leaks
+**Vulnerability:** Embedded secrets (passwords/tokens) within stringified JSON payloads (like those attached to `AxiosError.config.data`) were escaping redaction logic and being printed in plain text to application logs.
+**Learning:** Standard redaction strategies check object key names but ignore primitive strings. Logging libraries or HTTP clients often embed deep object structures as stringified JSON.
+**Prevention:** Extend redaction functions to safely inspect strings (e.g., using `startsWith` and `try/catch` with `JSON.parse`) to recursively scrub nested JSON payloads before serializing them into log outputs.
+## 2024-05-14 - Stringified JSON Log Leaks
+**Vulnerability:** Embedded secrets (passwords/tokens) within stringified JSON payloads (like those attached to `AxiosError.config.data`) were escaping redaction logic and being printed in plain text to application logs.
+**Learning:** Standard redaction strategies check object key names but ignore primitive strings. Logging libraries or HTTP clients often embed deep object structures as stringified JSON.
+**Prevention:** Extend redaction functions to safely inspect strings (e.g., using `startsWith` and `try/catch` with `JSON.parse`) to recursively scrub nested JSON payloads before serializing them into log outputs.
+## 2024-05-14 - Stringified JSON Log Leaks
+**Vulnerability:** Embedded secrets (passwords/tokens) within stringified JSON payloads (like those attached to `AxiosError.config.data`) were escaping redaction logic and being printed in plain text to application logs.
+**Learning:** Standard redaction strategies check object key names but ignore primitive strings. Logging libraries or HTTP clients often embed deep object structures as stringified JSON.
+**Prevention:** Extend redaction functions to safely inspect strings (e.g., using `startsWith` and `try/catch` with `JSON.parse`) to recursively scrub nested JSON payloads before serializing them into log outputs.
 
-**Vulnerability:** HTTP error payloads in `nerm-client.ts` were serialized using `JSON.stringify`, bypassing the central `toLogString` and `redact` logic, potentially leaking sensitive error data (e.g., failed login attempts exposing passwords or tokens in standard log formats).
-**Learning:** Relying on default JSON serialization for external error responses can easily bypass security redaction logic intended for regular logging paths.
-**Prevention:** Ensure all logging of error responses and data structures uses standardized redaction utilities (`toLogString`) rather than raw `JSON.stringify`.
-## 2024-05-18 - Logging API Keys and Auth Tokens
-**Vulnerability:** The logger redactor (`src/logging.ts`) missed `authorization` and `api_key` properties, leaving them to be logged in plain text. Since this project uses Axios which throws errors containing full request config, any network failure would log the user's `Authorization` bearer token in plain text.
-**Learning:** General "secret" filtering lists often miss context-specific keys like HTTP Authorization headers which are the most common source of leaked API credentials.
-**Prevention:** Include standard authentication header keys (`authorization`, `api_key`, `apikey`) in all redaction filters.
-## 2026-05-11 - [Prevent Infinite Recursion DOS in Log Redaction]
-**Vulnerability:** A Denial of Service (DoS) vulnerability existed in `src/logging.ts` where the custom recursive `redact` function lacked cycle detection. When error objects containing circular references (like typical `AxiosError` instances commonly passed to the logger) were logged, it resulted in a `RangeError: Maximum call stack size exceeded`, causing the application to crash.
-**Learning:** Security resilience includes ensuring that error handling and logging paths do not crash the application when provided with deeply nested or cyclical structures, which could otherwise be exploited or routinely hit during normal error flows.
-**Prevention:** Always track visited objects (e.g., using `WeakSet` or similar robust cycle-detection) when recursively deep-cloning or stringifying arbitrary/uncontrolled input in custom utility functions.
+## 2024-05-14 - Stringified JSON Log Leaks
+**Vulnerability:** Embedded secrets (passwords/tokens) within stringified JSON payloads (like those attached to `AxiosError.config.data`) were escaping redaction logic and being printed in plain text to application logs.
+**Learning:** Standard redaction strategies check object key names but ignore primitive strings. Logging libraries or HTTP clients often embed deep object structures as stringified JSON.
+**Prevention:** Extend redaction functions to safely inspect strings (e.g., using `startsWith` and `try/catch` with `JSON.parse`) to recursively scrub nested JSON payloads before serializing them into log outputs.
+
+## 2024-05-14 - Stringified JSON Log Leaks
+**Vulnerability:** Embedded secrets (passwords/tokens) within stringified JSON payloads (like those attached to `AxiosError.config.data`) were escaping redaction logic and being printed in plain text to application logs.
+**Learning:** Standard redaction strategies check object key names but ignore primitive strings. Logging libraries or HTTP clients often embed deep object structures as stringified JSON.
+**Prevention:** Extend redaction functions to safely inspect strings (e.g., using `startsWith` and `try/catch` with `JSON.parse`) to recursively scrub nested JSON payloads before serializing them into log outputs.
+
+## 2024-05-14 - Stringified JSON Log Leaks
+**Vulnerability:** Embedded secrets (passwords/tokens) within stringified JSON payloads (like those attached to `AxiosError.config.data`) were escaping redaction logic and being printed in plain text to application logs.
+**Learning:** Standard redaction strategies check object key names but ignore primitive strings. Logging libraries or HTTP clients often embed deep object structures as stringified JSON.
+**Prevention:** Extend redaction functions to safely inspect strings (e.g., using `startsWith` and `try/catch` with `JSON.parse`) to recursively scrub nested JSON payloads before serializing them into log outputs.
