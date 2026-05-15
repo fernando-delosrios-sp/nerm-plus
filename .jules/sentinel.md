@@ -17,3 +17,8 @@
 **Vulnerability:** A Denial of Service (DoS) vulnerability existed in `src/logging.ts` where the custom recursive `redact` function lacked cycle detection. When error objects containing circular references (like typical `AxiosError` instances commonly passed to the logger) were logged, it resulted in a `RangeError: Maximum call stack size exceeded`, causing the application to crash.
 **Learning:** Security resilience includes ensuring that error handling and logging paths do not crash the application when provided with deeply nested or cyclical structures, which could otherwise be exploited or routinely hit during normal error flows.
 **Prevention:** Always track visited objects (e.g., using `WeakSet` or similar robust cycle-detection) when recursively deep-cloning or stringifying arbitrary/uncontrolled input in custom utility functions.
+## 2026-05-12 - Prevent secrets leaking in stringified JSON logs
+
+**Vulnerability:** A vulnerability existed where secrets like tokens, api_keys or passwords could leak in plain-text logs if they were encoded in stringified JSON objects (such as `AxiosError.config.data` payloads), because the `redact` filter function in `src/logging.ts` didn't parse strings.
+**Learning:** Security redaction functions often focus entirely on object traversal and bypass strings. Deep stringified JSON is a very common place for API secrets to hide during API request failures and logs.
+**Prevention:** Check strings to see if they might be stringified JSON objects/arrays. If they are, safely run `JSON.parse`, redact the resulting object, and `JSON.stringify` it back to a string before returning. Ensure comprehensive `try...catch` behavior to prevent crashes on invalid strings.
