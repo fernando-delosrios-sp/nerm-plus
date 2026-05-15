@@ -74,6 +74,8 @@ export class NERMClient {
     private profileTypePromises = new Map<string, Promise<any>>()
     private profilePromises = new Map<string, Promise<any>>()
     private profileByNamePromises = new Map<string, Promise<any>>()
+    private userPromises = new Map<string, Promise<any>>()
+    private userByEmailPromises = new Map<string, Promise<any>>()
     private instanceId?: string
 
     constructor(config: any) {
@@ -422,11 +424,19 @@ export class NERMClient {
         }
     }
 
+    // ⚡ Bolt: Cache getUser results using a Promise map.
+    // Impact: Avoids multiple requests for the same user (e.g. owners/contributors)
+    // when resolving multiple profiles simultaneously, significantly reducing API calls.
     async getUser(id: string): Promise<any> {
-        const url = `/users/${id}`
-        const type = 'user'
-
-        return await this.getRequest(url, type)
+        if (!this.userPromises.has(id)) {
+            const fetchUser = async () => {
+                const url = `/users/${id}`
+                const type = 'user'
+                return await this.getRequest(url, type)
+            }
+            this.userPromises.set(id, fetchUser())
+        }
+        return this.userPromises.get(id)
     }
 
     async getRole(id: string): Promise<any> {
@@ -554,13 +564,21 @@ export class NERMClient {
         }
     }
 
+    // ⚡ Bolt: Cache getUserByEmail results using a Promise map.
+    // Impact: Prevents identical user lookups by email when evaluating attributes repeatedly,
+    // saving network calls and speeding up the process.
     async getUserByEmail(email: string): Promise<any> {
-        const url = `/users`
-        const type = 'users'
-
-        for await (const user of this.listRequest(url, type, { email })) {
-            return user
+        if (!this.userByEmailPromises.has(email)) {
+            const fetchUserByEmail = async () => {
+                const url = `/users`
+                const type = 'users'
+                for await (const user of this.listRequest(url, type, { email })) {
+                    return user
+                }
+            }
+            this.userByEmailPromises.set(email, fetchUserByEmail())
         }
+        return this.userByEmailPromises.get(email)
     }
 
     async getUserRoleAssignments(user_id: any) {

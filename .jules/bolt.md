@@ -23,6 +23,9 @@
 
 **Learning:** Found another `Array.prototype.includes()` bottleneck inside a loop in `src/services/schema-service.ts`. `schemaNames` was an array of strings, and inside a `for` loop over `resolvedProfiles`, `!schemaNames.includes(profile.name)` was called. If there are many profiles and schemas, this creates an O(N*M) lookup.
 **Action:** Transformed `schemaNames` to a `Set` for O(1) lookups: `new Set(schemas.map((x) => x.name))` and used `!schemaNames.has(profile.name)`, improving performance without sacrificing readability.
+## 2026-05-14 - Prevent Duplicate API Calls for Users
+**Learning:** API clients processing batch data or resolving multiple schemas concurrently may request the exact same entity (like a user by ID or email) repeatedly. Not caching these requests wastes network resources.
+**Action:** Use an in-memory Map of Promises to cache and reuse the pending or resolved requests to avoid redundant API calls.
 
 ## 2025-02-18 - Optimize nested profile parent lookup in PushService
 **Learning:** In `src/services/push-service.ts`, filtering an array of parent objects (`parentObjects.filter(...)`) inside an entity loop caused an O(N*M) time complexity bottleneck during synchronization.
