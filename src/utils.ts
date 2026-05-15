@@ -125,22 +125,21 @@ export const getAttribute = (object: { [key: string]: any }, attributePath: stri
 }
 
 export const entity2profile = (entity: SearchDocument, profile_type_id: string, conf: Mapping): any => {
-    const map = { ...conf.mapping }
-    const e = entity as any
-    const status = e?.enabled || !e?.inactive ? 'Active' : 'Inactive'
-    const profile: any = {
+    const searchDoc = entity as any
+    const status = searchDoc?.enabled || !searchDoc?.inactive ? 'Active' : 'Inactive'
+
+    const attributes: { [key: string]: string } = {}
+    Object.entries(conf.mapping).forEach(([targetAttr, sourcePath]) => {
+        attributes[targetAttr] = getAttribute(entity, sourcePath)
+    })
+    attributes[conf.id] = entity.id as string
+
+    return {
         profile_type_id,
         status,
         name: getAttribute(entity, 'name'),
+        attributes,
     }
-    const attributes: {
-        [key: string]: string
-    } = {}
-    Object.entries(map).forEach(([k, v]) => (attributes[k] = getAttribute(entity, v)))
-    attributes[conf.id] = entity.id as string
-    profile.attributes = attributes
-
-    return profile
 }
 
 export const getRoleType = (role: any): 'NeprofileUser' | 'NeaccessUser' => {
