@@ -33,4 +33,45 @@ describe('logging', () => {
         expect(logged.changes[3].value).toBe('normalValue')
         expect(logged.changes[4].value.secret).toBe('[REDACTED]')
     })
+
+    it('redacts secrets inside stringified JSON payloads', () => {
+        const input = {
+            url: 'http://example.com/api',
+            config: {
+                data: JSON.stringify({
+                    password: 'my-super-secret-password',
+                    token: '123456',
+                    public_info: 'hello',
+                    nested: {
+                        secretKey: 'hidden',
+                    },
+                }),
+            },
+        }
+
+        const logStr = toLogString(input)
+        const logged = JSON.parse(logStr)
+
+        // The data string should still be a string, but its contents should be redacted JSON
+        expect(typeof logged.config.data).toBe('string')
+
+        const dataPayload = JSON.parse(logged.config.data)
+        expect(dataPayload.password).toBe('[REDACTED]')
+        expect(dataPayload.token).toBe('[REDACTED]')
+        expect(dataPayload.public_info).toBe('hello')
+        expect(dataPayload.nested.secretKey).toBe('[REDACTED]')
+    })
+
+    it('redacts stringified JSON passed directly to toLogString', () => {
+        const inputStr = JSON.stringify({
+            api_key: 'top-secret',
+            status: 'active',
+        })
+
+        const logStr = toLogString(inputStr)
+        const logged = JSON.parse(logStr)
+
+        expect(logged.api_key).toBe('[REDACTED]')
+        expect(logged.status).toBe('active')
+    })
 })
