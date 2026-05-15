@@ -26,9 +26,25 @@ export class PushService {
                 let entities = await this.ctx.isc.search(search, index)
                 let children: Map<string, Set<string>> = new Map()
 
+                let parentObjectsMap: Map<string, string[]> | undefined
+
                 if (nested) {
                     const parents = masterEntityMap.get(parent_index!)!
                     children = parents2children(parents, index)
+
+                    // ⚡ Bolt: Build a map of parent objects for O(1) lookups instead of filtering array per entity
+                    // Impact: Reduces time complexity from O(N*M) to O(N+M) during nested profile resolution
+                    const parentObjects = masterProfileMap.get(parent_index!)
+                    if (parentObjects) {
+                        parentObjectsMap = new Map()
+                        for (const p of parentObjects) {
+                            const pId = p.attributes[id]
+                            if (!parentObjectsMap.has(pId)) {
+                                parentObjectsMap.set(pId, [])
+                            }
+                            parentObjectsMap.get(pId)!.push(p.id)
+                        }
+                    }
                 }
 
                 for (const entity of entities) {
@@ -39,11 +55,14 @@ export class PushService {
 
                     if (nested && profile) {
                         const childParents = children?.get(entity.id as string) ?? new Set()
-                        const parentObjects = masterProfileMap.get(parent_index!)
-                        if (parentObjects) {
-                            const childParentProfiles = parentObjects
-                                .filter((x) => childParents.has(x.attributes[id]))
-                                .map((x) => x.id)
+                        if (parentObjectsMap) {
+                            const childParentProfiles: string[] = []
+                            for (const parentId of childParents) {
+                                const mappedIds = parentObjectsMap.get(parentId)
+                                if (mappedIds) {
+                                    childParentProfiles.push(...mappedIds)
+                                }
+                            }
                             profile.attributes[attribute!] = childParentProfiles
                         }
                     }

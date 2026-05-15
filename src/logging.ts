@@ -4,6 +4,20 @@ import { logger } from '@sailpoint/connector-sdk'
 
 const redact = (obj: any, seen: WeakSet<any> = new WeakSet()): any => {
     if (obj == null) return obj
+
+    if (typeof obj === 'string') {
+        const str = obj.trim()
+        if ((str.startsWith('{') && str.endsWith('}')) || (str.startsWith('[') && str.endsWith(']'))) {
+            try {
+                const parsed = JSON.parse(str)
+                return JSON.stringify(redact(parsed, seen))
+            } catch (e) {
+                return obj
+            }
+        }
+        return obj
+    }
+
     if (typeof obj !== 'object') return obj
     if (seen.has(obj)) return '[CIRCULAR]'
     seen.add(obj)
@@ -23,7 +37,7 @@ const redact = (obj: any, seen: WeakSet<any> = new WeakSet()): any => {
                 keyLower.includes('apikey')
             ) {
                 redacted[key] = '[REDACTED]'
-            } else if (typeof redacted[key] === 'object') {
+            } else if (typeof redacted[key] === 'object' || typeof redacted[key] === 'string') {
                 redacted[key] = redact(redacted[key], seen)
             }
             // Handling changes array specific format: { attribute: 'password', value: 'secret' }
@@ -51,7 +65,10 @@ const redact = (obj: any, seen: WeakSet<any> = new WeakSet()): any => {
 }
 
 export const toLogString = (value: any): string => {
-    if (typeof value === 'string') return value
+    if (typeof value === 'string') {
+        const redacted = redact(value)
+        return typeof redacted === 'string' ? redacted : JSON.stringify(redacted)
+    }
     try {
         return JSON.stringify(redact(value))
     } catch {

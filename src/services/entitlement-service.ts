@@ -70,18 +70,19 @@ export class EntitlementService {
         if (this.ctx.config.account_type === type) {
             const message = `Cannot remove account base type`
             throw new ConnectorError(message)
-        } else {
-            const id = account.attributes.user_id as string
-            if (id) {
-                await this.ctx.nerm.deleteUser(id)
-                await this.attributeService.setAttribute(account, 'user_id', undefined)
-                const types = account.attributes.types as string[]
-                types.splice(types.indexOf(type), 1)
-            } else {
-                const message = `User not found for "${account.uuid}" profile`
-                logger.error(message)
-            }
         }
+
+        const id = account.attributes.user_id as string
+        if (!id) {
+            const message = `User not found for "${account.uuid}" profile`
+            logger.error(message)
+            return
+        }
+
+        await this.ctx.nerm.deleteUser(id)
+        await this.attributeService.setAttribute(account, 'user_id', undefined)
+        const types = account.attributes.types as string[]
+        types.splice(types.indexOf(type), 1)
     }
 
     async addRole(account: StdAccountListOutput, role_id: string) {
@@ -162,22 +163,23 @@ export class EntitlementService {
         } else {
             requester_id = account.attributes[requester]
         }
-        if (requester_id) {
-            const body: { [key: string]: any } = {
-                workflow_id,
-                requester_id,
-                requester_type,
-            }
-            if (account.identity !== '') {
-                body.profile_id = account.identity
-            }
-            const response = await this.ctx.nerm.createWorkflowSession(body, wait)
-            if (response) {
-                return response
-            }
-        } else {
+        if (!requester_id) {
             const message = `Unable to resolve ${requester} for workflow ${workflow_id}`
             logger.error(message)
+            return
+        }
+
+        const body: { [key: string]: any } = {
+            workflow_id,
+            requester_id,
+            requester_type,
+        }
+        if (account.identity !== '') {
+            body.profile_id = account.identity
+        }
+        const response = await this.ctx.nerm.createWorkflowSession(body, wait)
+        if (response) {
+            return response
         }
     }
 

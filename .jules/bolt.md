@@ -26,3 +26,7 @@
 ## 2026-05-14 - Prevent Duplicate API Calls for Users
 **Learning:** API clients processing batch data or resolving multiple schemas concurrently may request the exact same entity (like a user by ID or email) repeatedly. Not caching these requests wastes network resources.
 **Action:** Use an in-memory Map of Promises to cache and reuse the pending or resolved requests to avoid redundant API calls.
+
+## 2025-02-18 - Optimize nested profile parent lookup in PushService
+**Learning:** In `src/services/push-service.ts`, filtering an array of parent objects (`parentObjects.filter(...)`) inside an entity loop caused an O(N*M) time complexity bottleneck during synchronization.
+**Action:** Always preprocess mapped data arrays into a `Map` or `Set` outside of iterative processing loops to enable O(1) lookups and reduce time complexity to O(N+M).
