@@ -9,14 +9,19 @@
 **Vulnerability:** HTTP error payloads in `nerm-client.ts` were serialized using `JSON.stringify`, bypassing the central `toLogString` and `redact` logic, potentially leaking sensitive error data (e.g., failed login attempts exposing passwords or tokens in standard log formats).
 **Learning:** Relying on default JSON serialization for external error responses can easily bypass security redaction logic intended for regular logging paths.
 **Prevention:** Ensure all logging of error responses and data structures uses standardized redaction utilities (`toLogString`) rather than raw `JSON.stringify`.
+
 ## 2024-05-18 - Logging API Keys and Auth Tokens
+
 **Vulnerability:** The logger redactor (`src/logging.ts`) missed `authorization` and `api_key` properties, leaving them to be logged in plain text. Since this project uses Axios which throws errors containing full request config, any network failure would log the user's `Authorization` bearer token in plain text.
 **Learning:** General "secret" filtering lists often miss context-specific keys like HTTP Authorization headers which are the most common source of leaked API credentials.
 **Prevention:** Include standard authentication header keys (`authorization`, `api_key`, `apikey`) in all redaction filters.
+
 ## 2026-05-11 - [Prevent Infinite Recursion DOS in Log Redaction]
+
 **Vulnerability:** A Denial of Service (DoS) vulnerability existed in `src/logging.ts` where the custom recursive `redact` function lacked cycle detection. When error objects containing circular references (like typical `AxiosError` instances commonly passed to the logger) were logged, it resulted in a `RangeError: Maximum call stack size exceeded`, causing the application to crash.
 **Learning:** Security resilience includes ensuring that error handling and logging paths do not crash the application when provided with deeply nested or cyclical structures, which could otherwise be exploited or routinely hit during normal error flows.
 **Prevention:** Always track visited objects (e.g., using `WeakSet` or similar robust cycle-detection) when recursively deep-cloning or stringifying arbitrary/uncontrolled input in custom utility functions.
+
 ## 2026-05-12 - Prevent secrets leaking in stringified JSON logs
 
 **Vulnerability:** A vulnerability existed where secrets like tokens, api_keys or passwords could leak in plain-text logs if they were encoded in stringified JSON objects (such as `AxiosError.config.data` payloads), because the `redact` filter function in `src/logging.ts` didn't parse strings.
