@@ -15,6 +15,15 @@ const redact = (obj: any, seen: WeakSet<any> = new WeakSet()): any => {
                 return obj
             }
         }
+        if (str.includes('=')) {
+            let redactedStr = str
+            const sensitiveKeys = ['password', 'token', 'secret', 'authorization', 'api_key', 'apikey']
+            for (const key of sensitiveKeys) {
+                const regex = new RegExp(`([^&]*${key}[^&=]*)=([^&]+)`, 'gi')
+                redactedStr = redactedStr.replace(regex, `$1=[REDACTED]`)
+            }
+            return redactedStr
+        }
         return obj
     }
 

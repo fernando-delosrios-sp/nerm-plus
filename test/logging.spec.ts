@@ -74,4 +74,19 @@ describe('logging', () => {
         expect(logged.api_key).toBe('[REDACTED]')
         expect(logged.status).toBe('active')
     })
+
+    it('redacts URL-encoded strings', () => {
+        const input = {
+            config: {
+                data: 'grant_type=client_credentials&client_id=myclient&client_secret=supersecret123&password=my-password&api_key=my-key',
+            },
+        }
+
+        const logStr = toLogString(input)
+        const logged = JSON.parse(logStr)
+
+        expect(logged.config.data).toBe(
+            'grant_type=client_credentials&client_id=myclient&client_secret=[REDACTED]&password=[REDACTED]&api_key=[REDACTED]'
+        )
+    })
 })
