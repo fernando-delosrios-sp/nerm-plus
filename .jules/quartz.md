@@ -17,3 +17,8 @@
 
 **Learning:** Deeply nested logical ORs for string matching (e.g., checking if a key contains sensitive words like "password" or "token") add significant visual noise, especially when duplicated across different structures (like object keys vs. array element attributes).
 **Action:** Extract the complex boolean string matching into a small named helper function (e.g., `isSensitiveKey(key)`). This clearly communicates intent, shrinks the size of the conditional blocks, and makes the main logic loops significantly easier to scan.
+
+## 2024-05-20 - Flatten switch and nested flow with guard clauses
+
+**Learning:** When validating inputs or states in operations logic (e.g., `addType`, `removeType` in `entitlement-service.ts`), `switch` statements with only one specific case and a `default` block, combined with nested `if/else` checks, lead to unnecessary indentation and harder-to-read 'arrow code'.
+**Action:** Use early return or throw guard clauses (e.g., `throw new ConnectorError(...)`) to exit fast on invalid states. This eliminates the need for `switch` and large `else` blocks, keeping the main execution path at the lowest possible indentation level.
