@@ -37,3 +37,8 @@
 
 **Learning:** In `src/services/push-service.ts`, filtering an array of parent objects (`parentObjects.filter(...)`) inside an entity loop caused an O(N\*M) time complexity bottleneck during synchronization.
 **Action:** Always preprocess mapped data arrays into a `Map` or `Set` outside of iterative processing loops to enable O(1) lookups and reduce time complexity to O(N+M).
+
+## 2024-06-05 - Avoid N+1 requests during account aggregation
+
+**Learning:** Found a redundant N+1 query problem in `src/operations/std-account-list.ts`. The accounts were being loaded perfectly fine from the paginated list APIs via `this.ctx.nerm.listUsers` or `listProfiles`. However, during batch processing, `accountService.getAccount(item.id)` was being invoked for every single item, unnecessarily triggering a redundant `GET /users/{id}` or `GET /profiles/{id}` network request for every row returned by the initial list.
+**Action:** Instead of re-fetching the account by ID, the pre-fetched `item` object yielded by the paginated list generator is directly passed into the `accountService.buildAccount(item, input.schema)` method. This bypasses the redundant individual requests entirely, vastly speeding up the initial account sync flow (one API call per account saved).

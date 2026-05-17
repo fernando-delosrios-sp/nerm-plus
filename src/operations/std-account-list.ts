@@ -27,7 +27,9 @@ export function createStdAccountList(
 
             const processAccountBatch = async (items: any[]) => {
                 const results = await Promise.allSettled(
-                    items.map((item) => accountService.getAccount(item.id, input.schema))
+                    // ⚡ Bolt: Pass the item directly to buildAccount instead of re-fetching by ID via getAccount.
+                    // Impact: Saves one API call per account during aggregation, drastically speeding up the sync.
+                    items.map((item) => accountService.buildAccount(item, input.schema))
                 )
                 for (const result of results) {
                     if (result.status === 'fulfilled') {
