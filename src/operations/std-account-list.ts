@@ -27,7 +27,12 @@ export function createStdAccountList(
 
             const processAccountBatch = async (items: any[]) => {
                 const results = await Promise.allSettled(
-                    items.map((item) => accountService.getAccount(item.id, input.schema))
+                    items.map(async (item) => {
+                        // ⚡ Bolt: Fixed N+1 query issue. Reusing pre-fetched entity
+                        // objects from the pagination generator rather than firing
+                        // a secondary GET-by-ID request per item.
+                        return accountService.buildAccount(item, input.schema)
+                    })
                 )
                 for (const result of results) {
                     if (result.status === 'fulfilled') {

@@ -37,3 +37,8 @@
 
 **Learning:** In `src/services/push-service.ts`, filtering an array of parent objects (`parentObjects.filter(...)`) inside an entity loop caused an O(N\*M) time complexity bottleneck during synchronization.
 **Action:** Always preprocess mapped data arrays into a `Map` or `Set` outside of iterative processing loops to enable O(1) lookups and reduce time complexity to O(N+M).
+
+## 2026-05-18 - Eliminate N+1 Query in Account List Aggregation
+
+**Learning:** During list aggregation (e.g., `std-account-list`), pagination endpoints usually fetch the entire entity objects. Calling a read/get-by-id endpoint for each item yielded by the list generator creates a severe N+1 query problem that throttles throughput.
+**Action:** Reused the pre-fetched item objects yielded by the list pagination directly and passed them to builder functions (e.g., `buildAccount(item)`) instead of redundantly re-fetching them by ID, eliminating one unnecessary API call per entity in list aggregations.
