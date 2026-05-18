@@ -17,3 +17,8 @@
 
 **Learning:** Deeply nested logical ORs for string matching (e.g., checking if a key contains sensitive words like "password" or "token") add significant visual noise, especially when duplicated across different structures (like object keys vs. array element attributes).
 **Action:** Extract the complex boolean string matching into a small named helper function (e.g., `isSensitiveKey(key)`). This clearly communicates intent, shrinks the size of the conditional blocks, and makes the main logic loops significantly easier to scan.
+
+## 2024-05-20 - Extract duplicated object-resolution blocks into private helpers
+
+**Learning:** Service classes containing multiple operations (like `addRole` and `removeRole` in `EntitlementService`) often duplicate 10-15 lines of setup logic, such as resolving identifiers (`user_id`) based on configuration (`account_type`) before performing the main action. This bloats functions and obscures the core intent.
+**Action:** Extract the duplicated setup and resolution logic into a small, focused private helper method (e.g., `resolveUserIdForRole`). This keeps the main operation methods lean, focused on their primary action, and ensures consistency.
