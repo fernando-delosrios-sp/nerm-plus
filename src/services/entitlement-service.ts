@@ -19,52 +19,51 @@ export class EntitlementService {
         logger.info(`Adding ${type} type to ${account.uuid}`)
         const name = account.uuid as string
         let loginValue: string | undefined
-        switch (type) {
-            case 'Profile':
-                const message = `"Add Profile type" operation not supported`
-                throw new ConnectorError(message)
-            default:
-                if (this.ctx.config.account_type !== 'Profile') {
-                    const message = `"Only one user type is allowed per account`
-                    throw new ConnectorError(message)
-                }
 
-                const user_id = account.attributes.user_id as string
-                if (user_id) {
-                    const response = await this.ctx.nerm.getUser(user_id)
-                    if (response) {
-                        const roleAssignments = await this.ctx.nerm.getUserRoleAssignments(user_id)
-                        if (roleAssignments) {
-                            account.attributes.roles = roleAssignments.map((x: { role_id: any }) => x.role_id)
-                        }
-                    }
-                } else {
-                    const login = this.ctx.config.login_attribute
-                        ? (account.attributes[this.ctx.config.login_attribute] as string)
-                        : undefined
-                    if (!login) {
-                        const message = 'Missing login attribute for user creation'
-                        throw new ConnectorError(message)
-                    } else {
-                        const attributes = { ...account.attributes, login, name }
-                        let response = await this.ctx.nerm.getUserByLoginAndType(login, type)
-                        if (!response) {
-                            const body = await this.accountService.buildNERMAccountBody(attributes, type)
-                            response = await this.ctx.nerm.createUser(body)
-                        }
-                        if (response) {
-                            account.attributes.user_id = response.id
-                            await this.ctx.nerm.setProfileAttribute(account.identity!, 'user_id', response.id)
-                        } else {
-                            throw new ConnectorError(`Failed to add "${type}" type to ${account.uuid}`)
-                        }
-                        loginValue = response.login
-                    }
-                }
+        if (type === 'Profile') {
+            throw new ConnectorError(`"Add Profile type" operation not supported`)
         }
+
+        if (this.ctx.config.account_type !== 'Profile') {
+            throw new ConnectorError(`"Only one user type is allowed per account`)
+        }
+
+        const user_id = account.attributes.user_id as string
+        if (user_id) {
+            const response = await this.ctx.nerm.getUser(user_id)
+            if (response) {
+                const roleAssignments = await this.ctx.nerm.getUserRoleAssignments(user_id)
+                if (roleAssignments) {
+                    account.attributes.roles = roleAssignments.map((x: { role_id: any }) => x.role_id)
+                }
+            }
+        } else {
+            const login = this.ctx.config.login_attribute
+                ? (account.attributes[this.ctx.config.login_attribute] as string)
+                : undefined
+
+            if (!login) {
+                throw new ConnectorError('Missing login attribute for user creation')
+            }
+
+            const attributes = { ...account.attributes, login, name }
+            let response = await this.ctx.nerm.getUserByLoginAndType(login, type)
+            if (!response) {
+                const body = await this.accountService.buildNERMAccountBody(attributes, type)
+                response = await this.ctx.nerm.createUser(body)
+            }
+
+            if (response) {
+                account.attributes.user_id = response.id
+                await this.ctx.nerm.setProfileAttribute(account.identity!, 'user_id', response.id)
+            } else {
+                throw new ConnectorError(`Failed to add "${type}" type to ${account.uuid}`)
+            }
+            loginValue = response.login
+        }
+
         updateTypes(account.attributes, type)
     }
-
     async removeType(account: StdAccountListOutput, type: AccountType) {
         logger.info(`Removing ${type} type to ${account.uuid}`)
         if (this.ctx.config.account_type === type) {
