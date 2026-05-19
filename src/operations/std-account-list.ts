@@ -27,7 +27,7 @@ export function createStdAccountList(
 
             const processAccountBatch = async (items: any[]) => {
                 const results = await Promise.allSettled(
-                    items.map((item) => accountService.getAccount(item.id, input.schema))
+                    items.map((item) => accountService.buildAccount(item, input.schema))
                 )
                 for (const result of results) {
                     if (result.status === 'fulfilled') {
