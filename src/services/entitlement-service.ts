@@ -84,9 +84,7 @@ export class EntitlementService {
         types.splice(types.indexOf(type), 1)
     }
 
-    async addRole(account: StdAccountListOutput, role_id: string) {
-        logger.info(`Adding ${role_id} role to ${account.uuid}`)
-        let id: string
+    private async resolveUserIdForRole(account: StdAccountListOutput, role_id: string): Promise<string> {
         const role = await this.ctx.nerm.getRole(role_id)
         const type = getRoleType(role)
         switch (this.ctx.config.account_type) {
@@ -98,12 +96,15 @@ export class EntitlementService {
                         await this.addType(account, 'NeaccessUser')
                     }
                 }
-                id = account.attributes.user_id as string
-                break
+                return account.attributes.user_id as string
             default:
-                id = account.identity!
-                break
+                return account.identity!
         }
+    }
+
+    async addRole(account: StdAccountListOutput, role_id: string) {
+        logger.info(`Adding ${role_id} role to ${account.uuid}`)
+        const id = await this.resolveUserIdForRole(account, role_id)
 
         account.attributes.roles = account.attributes.roles ?? []
         const roles = account.attributes.roles as string[]
@@ -116,24 +117,7 @@ export class EntitlementService {
 
     async removeRole(account: StdAccountListOutput, role_id: string) {
         logger.info(`Removing ${role_id} role to ${account.uuid}`)
-        let id: string
-        const role = await this.ctx.nerm.getRole(role_id)
-        const type = getRoleType(role)
-        switch (this.ctx.config.account_type) {
-            case 'Profile':
-                if (!account.attributes.user_id) {
-                    if (type === 'NeprofileUser') {
-                        await this.addType(account, 'NeprofileUser')
-                    } else {
-                        await this.addType(account, 'NeaccessUser')
-                    }
-                }
-                id = account.attributes.user_id as string
-                break
-            default:
-                id = account.identity!
-                break
-        }
+        const id = await this.resolveUserIdForRole(account, role_id)
 
         account.attributes.roles = account.attributes.roles ?? []
         const roles = account.attributes.roles as string[]

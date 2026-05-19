@@ -22,3 +22,6 @@
 
 **Learning:** When validating inputs or states in operations logic (e.g., `addType`, `removeType` in `entitlement-service.ts`), `switch` statements with only one specific case and a `default` block, combined with nested `if/else` checks, lead to unnecessary indentation and harder-to-read 'arrow code'.
 **Action:** Use early return or throw guard clauses (e.g., `throw new ConnectorError(...)`) to exit fast on invalid states. This eliminates the need for `switch` and large `else` blocks, keeping the main execution path at the lowest possible indentation level.
+## 2026-05-19 - Extract Repeated Complex Boolean and Object Resolution Logic
+**Learning:** Extracting duplicated, complex setup or object-resolution logic spanning multiple methods (like user ID validation based on `account_type` in `EntitlementService`) into private helper methods reduces duplication and improves the clarity of main operation flows.
+**Action:** Identify repeated configuration checks and entity resolution blocks across service methods and extract them into focused, descriptive private helper methods.

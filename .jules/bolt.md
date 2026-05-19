@@ -37,3 +37,8 @@
 
 **Learning:** In `src/services/push-service.ts`, filtering an array of parent objects (`parentObjects.filter(...)`) inside an entity loop caused an O(N\*M) time complexity bottleneck during synchronization.
 **Action:** Always preprocess mapped data arrays into a `Map` or `Set` outside of iterative processing loops to enable O(1) lookups and reduce time complexity to O(N+M).
+
+## 2024-05-19 - Avoid N+1 queries in list aggregations
+
+**Learning:** During list aggregations (e.g., `listAccounts`), redundantly re-fetching pre-fetched API items by ID (using functions like `getAccount`) causes severe N+1 query performance bottlenecks.
+**Action:** Always pass the pre-fetched item objects yielded by list endpoint pagination directly to builder functions (like `buildAccount`) to significantly reduce API calls and speed up the process.
