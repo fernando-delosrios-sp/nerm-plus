@@ -27,3 +27,9 @@
 **Vulnerability:** A vulnerability existed where secrets like tokens, api_keys or passwords could leak in plain-text logs if they were encoded in stringified JSON objects (such as `AxiosError.config.data` payloads), because the `redact` filter function in `src/logging.ts` didn't parse strings.
 **Learning:** Security redaction functions often focus entirely on object traversal and bypass strings. Deep stringified JSON is a very common place for API secrets to hide during API request failures and logs.
 **Prevention:** Check strings to see if they might be stringified JSON objects/arrays. If they are, safely run `JSON.parse`, redact the resulting object, and `JSON.stringify` it back to a string before returning. Ensure comprehensive `try...catch` behavior to prevent crashes on invalid strings.
+
+## 2026-05-20 - Prevent URL-Encoded Form Data Exposing Secrets
+
+**Vulnerability:** A vulnerability existed where HTTP form payloads in API network requests (such as `x-www-form-urlencoded` payloads) containing sensitive keys (like `client_secret`) would bypass redaction in plain-text logs, often appearing entirely unredacted in network error configs (e.g. `AxiosError.config.data` as `client_secret=real_password`).
+**Learning:** General JSON and object traversal redaction does not handle serialized string formats like URL query parameters or HTTP Form encoded values often used for OAuth Token Exchange endpoints.
+**Prevention:** Extend string parsing logic within standard string redaction tools to check for key-value pair serialization structures (`=` and `&`) and parse them via `URLSearchParams` to safely redact sensitive keys inside HTTP form data before logging.

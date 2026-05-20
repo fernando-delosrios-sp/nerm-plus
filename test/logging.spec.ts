@@ -74,4 +74,15 @@ describe('logging', () => {
         expect(logged.api_key).toBe('[REDACTED]')
         expect(logged.status).toBe('active')
     })
+
+    it('redacts URL-encoded form data strings', () => {
+        const inputStr = 'grant_type=client_credentials&client_id=myid&client_secret=supersecret'
+        const logStr = toLogString(inputStr)
+
+        expect(logStr).toContain('grant_type=client_credentials')
+        expect(logStr).toContain('client_id=myid')
+        // URLSearchParams encoding might change [REDACTED] to %5BREDACTED%5D
+        expect(logStr).toContain('client_secret=%5BREDACTED%5D')
+        expect(logStr).not.toContain('supersecret')
+    })
 })
