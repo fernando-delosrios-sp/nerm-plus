@@ -25,3 +25,6 @@
 ## 2026-05-19 - Extract Repeated Complex Boolean and Object Resolution Logic
 **Learning:** Extracting duplicated, complex setup or object-resolution logic spanning multiple methods (like user ID validation based on `account_type` in `EntitlementService`) into private helper methods reduces duplication and improves the clarity of main operation flows.
 **Action:** Identify repeated configuration checks and entity resolution blocks across service methods and extract them into focused, descriptive private helper methods.
+## 2025-05-13 - Deduplicate Similar Switch Cases in Service Layer
+**Learning:** When handling multiple configuration types (like `NeprofileUser` and `NeaccessUser`) in service methods, logic is often identically duplicated across parallel case statements, increasing visual noise and maintenance overhead.
+**Action:** Use case fall-through to merge identical logic in switch statements, guarding any small type-specific differences (such as assigning `profile_id`) with a conditional check, keeping the switch block concise and DRY.
