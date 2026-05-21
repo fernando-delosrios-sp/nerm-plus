@@ -25,3 +25,6 @@
 ## 2026-05-19 - Extract Repeated Complex Boolean and Object Resolution Logic
 **Learning:** Extracting duplicated, complex setup or object-resolution logic spanning multiple methods (like user ID validation based on `account_type` in `EntitlementService`) into private helper methods reduces duplication and improves the clarity of main operation flows.
 **Action:** Identify repeated configuration checks and entity resolution blocks across service methods and extract them into focused, descriptive private helper methods.
+## 2024-06-25 - Handle undefined attributes in profile2Entitlement gracefully
+**Learning:** Hard-coded property assignments in object mapping iterations are vulnerable to runtime errors if the source property is missing. Existing tests may accidentally "expect" this broken behavior rather than validating a correct fix.
+**Action:** Always use optional chaining (`?.[key]`) or safe fallbacks when mapping properties dynamically. Furthermore, always check if there are tests expecting `.toThrow()` for the exact error being fixed and update them to expect a graceful fallback.

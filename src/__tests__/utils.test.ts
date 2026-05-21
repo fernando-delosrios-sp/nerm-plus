@@ -104,7 +104,7 @@ describe('profile2Entitlement', () => {
         expect(result).toEqual(expectedEntitlement)
     })
 
-    it('should throw an error if profile.attributes is undefined but attrs are requested', () => {
+    it('should map profile without attributes object gracefully', () => {
         const mockProfile = {
             id: '222',
             name: 'Bad Profile',
@@ -112,7 +112,7 @@ describe('profile2Entitlement', () => {
         const type = 'ProfileType'
         const attrs = ['department']
 
-        // This will throw TypeError: Cannot read properties of undefined (reading 'department')
-        expect(() => profile2Entitlement(mockProfile, type, attrs)).toThrow(TypeError)
+        const result = profile2Entitlement(mockProfile, type, attrs)
+        expect(result.attributes.department).toBeUndefined()
     })
 })
