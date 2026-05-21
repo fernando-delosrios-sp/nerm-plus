@@ -42,3 +42,6 @@
 
 **Learning:** During list aggregations (e.g., `listAccounts`), redundantly re-fetching pre-fetched API items by ID (using functions like `getAccount`) causes severe N+1 query performance bottlenecks.
 **Action:** Always pass the pre-fetched item objects yielded by list endpoint pagination directly to builder functions (like `buildAccount`) to significantly reduce API calls and speed up the process.
+## 2024-06-25 - Avoid N+1 requests in user attribute sequential updates
+**Learning:** Checking individual properties and immediately calling the update API (like `setUserAttribute`) repeatedly in sequential `if` blocks can lead to N+1 API request patterns.
+**Action:** When conditionally updating multiple fields on the same entity, accumulate the modified fields into a single request body dictionary (e.g. `userUpdates`) and then execute a single unified API update (e.g. `updateUser(id, userUpdates)`).
