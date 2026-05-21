@@ -25,3 +25,6 @@
 ## 2026-05-19 - Extract Repeated Complex Boolean and Object Resolution Logic
 **Learning:** Extracting duplicated, complex setup or object-resolution logic spanning multiple methods (like user ID validation based on `account_type` in `EntitlementService`) into private helper methods reduces duplication and improves the clarity of main operation flows.
 **Action:** Identify repeated configuration checks and entity resolution blocks across service methods and extract them into focused, descriptive private helper methods.
+## 2026-05-21 - Flatten conditionals with guard clauses
+**Learning:** When validating inputs or states in operations logic (e.g., `addType`, `addWorkflow` in `entitlement-service.ts`), deep nesting often occurs when using 'if-else' structures for primary failure or presence checks.
+**Action:** Use early return or throw guard clauses (e.g., `if (!workflow) throw...` or `if (user_id) { ... return }`) instead of nested switch or else blocks to avoid deeply nested 'arrow code' and keep the execution path at a shallow indentation level.
