@@ -27,6 +27,31 @@ const redact = (obj: any, seen: WeakSet<any> = new WeakSet()): any => {
                 return obj
             }
         }
+        // Heuristic to detect if it's likely a form-urlencoded payload from an axios config:
+        // typically they don't contain spaces and have at least one key=value format joined by &
+        if (str.includes('=') && !str.includes(' ') && !str.includes('://') && !str.includes('\n')) {
+            try {
+                const params = new URLSearchParams(str)
+                let modified = false
+                const entries = Array.from(params.entries())
+
+                // Only consider it valid form data if ALL keys are valid alphanumeric/underscore formats (no URLs or sentences)
+                const isValidForm = entries.every(([k]) => /^[a-zA-Z0-9_-]+$/.test(k))
+
+                if (isValidForm && entries.length > 0 && entries.some(([_, v]) => v !== '')) {
+                    for (const [key] of entries) {
+                        if (isSensitiveKey(key)) {
+                            params.set(key, '[REDACTED]')
+                            modified = true
+                        }
+                    }
+                    if (modified) {
+                        // URLSearchParams encodes spaces as `+`. decodeURIComponent it so we return exact format if needed, but `.toString()` is fine for form data.
+                        return params.toString()
+                    }
+                }
+            } catch (e) {}
+        }
         return obj
     }
 

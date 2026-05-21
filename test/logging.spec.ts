@@ -74,4 +74,28 @@ describe('logging', () => {
         expect(logged.api_key).toBe('[REDACTED]')
         expect(logged.status).toBe('active')
     })
+
+    it('redacts URL-encoded form data strings', () => {
+        const input = {
+            url: 'https://example.com/oauth/token',
+            config: {
+                data: 'grant_type=client_credentials&client_id=myId&client_secret=mySuperSecret&token=123',
+            },
+        }
+
+        const logStr = toLogString(input)
+        const logged = JSON.parse(logStr)
+
+        expect(logged.config.data).toBe(
+            'grant_type=client_credentials&client_id=myId&client_secret=%5BREDACTED%5D&token=%5BREDACTED%5D'
+        )
+    })
+
+    it('does not mangle regular strings or URLs containing equals signs and sensitive words', () => {
+        const normalString = 'Received token=123'
+        const urlString = 'https://example.com/api?token=123'
+
+        expect(toLogString(normalString)).toBe('Received token=123')
+        expect(toLogString(urlString)).toBe('https://example.com/api?token=123')
+    })
 })
