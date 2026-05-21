@@ -42,3 +42,6 @@
 
 **Learning:** During list aggregations (e.g., `listAccounts`), redundantly re-fetching pre-fetched API items by ID (using functions like `getAccount`) causes severe N+1 query performance bottlenecks.
 **Action:** Always pass the pre-fetched item objects yielded by list endpoint pagination directly to builder functions (like `buildAccount`) to significantly reduce API calls and speed up the process.
+## 2024-05-21 - Optimize removeRole with concurrent deletion
+**Learning:** Sequential await within a \`for await\` loop for independent HTTP DELETE requests creates an N+1 performance bottleneck. Because the project leverages \`axios-request-throttle\` to manage API concurrency limits, these requests can be safely parallelized.
+**Action:** Used \`Promise.all\` to dispatch independent HTTP requests concurrently within asynchronous generator iteration blocks.
