@@ -42,3 +42,6 @@
 
 **Learning:** During list aggregations (e.g., `listAccounts`), redundantly re-fetching pre-fetched API items by ID (using functions like `getAccount`) causes severe N+1 query performance bottlenecks.
 **Action:** Always pass the pre-fetched item objects yielded by list endpoint pagination directly to builder functions (like `buildAccount`) to significantly reduce API calls and speed up the process.
+## 2026-05-22 - Replace inefficient array split/reverse/join with string slice for O(1) allocation
+**Learning:** The `path.split('.').reverse().pop()` and `join('.')` chain found in `resolveAttributePath` and `getAttributeRecursively` causes severe O(N) array allocation overhead and multiple loop passes. In addition, the original implementation had a latent bug in `resolveAttributePath` where it joined reversed string arrays incorrectly.
+**Action:** When extracting the parent prefix from a dot-delimited path, always use string slicing (`indexOf` and `slice`) which executes in O(1) memory space instead of allocating intermediate arrays.
