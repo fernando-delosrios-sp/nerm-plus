@@ -24,9 +24,29 @@ const redact = (obj: any, seen: WeakSet<any> = new WeakSet()): any => {
                 const parsed = JSON.parse(str)
                 return JSON.stringify(redact(parsed, seen))
             } catch (e) {
-                return obj
+                // fallthrough to other checks
             }
         }
+
+        // URL-encoded form data heuristic
+        if (str.includes('=') && !str.includes(' ') && !str.includes('://')) {
+            try {
+                const params = new URLSearchParams(str)
+                let modified = false
+                params.forEach((value, key) => {
+                    if (isSensitiveKey(key)) {
+                        params.set(key, '[REDACTED]')
+                        modified = true
+                    }
+                })
+                if (modified) {
+                    return params.toString()
+                }
+            } catch (e) {
+                // fallthrough
+            }
+        }
+
         return obj
     }
 

@@ -74,4 +74,40 @@ describe('logging', () => {
         expect(logged.api_key).toBe('[REDACTED]')
         expect(logged.status).toBe('active')
     })
+
+    it('redacts URL-encoded form data embedded in objects', () => {
+        const input = {
+            url: 'http://example.com/oauth/token',
+            config: {
+                data: 'grant_type=client_credentials&client_id=123&client_secret=supersecret&normal_param=value',
+            },
+        }
+
+        const logStr = toLogString(input)
+        const logged = JSON.parse(logStr)
+
+        expect(typeof logged.config.data).toBe('string')
+        expect(logged.config.data).toContain('grant_type=client_credentials')
+        expect(logged.config.data).toContain('client_id=123')
+        expect(logged.config.data).toContain('client_secret=%5BREDACTED%5D')
+        expect(logged.config.data).toContain('normal_param=value')
+        expect(logged.config.data).not.toContain('supersecret')
+    })
+
+    it('redacts URL-encoded form data passed directly', () => {
+        const inputStr = 'grant_type=client_credentials&client_id=123&client_secret=supersecret'
+        const logStr = toLogString(inputStr)
+        expect(logStr).toContain('client_secret=%5BREDACTED%5D')
+        expect(logStr).not.toContain('supersecret')
+    })
+
+    it('does not mangle normal URLs or text with equals signs', () => {
+        const normalUrl = 'https://example.com?param=value&secret=keep-this-unmodified'
+        const logStrUrl = toLogString(normalUrl)
+        expect(logStrUrl).toBe(normalUrl) // Ignored due to "://" check
+
+        const textWithSpaces = 'this text = contains spaces and secret = mysecret'
+        const logStrText = toLogString(textWithSpaces)
+        expect(logStrText).toBe(textWithSpaces) // Ignored due to " " check
+    })
 })
