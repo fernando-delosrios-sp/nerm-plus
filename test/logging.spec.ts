@@ -52,7 +52,6 @@ describe('logging', () => {
         const logStr = toLogString(input)
         const logged = JSON.parse(logStr)
 
-        // The data string should still be a string, but its contents should be redacted JSON
         expect(typeof logged.config.data).toBe('string')
 
         const dataPayload = JSON.parse(logged.config.data)
@@ -73,5 +72,19 @@ describe('logging', () => {
 
         expect(logged.api_key).toBe('[REDACTED]')
         expect(logged.status).toBe('active')
+    })
+
+    it('redacts secrets inside URL-encoded form data strings', () => {
+        const input = {
+            url: 'http://example.com/oauth/token',
+            config: {
+                data: 'client_id=123&client_secret=abc-def&grant_type=client_credentials',
+            },
+        }
+
+        const logStr = toLogString(input)
+        const logged = JSON.parse(logStr)
+
+        expect(logged.config.data).toBe('client_id=123&client_secret=%5BREDACTED%5D&grant_type=client_credentials')
     })
 })
