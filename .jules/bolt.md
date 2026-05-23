@@ -42,3 +42,8 @@
 
 **Learning:** During list aggregations (e.g., `listAccounts`), redundantly re-fetching pre-fetched API items by ID (using functions like `getAccount`) causes severe N+1 query performance bottlenecks.
 **Action:** Always pass the pre-fetched item objects yielded by list endpoint pagination directly to builder functions (like `buildAccount`) to significantly reduce API calls and speed up the process.
+
+## 2024-05-13 - Cache Role lookups with Promise map
+
+**Learning:** Redundant queries for specific roles stack up in concurrent processes such as account and entitlement building and were issuing N requests for the same dependent role.
+**Action:** Implemented Promise map caching for role queries to coalesce concurrent calls, reducing overhead and API requests.
