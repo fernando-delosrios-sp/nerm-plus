@@ -25,3 +25,6 @@
 ## 2026-05-19 - Extract Repeated Complex Boolean and Object Resolution Logic
 **Learning:** Extracting duplicated, complex setup or object-resolution logic spanning multiple methods (like user ID validation based on `account_type` in `EntitlementService`) into private helper methods reduces duplication and improves the clarity of main operation flows.
 **Action:** Identify repeated configuration checks and entity resolution blocks across service methods and extract them into focused, descriptive private helper methods.
+## 2025-05-24 - Use case fall-through to merge identical logic paths
+**Learning:** Refactoring multiple identical cases (e.g. `NeprofileUser` and `NeaccessUser`) in switch statements using case fall-through significantly reduces code duplication and improves scanability, especially in repetitive service class operations like creating, building, or querying entity state.
+**Action:** When implementing or modifying switch blocks in service modules that branch on related concepts or types, merge duplicate execution paths with fall-through cases, guarding any minor type-specific tweaks (such as slightly different object initializations) with internal condition checks.
