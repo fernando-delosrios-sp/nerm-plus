@@ -42,3 +42,6 @@
 
 **Learning:** During list aggregations (e.g., `listAccounts`), redundantly re-fetching pre-fetched API items by ID (using functions like `getAccount`) causes severe N+1 query performance bottlenecks.
 **Action:** Always pass the pre-fetched item objects yielded by list endpoint pagination directly to builder functions (like `buildAccount`) to significantly reduce API calls and speed up the process.
+## 2026-05-24 - String Manipulation Optimization
+**Learning:** String split and reverse operations create unnecessary array allocations and intermediate strings, which can cause significant garbage collection overhead in frequently called recursive functions.
+**Action:** Use primitive string slicing (`indexOf` and `slice`) for simple string parsing instead of chaining array operations.
