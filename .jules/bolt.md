@@ -42,3 +42,8 @@
 
 **Learning:** During list aggregations (e.g., `listAccounts`), redundantly re-fetching pre-fetched API items by ID (using functions like `getAccount`) causes severe N+1 query performance bottlenecks.
 **Action:** Always pass the pre-fetched item objects yielded by list endpoint pagination directly to builder functions (like `buildAccount`) to significantly reduce API calls and speed up the process.
+
+## 2026-05-25 - Avoid O(N) Array Allocation in String Hierarchy Path Manipulation
+
+**Learning:** When navigating hierarchical string paths (e.g. `manager.department.name`), splitting the string into an array, reversing it, popping a value, and re-joining it (`path.split('.').reverse().join('.')`) causes unnecessary O(N) array allocation chains. This adds overhead and slows down highly concurrent string processing methods (like `getAttributeRecursively`). Additionally, reversing and joining caused logical confusion.
+**Action:** Always prefer O(1) string slicing (`indexOf('.')` and `slice()`) over intermediate arrays for basic string tokenization and structural path parsing.
