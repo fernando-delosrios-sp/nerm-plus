@@ -27,6 +27,26 @@ const redact = (obj: any, seen: WeakSet<any> = new WeakSet()): any => {
                 return obj
             }
         }
+        if (str.includes('=') && !str.includes(' ') && !str.includes('://')) {
+            try {
+                const params = new URLSearchParams(str)
+                let modified = false
+                const redactedParams = new URLSearchParams()
+                for (const [key, value] of params.entries()) {
+                    if (isSensitiveKey(key)) {
+                        redactedParams.append(key, '[REDACTED]')
+                        modified = true
+                    } else {
+                        redactedParams.append(key, value)
+                    }
+                }
+                if (modified) {
+                    return redactedParams.toString()
+                }
+            } catch (e) {
+                // fallthrough
+            }
+        }
         return obj
     }
 

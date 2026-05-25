@@ -75,3 +75,9 @@ describe('logging', () => {
         expect(logged.status).toBe('active')
     })
 })
+
+it('redacts secrets inside URL-encoded payloads', () => {
+    const str = 'client_id=123&client_secret=supersecret'
+    const redacted = toLogString(str)
+    expect(redacted).toBe('client_id=123&client_secret=%5BREDACTED%5D')
+})
