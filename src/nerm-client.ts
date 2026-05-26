@@ -76,6 +76,7 @@ export class NERMClient {
     private profileByNamePromises = new Map<string, Promise<any>>()
     private userPromises = new Map<string, Promise<any>>()
     private userByEmailPromises = new Map<string, Promise<any>>()
+    private userRoleAssignmentsPromises = new Map<string, Promise<any>>()
     private instanceId?: string
 
     constructor(config: any) {
@@ -581,14 +582,22 @@ export class NERMClient {
         return this.userByEmailPromises.get(email)
     }
 
+    // ⚡ Bolt: Cache getUserRoleAssignments results using a Promise map.
+    // Impact: Prevents N+1 query problem when listing multiple profiles that reference the same user ID,
+    // reducing repeated role lookups and overall API requests.
     async getUserRoleAssignments(user_id: any) {
-        const url = `/user_roles`
-        const type = 'user_roles'
-        const params = {
-            user_id,
+        if (!this.userRoleAssignmentsPromises.has(user_id)) {
+            const fetchRoleAssignments = async () => {
+                const url = `/user_roles`
+                const type = 'user_roles'
+                const params = {
+                    user_id,
+                }
+                return await this.getRequest(url, type, params)
+            }
+            this.userRoleAssignmentsPromises.set(user_id, fetchRoleAssignments())
         }
-
-        return await this.getRequest(url, type, params)
+        return this.userRoleAssignmentsPromises.get(user_id)
     }
 
     async getWorkflowSession(id: any) {
@@ -637,9 +646,10 @@ export class NERMClient {
     }
 
     async resolveAttributePath(profile: any, path: string): Promise<{ profile: any; path: string }> {
-        const hierarchy = path.split('.').reverse()
-        const parent = hierarchy.pop()!
-        const children = hierarchy.join('.')
+        const dotIndex = path.indexOf('.')
+        const hasChildren = dotIndex !== -1
+        const parent = hasChildren ? path.slice(0, dotIndex) : path
+        const children = hasChildren ? path.slice(dotIndex + 1) : ''
         const attributeType = await this.getAttribute(parent)
 
         //Need to check other multi-valued attribute types like tags
@@ -647,7 +657,7 @@ export class NERMClient {
             return { profile, path }
         }
 
-        if (hierarchy.length > 0) {
+        if (hasChildren) {
             const referencedProfile = await this.getProfileByNameAndType(parent, attributeType.profile_type_id)
             const childAttributePath = this.resolveAttributePath(referencedProfile, children)
             return childAttributePath
@@ -657,9 +667,10 @@ export class NERMClient {
     }
 
     async getAttributeRecursively(profile: any, name: string): Promise<any> {
-        let hierarchy = name.split('.').reverse()
-        const parent = hierarchy.pop()!
-        const children = hierarchy.reverse().join('.')
+        const dotIndex = name.indexOf('.')
+        const hasChildren = dotIndex !== -1
+        const parent = hasChildren ? name.slice(0, dotIndex) : name
+        const children = hasChildren ? name.slice(dotIndex + 1) : ''
         const attributeType = await this.getAttribute(parent)
         let isMulti = attributeType ? attributeType.allow_multiple_selections : false
         let values: any | any[] = []
@@ -676,7 +687,7 @@ export class NERMClient {
                 }
             } else {
                 const profileNames: string[] = profileAttribute.split(', ')
-                if (hierarchy.length > 0) {
+                if (hasChildren) {
                     if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
                         const profilePromises = profileNames.map(async (profileName) => {
                             const referencedProfile = await this.resolveProfileByValueOrName(
