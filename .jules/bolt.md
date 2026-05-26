@@ -42,3 +42,8 @@
 
 **Learning:** During list aggregations (e.g., `listAccounts`), redundantly re-fetching pre-fetched API items by ID (using functions like `getAccount`) causes severe N+1 query performance bottlenecks.
 **Action:** Always pass the pre-fetched item objects yielded by list endpoint pagination directly to builder functions (like `buildAccount`) to significantly reduce API calls and speed up the process.
+
+## 2024-05-30 - O(1) string slicing for object path manipulation
+
+**Learning:** Using `.split('.').reverse().join('.')` (and similar variants) for path manipulation adds O(N) allocation overhead and can silently introduce logical bugs by reversing the nested order of child path segments (e.g., parsing `a.b.c` incorrectly to `c.b`). Avoid array-based tokenization for deep object paths.
+**Action:** Use O(1) string slicing with `indexOf('.')` and `slice()` instead of `split` and `join` when splitting hierarchical paths in `nerm-client.ts`, which avoids allocating multiple temporary arrays while resolving deeply nested schemas during entity sync.
