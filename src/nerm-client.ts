@@ -76,6 +76,7 @@ export class NERMClient {
     private profileByNamePromises = new Map<string, Promise<any>>()
     private userPromises = new Map<string, Promise<any>>()
     private userByEmailPromises = new Map<string, Promise<any>>()
+    private userRoleAssignmentsPromises = new Map<string, Promise<any>>()
     private instanceId?: string
 
     constructor(config: any) {
@@ -581,14 +582,22 @@ export class NERMClient {
         return this.userByEmailPromises.get(email)
     }
 
+    // ⚡ Bolt: Cache getUserRoleAssignments results using a Promise map.
+    // Impact: Prevents N+1 query problem when listing multiple profiles that reference the same user ID,
+    // reducing repeated role lookups and overall API requests.
     async getUserRoleAssignments(user_id: any) {
-        const url = `/user_roles`
-        const type = 'user_roles'
-        const params = {
-            user_id,
+        if (!this.userRoleAssignmentsPromises.has(user_id)) {
+            const fetchRoleAssignments = async () => {
+                const url = `/user_roles`
+                const type = 'user_roles'
+                const params = {
+                    user_id,
+                }
+                return await this.getRequest(url, type, params)
+            }
+            this.userRoleAssignmentsPromises.set(user_id, fetchRoleAssignments())
         }
-
-        return await this.getRequest(url, type, params)
+        return this.userRoleAssignmentsPromises.get(user_id)
     }
 
     async getWorkflowSession(id: any) {

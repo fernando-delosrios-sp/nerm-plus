@@ -42,3 +42,8 @@
 
 **Learning:** During list aggregations (e.g., `listAccounts`), redundantly re-fetching pre-fetched API items by ID (using functions like `getAccount`) causes severe N+1 query performance bottlenecks.
 **Action:** Always pass the pre-fetched item objects yielded by list endpoint pagination directly to builder functions (like `buildAccount`) to significantly reduce API calls and speed up the process.
+
+## 2024-05-20 - Cache NERM User Role Assignments
+
+**Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
+**Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
