@@ -18,14 +18,13 @@ export class EntitlementService {
 
         logger.info(`Adding ${type} type to ${account.uuid}`)
         const name = account.uuid as string
-        let loginValue: string | undefined
 
         if (type === 'Profile') {
             throw new ConnectorError(`"Add Profile type" operation not supported`)
         }
 
         if (this.ctx.config.account_type !== 'Profile') {
-            throw new ConnectorError(`"Only one user type is allowed per account`)
+            throw new ConnectorError(`Only one user type is allowed per account`)
         }
 
         const user_id = account.attributes.user_id as string
@@ -37,29 +36,31 @@ export class EntitlementService {
                     account.attributes.roles = roleAssignments.map((x: { role_id: any }) => x.role_id)
                 }
             }
+
+            updateTypes(account.attributes, type)
+            return
+        }
+
+        const login = this.ctx.config.login_attribute
+            ? (account.attributes[this.ctx.config.login_attribute] as string)
+            : undefined
+
+        if (!login) {
+            throw new ConnectorError('Missing login attribute for user creation')
+        }
+
+        const attributes = { ...account.attributes, login, name }
+        let response = await this.ctx.nerm.getUserByLoginAndType(login, type)
+        if (!response) {
+            const body = await this.accountService.buildNERMAccountBody(attributes, type)
+            response = await this.ctx.nerm.createUser(body)
+        }
+
+        if (response) {
+            account.attributes.user_id = response.id
+            await this.ctx.nerm.setProfileAttribute(account.identity!, 'user_id', response.id)
         } else {
-            const login = this.ctx.config.login_attribute
-                ? (account.attributes[this.ctx.config.login_attribute] as string)
-                : undefined
-
-            if (!login) {
-                throw new ConnectorError('Missing login attribute for user creation')
-            }
-
-            const attributes = { ...account.attributes, login, name }
-            let response = await this.ctx.nerm.getUserByLoginAndType(login, type)
-            if (!response) {
-                const body = await this.accountService.buildNERMAccountBody(attributes, type)
-                response = await this.ctx.nerm.createUser(body)
-            }
-
-            if (response) {
-                account.attributes.user_id = response.id
-                await this.ctx.nerm.setProfileAttribute(account.identity!, 'user_id', response.id)
-            } else {
-                throw new ConnectorError(`Failed to add "${type}" type to ${account.uuid}`)
-            }
-            loginValue = response.login
+            throw new ConnectorError(`Failed to add "${type}" type to ${account.uuid}`)
         }
 
         updateTypes(account.attributes, type)
@@ -176,18 +177,20 @@ export class EntitlementService {
     async addWorkflow(account: StdAccountListOutput, workflow_id: string, waitFlag: boolean = false) {
         logger.debug(`Adding workflow ${workflow_id} to account ${account.uuid}`)
         const workflow = this.ctx.config.workflows?.find((x) => x.workflow === workflow_id)
-        if (workflow) {
-            const { requester_id } = workflow
-            await this.runWorkflow(account, workflow_id, requester_id, waitFlag)
-            const persistent = this.ctx.config.workflows?.find((x) => x.workflow === workflow_id)?.persistent ?? false
-            if (persistent) {
-                const current = (account.attributes.workflows as string[]) ?? []
-                current.push(workflow_id)
-                await this.attributeService.setAttribute(account, 'workflows', current)
-            }
-        } else {
+
+        if (!workflow) {
             const message = `Unable to find configuration for workflow ${workflow_id}`
             throw new ConnectorError(message)
+        }
+
+        const { requester_id } = workflow
+        await this.runWorkflow(account, workflow_id, requester_id, waitFlag)
+
+        const persistent = this.ctx.config.workflows?.find((x) => x.workflow === workflow_id)?.persistent ?? false
+        if (persistent) {
+            const current = (account.attributes.workflows as string[]) ?? []
+            current.push(workflow_id)
+            await this.attributeService.setAttribute(account, 'workflows', current)
         }
     }
 
