@@ -50,7 +50,7 @@ export const name2Attribute = (name: string): SchemaAttribute => ({
 export const profile2Entitlement = (profile: any, type: string, attrs: string[]): StdEntitlementListOutput => {
     const { id, name } = profile
     let attributes: Attributes = { id, name }
-    attrs.forEach((x) => (attributes[x] = profile.attributes[x]))
+    attrs.forEach((x) => (attributes[x] = profile.attributes?.[x]))
 
     return {
         type,
