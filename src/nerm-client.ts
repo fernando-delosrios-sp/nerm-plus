@@ -72,6 +72,7 @@ export class NERMClient {
     private client: AxiosCacheInstance
     private attributesPromise?: Promise<Map<string, any>>
     private profileTypePromises = new Map<string, Promise<any>>()
+    private profileByIdPromises = new Map<string, Promise<any>>()
     private profilePromises = new Map<string, Promise<any>>()
     private profileByNamePromises = new Map<string, Promise<any>>()
     private userPromises = new Map<string, Promise<any>>()
@@ -282,11 +283,19 @@ export class NERMClient {
         yield* this.listRequest(url, type, params)
     }
 
+    // ⚡ Bolt: Cache getProfile results using a Promise map.
+    // Impact: Avoids N identical requests when synchronizing multiple accounts that
+    // reference the same profile ID, reducing redundant API calls and overhead.
     async getProfile(id: string): Promise<any> {
-        const url = `/profiles/${id}`
-        const type = 'profile'
-
-        return this.getRequest(url, type)
+        if (!this.profileByIdPromises.has(id)) {
+            const fetchProfile = async () => {
+                const url = `/profiles/${id}`
+                const type = 'profile'
+                return await this.getRequest(url, type)
+            }
+            this.profileByIdPromises.set(id, fetchProfile())
+        }
+        return this.profileByIdPromises.get(id)
     }
 
     // ⚡ Bolt: Cache getProfileByName results using a Promise map.
@@ -878,10 +887,14 @@ export class NERMClient {
 
         try {
             let response = await this.listRequest(url, type, params)
+            const deletePromises: Promise<any>[] = []
             for await (const roleAssignment of response) {
-                url = `/user_role/${roleAssignment.id}`
-                await this.deleteRequest(url)
+                const deleteUrl = `/user_role/${roleAssignment.id}`
+                deletePromises.push(this.deleteRequest(deleteUrl).catch((e: any) => e))
             }
+            const results = await Promise.all(deletePromises)
+            const errors = results.filter((r) => r instanceof Error)
+            if (errors.length > 0) throw errors[0]
         } catch (error) {
             const message = `Failed to remove "${role_id}" role_id from "${user_id}" user_id`
             this.logError('removeRole', message)

@@ -187,18 +187,16 @@ export class AccountService {
                 id = attributes.user_id as string
                 break
             case 'NeprofileUser':
-                account = new NeprofileUserAccount(nermObject)
+            case 'NeaccessUser':
+                account =
+                    this.ctx.config.account_type === 'NeprofileUser'
+                        ? new NeprofileUserAccount(nermObject)
+                        : new NeaccessUserAccount(nermObject)
                 attributes = resolveUserAttributes(nermObject, schema)
                 account.attributes[this.ctx.config.login_attribute] = nermObject.login
-                if (account.attributes.workflows) {
+                if (this.ctx.config.account_type === 'NeprofileUser' && account.attributes.workflows) {
                     account.attributes.workflows = (account.attributes.workflows as string).split(',')
                 }
-                id = account.identity
-                break
-            case 'NeaccessUser':
-                account = new NeaccessUserAccount(nermObject)
-                attributes = resolveUserAttributes(nermObject, schema)
-                account.attributes[this.ctx.config.login_attribute] = nermObject.login
                 id = account.identity
                 break
         }

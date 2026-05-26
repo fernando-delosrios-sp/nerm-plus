@@ -22,12 +22,22 @@
 
 **Learning:** When validating inputs or states in operations logic (e.g., `addType`, `removeType` in `entitlement-service.ts`), `switch` statements with only one specific case and a `default` block, combined with nested `if/else` checks, lead to unnecessary indentation and harder-to-read 'arrow code'.
 **Action:** Use early return or throw guard clauses (e.g., `throw new ConnectorError(...)`) to exit fast on invalid states. This eliminates the need for `switch` and large `else` blocks, keeping the main execution path at the lowest possible indentation level.
+
 ## 2026-05-19 - Extract Repeated Complex Boolean and Object Resolution Logic
+
 **Learning:** Extracting duplicated, complex setup or object-resolution logic spanning multiple methods (like user ID validation based on `account_type` in `EntitlementService`) into private helper methods reduces duplication and improves the clarity of main operation flows.
 **Action:** Identify repeated configuration checks and entity resolution blocks across service methods and extract them into focused, descriptive private helper methods.
 ## 2026-05-21 - Flatten conditionals with guard clauses
 **Learning:** When validating inputs or states in operations logic (e.g., `addType`, `addWorkflow` in `entitlement-service.ts`), deep nesting often occurs when using 'if-else' structures for primary failure or presence checks.
 **Action:** Use early return or throw guard clauses (e.g., `if (!workflow) throw...` or `if (user_id) { ... return }`) instead of nested switch or else blocks to avoid deeply nested 'arrow code' and keep the execution path at a shallow indentation level.
+
+## 2026-05-19 - Use case fall-through to eliminate switch redundancy
+**Learning:** Services like AccountService and AttributeService sometimes process identical or nearly identical execution paths for multiple subtypes (e.g., NeprofileUser and NeaccessUser) inside large switch blocks.
+**Action:** Merge identical cases using switch case fall-through (`case A: case B: ... break;`), and extract any minor differences (like setting an extra property) into an internal `if` check. This reduces code duplication and improves scannability.
+## 2026-05-19 - Refactor switch statements with case fall-through
+
+**Learning:** When switch statements in services (like AccountService) contain cases that share identical or nearly identical handling logic (e.g., for NeprofileUser and NeaccessUser), it leads to redundant code blocks that are harder to maintain and read.
+**Action:** Use case fall-through to merge identical logic for multiple switch cases. If there are minor type-specific differences, guard them with an internal conditional (e.g., `if (type === 'NeaccessUser') {...}`) within the combined block.
 ## 2025-05-13 - Deduplicate Similar Switch Cases in Service Layer
 **Learning:** When handling multiple configuration types (like `NeprofileUser` and `NeaccessUser`) in service methods, logic is often identically duplicated across parallel case statements, increasing visual noise and maintenance overhead.
 **Action:** Use case fall-through to merge identical logic in switch statements, guarding any small type-specific differences (such as assigning `profile_id`) with a conditional check, keeping the switch block concise and DRY.

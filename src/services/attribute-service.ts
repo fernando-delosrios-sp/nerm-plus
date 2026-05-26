@@ -16,24 +16,29 @@ export class AttributeService {
                 }
                 const id = account.attributes.user_id as string
                 if (id) {
+                    const userUpdates: Record<string, any> = {}
+
                     if (attribute === this.ctx.config.login_attribute) {
-                        await this.ctx.nerm.setUserAttribute(id, 'login', value)
+                        userUpdates.login = value
                     }
 
                     if (attribute === 'name') {
-                        await this.ctx.nerm.setUserAttribute(id, 'name', value)
+                        userUpdates.name = value
                     }
 
                     if (attribute === 'email') {
-                        await this.ctx.nerm.setUserAttribute(id, 'email', value)
+                        userUpdates.email = value
+                    }
+
+                    if (Object.keys(userUpdates).length > 0) {
+                        await this.ctx.nerm.updateUser(id, userUpdates)
                     }
                 }
                 break
             case 'NeprofileUser':
-                await this.ctx.nerm.setUserAttribute(account.identity!, attribute, value)
-                break
             case 'NeaccessUser':
                 await this.ctx.nerm.setUserAttribute(account.identity!, attribute, value)
+                break
         }
 
         if (attribute === 'status') {

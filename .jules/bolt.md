@@ -42,6 +42,15 @@
 
 **Learning:** During list aggregations (e.g., `listAccounts`), redundantly re-fetching pre-fetched API items by ID (using functions like `getAccount`) causes severe N+1 query performance bottlenecks.
 **Action:** Always pass the pre-fetched item objects yielded by list endpoint pagination directly to builder functions (like `buildAccount`) to significantly reduce API calls and speed up the process.
+## 2024-06-25 - Avoid N+1 requests in user attribute sequential updates
+**Learning:** Checking individual properties and immediately calling the update API (like `setUserAttribute`) repeatedly in sequential `if` blocks can lead to N+1 API request patterns.
+**Action:** When conditionally updating multiple fields on the same entity, accumulate the modified fields into a single request body dictionary (e.g. `userUpdates`) and then execute a single unified API update (e.g. `updateUser(id, userUpdates)`).
+## 2024-05-21 - Optimize removeRole with concurrent deletion
+**Learning:** Sequential await within a \`for await\` loop for independent HTTP DELETE requests creates an N+1 performance bottleneck. Because the project leverages \`axios-request-throttle\` to manage API concurrency limits, these requests can be safely parallelized.
+**Action:** Used \`Promise.all\` to dispatch independent HTTP requests concurrently within asynchronous generator iteration blocks.
+## 2025-01-06 - Implement Profile Cache by ID
+**Learning:** Calling `Promise.all` with a generator yielding mapping objects can result in N identical HTTP API queries if the method invoked isn't cached, leading to a performance cliff when generating lists.
+**Action:** When implementing caching mechanisms, review all signature variations of an API retrieval function. Ensure basic fetch-by-ID operations use the same promise-map caching structure as complex multi-property lookup methods.
 
 ## 2024-05-20 - Cache NERM User Role Assignments
 
