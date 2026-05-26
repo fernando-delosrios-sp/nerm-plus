@@ -27,12 +27,13 @@
 
 **Learning:** Extracting duplicated, complex setup or object-resolution logic spanning multiple methods (like user ID validation based on `account_type` in `EntitlementService`) into private helper methods reduces duplication and improves the clarity of main operation flows.
 **Action:** Identify repeated configuration checks and entity resolution blocks across service methods and extract them into focused, descriptive private helper methods.
-<<<<<<< quartz-refactor-switch-fallthrough-17718181391429737051
+## 2026-05-21 - Flatten conditionals with guard clauses
+**Learning:** When validating inputs or states in operations logic (e.g., `addType`, `addWorkflow` in `entitlement-service.ts`), deep nesting often occurs when using 'if-else' structures for primary failure or presence checks.
+**Action:** Use early return or throw guard clauses (e.g., `if (!workflow) throw...` or `if (user_id) { ... return }`) instead of nested switch or else blocks to avoid deeply nested 'arrow code' and keep the execution path at a shallow indentation level.
 
 ## 2026-05-19 - Use case fall-through to eliminate switch redundancy
 **Learning:** Services like AccountService and AttributeService sometimes process identical or nearly identical execution paths for multiple subtypes (e.g., NeprofileUser and NeaccessUser) inside large switch blocks.
 **Action:** Merge identical cases using switch case fall-through (`case A: case B: ... break;`), and extract any minor differences (like setting an extra property) into an internal `if` check. This reduces code duplication and improves scannability.
-=======
 ## 2026-05-19 - Refactor switch statements with case fall-through
 
 **Learning:** When switch statements in services (like AccountService) contain cases that share identical or nearly identical handling logic (e.g., for NeprofileUser and NeaccessUser), it leads to redundant code blocks that are harder to maintain and read.
@@ -47,4 +48,3 @@
 ## 2026-05-26 - Use string slicing for O(1) path resolution instead of arrays
 **Learning:** Using `.split('.').reverse().join('.')` (and similar variants) for path manipulation not only adds O(N) array allocation overhead but can silently introduce logical bugs by reversing the nested order of child path segments (e.g., parsing `a.b.c` incorrectly to `c.b`).
 **Action:** Avoid array-based tokenization for deep object paths and always favor O(1) string slicing using `indexOf('.')` and `slice()`.
->>>>>>> jules
