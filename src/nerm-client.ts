@@ -46,38 +46,21 @@ function formatHttpError(err: any): string {
     if (typeof data.error === 'string') {
         pieces.push(data.error)
     } else if (data.error != null) {
-        try {
-            pieces.push(`error: ${JSON.stringify(data.error)}`)
-        } catch {
-            pieces.push(`error: ${String(data.error)}`)
-        }
+        pieces.push(`error: ${toLogString(data.error)}`)
     }
     if (data.message != null && String(data.message) !== String(data.error)) {
         pieces.push(String(data.message))
     }
     if (data.errors != null) {
-        try {
-            pieces.push(`errors: ${JSON.stringify(data.errors)}`)
-        } catch {
-            pieces.push(`errors: ${String(data.errors)}`)
-        }
+        pieces.push(`errors: ${toLogString(data.errors)}`)
     }
     if (data.base != null) {
-        try {
-            pieces.push(`base: ${JSON.stringify(data.base)}`)
-        } catch {
-            pieces.push(`base: ${String(data.base)}`)
-        }
+        pieces.push(`base: ${toLogString(data.base)}`)
     }
     if (pieces.length > 0) {
         return `${prefix}: ${pieces.join(' | ')}`
     }
-    let full: string
-    try {
-        full = JSON.stringify(data)
-    } catch {
-        full = String(data)
-    }
+    let full: string = toLogString(data)
     const max = 4000
     if (full.length > max) {
         full = full.slice(0, max) + '…'
@@ -88,6 +71,13 @@ function formatHttpError(err: any): string {
 export class NERMClient {
     private client: AxiosCacheInstance
     private attributesPromise?: Promise<Map<string, any>>
+    private profileTypePromises = new Map<string, Promise<any>>()
+    private profileByIdPromises = new Map<string, Promise<any>>()
+    private profilePromises = new Map<string, Promise<any>>()
+    private profileByNamePromises = new Map<string, Promise<any>>()
+    private userPromises = new Map<string, Promise<any>>()
+    private userByEmailPromises = new Map<string, Promise<any>>()
+    private userRoleAssignmentsPromises = new Map<string, Promise<any>>()
     private instanceId?: string
 
     constructor(config: any) {
@@ -272,9 +262,18 @@ export class NERMClient {
         return this.getRequest(url, type)
     }
 
+    // ⚡ Bolt: Cache getProfileTypeByName results using a Promise map.
+    // Impact: Avoids N identical requests when synchronizing multiple profiles or schemas
+    // that share the same ProfileType configuration, significantly reducing latency and overhead.
     async getProfileTypeByName(name: string): Promise<any> {
-        const response = this.listProfileTypes({ name })
-        return (await response.next()).value
+        if (!this.profileTypePromises.has(name)) {
+            const fetchProfileType = async () => {
+                const response = this.listProfileTypes({ name })
+                return (await response.next()).value
+            }
+            this.profileTypePromises.set(name, fetchProfileType())
+        }
+        return this.profileTypePromises.get(name)
     }
 
     async *listProfiles(params?: any) {
@@ -284,57 +283,84 @@ export class NERMClient {
         yield* this.listRequest(url, type, params)
     }
 
+    // ⚡ Bolt: Cache getProfile results using a Promise map.
+    // Impact: Avoids N identical requests when synchronizing multiple accounts that
+    // reference the same profile ID, reducing redundant API calls and overhead.
     async getProfile(id: string): Promise<any> {
-        const url = `/profiles/${id}`
-        const type = 'profile'
-
-        return this.getRequest(url, type)
+        if (!this.profileByIdPromises.has(id)) {
+            const fetchProfile = async () => {
+                const url = `/profiles/${id}`
+                const type = 'profile'
+                return await this.getRequest(url, type)
+            }
+            this.profileByIdPromises.set(id, fetchProfile())
+        }
+        return this.profileByIdPromises.get(id)
     }
 
+    // ⚡ Bolt: Cache getProfileByName results using a Promise map.
+    // Impact: Avoids N identical requests when synchronizing multiple profiles that
+    // reference the same target profile by name, reducing redundant API calls and overhead.
     async getProfileByName(name: string): Promise<any> {
-        const url = `/profiles`
-        const type = 'profiles'
-        let response
-        for await (const profile of this.listRequest(url, type, { name })) {
-            if (!response) {
-                response = profile
-            } else {
-                const message = `Multiple profiles found for "${name}" name`
-                this.logWarn('getProfileByName', message)
-                break
-            }
-        }
+        if (!this.profileByNamePromises.has(name)) {
+            const fetchProfile = async () => {
+                const url = `/profiles`
+                const type = 'profiles'
+                let response
+                for await (const profile of this.listRequest(url, type, { name })) {
+                    if (!response) {
+                        response = profile
+                    } else {
+                        const message = `Multiple profiles found for "${name}" name`
+                        this.logWarn('getProfileByName', message)
+                        break
+                    }
+                }
 
-        if (!response) {
-            this.logWarn('getProfileByName', `No profile found for name="${name}"`)
+                if (!response) {
+                    this.logWarn('getProfileByName', `No profile found for name="${name}"`)
+                }
+                return response
+            }
+            this.profileByNamePromises.set(name, fetchProfile())
         }
-        return response
+        return this.profileByNamePromises.get(name)
     }
 
+    // ⚡ Bolt: Cache getProfileByNameAndType results using a Promise map.
+    // Impact: Avoids N identical requests when multiple profiles reference the same dependent profile
+    // (e.g., manager or department) by name and type during attribute resolution.
     async getProfileByNameAndType(name: string, profile_type_id: string): Promise<any> {
-        const url = `/profiles`
-        const type = 'profiles'
-        let response
-        for await (const profile of this.listRequest(url, type, { name })) {
-            if (profile.profile_type_id !== profile_type_id) {
-                continue
-            }
-            if (!response) {
-                response = profile
-            } else {
-                const message = `Multiple profiles found for "${name}" with profile_type_id=${profile_type_id}`
-                this.logWarn('getProfileByNameAndType', message)
-                break
-            }
-        }
+        const cacheKey = `${name}:${profile_type_id}`
+        if (!this.profilePromises.has(cacheKey)) {
+            const fetchProfile = async () => {
+                const url = `/profiles`
+                const type = 'profiles'
+                let response
+                for await (const profile of this.listRequest(url, type, { name })) {
+                    if (profile.profile_type_id !== profile_type_id) {
+                        continue
+                    }
+                    if (!response) {
+                        response = profile
+                    } else {
+                        const message = `Multiple profiles found for "${name}" with profile_type_id=${profile_type_id}`
+                        this.logWarn('getProfileByNameAndType', message)
+                        break
+                    }
+                }
 
-        if (!response) {
-            this.logWarn(
-                'getProfileByNameAndType',
-                `No profile found for name="${name}" with profile_type_id=${profile_type_id}`
-            )
+                if (!response) {
+                    this.logWarn(
+                        'getProfileByNameAndType',
+                        `No profile found for name="${name}" with profile_type_id=${profile_type_id}`
+                    )
+                }
+                return response
+            }
+            this.profilePromises.set(cacheKey, fetchProfile())
         }
-        return response
+        return this.profilePromises.get(cacheKey)
     }
 
     /**
@@ -408,11 +434,19 @@ export class NERMClient {
         }
     }
 
+    // ⚡ Bolt: Cache getUser results using a Promise map.
+    // Impact: Avoids multiple requests for the same user (e.g. owners/contributors)
+    // when resolving multiple profiles simultaneously, significantly reducing API calls.
     async getUser(id: string): Promise<any> {
-        const url = `/users/${id}`
-        const type = 'user'
-
-        return await this.getRequest(url, type)
+        if (!this.userPromises.has(id)) {
+            const fetchUser = async () => {
+                const url = `/users/${id}`
+                const type = 'user'
+                return await this.getRequest(url, type)
+            }
+            this.userPromises.set(id, fetchUser())
+        }
+        return this.userPromises.get(id)
     }
 
     async getRole(id: string): Promise<any> {
@@ -540,23 +574,39 @@ export class NERMClient {
         }
     }
 
+    // ⚡ Bolt: Cache getUserByEmail results using a Promise map.
+    // Impact: Prevents identical user lookups by email when evaluating attributes repeatedly,
+    // saving network calls and speeding up the process.
     async getUserByEmail(email: string): Promise<any> {
-        const url = `/users`
-        const type = 'users'
-
-        for await (const user of this.listRequest(url, type, { email })) {
-            return user
+        if (!this.userByEmailPromises.has(email)) {
+            const fetchUserByEmail = async () => {
+                const url = `/users`
+                const type = 'users'
+                for await (const user of this.listRequest(url, type, { email })) {
+                    return user
+                }
+            }
+            this.userByEmailPromises.set(email, fetchUserByEmail())
         }
+        return this.userByEmailPromises.get(email)
     }
 
+    // ⚡ Bolt: Cache getUserRoleAssignments results using a Promise map.
+    // Impact: Prevents N+1 query problem when listing multiple profiles that reference the same user ID,
+    // reducing repeated role lookups and overall API requests.
     async getUserRoleAssignments(user_id: any) {
-        const url = `/user_roles`
-        const type = 'user_roles'
-        const params = {
-            user_id,
+        if (!this.userRoleAssignmentsPromises.has(user_id)) {
+            const fetchRoleAssignments = async () => {
+                const url = `/user_roles`
+                const type = 'user_roles'
+                const params = {
+                    user_id,
+                }
+                return await this.getRequest(url, type, params)
+            }
+            this.userRoleAssignmentsPromises.set(user_id, fetchRoleAssignments())
         }
-
-        return await this.getRequest(url, type, params)
+        return this.userRoleAssignmentsPromises.get(user_id)
     }
 
     async getWorkflowSession(id: any) {
@@ -605,9 +655,10 @@ export class NERMClient {
     }
 
     async resolveAttributePath(profile: any, path: string): Promise<{ profile: any; path: string }> {
-        const hierarchy = path.split('.').reverse()
-        const parent = hierarchy.pop()!
-        const children = hierarchy.join('.')
+        const dotIndex = path.indexOf('.')
+        const hasChildren = dotIndex !== -1
+        const parent = hasChildren ? path.slice(0, dotIndex) : path
+        const children = hasChildren ? path.slice(dotIndex + 1) : ''
         const attributeType = await this.getAttribute(parent)
 
         //Need to check other multi-valued attribute types like tags
@@ -615,7 +666,7 @@ export class NERMClient {
             return { profile, path }
         }
 
-        if (hierarchy.length > 0) {
+        if (hasChildren) {
             const referencedProfile = await this.getProfileByNameAndType(parent, attributeType.profile_type_id)
             const childAttributePath = this.resolveAttributePath(referencedProfile, children)
             return childAttributePath
@@ -625,9 +676,10 @@ export class NERMClient {
     }
 
     async getAttributeRecursively(profile: any, name: string): Promise<any> {
-        let hierarchy = name.split('.').reverse()
-        const parent = hierarchy.pop()!
-        const children = hierarchy.reverse().join('.')
+        const dotIndex = name.indexOf('.')
+        const hasChildren = dotIndex !== -1
+        const parent = hasChildren ? name.slice(0, dotIndex) : name
+        const children = hasChildren ? name.slice(dotIndex + 1) : ''
         const attributeType = await this.getAttribute(parent)
         let isMulti = attributeType ? attributeType.allow_multiple_selections : false
         let values: any | any[] = []
@@ -644,7 +696,7 @@ export class NERMClient {
                 }
             } else {
                 const profileNames: string[] = profileAttribute.split(', ')
-                if (hierarchy.length > 0) {
+                if (hasChildren) {
                     if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
                         const profilePromises = profileNames.map(async (profileName) => {
                             const referencedProfile = await this.resolveProfileByValueOrName(
@@ -690,67 +742,71 @@ export class NERMClient {
 
     async resolveProfileAttributes(profile: any, schema: AccountSchema): Promise<any> {
         const attributes: { [key: string]: any } = {}
-        for (const attr of schema.attributes!) {
-            let finalValue
-            if (ENTITLEMENT_ATTRIBUTES.includes(attr.name)) {
-                if (attr.name === 'types') {
-                    finalValue = ['Profile']
-                    if (profile.attributes.user_id) {
-                        const user = await this.getUser(profile.attributes.user_id)
-                        if (user) {
-                            finalValue.push(user.type)
-                        }
-                    }
-                    attributes[attr.name] = finalValue
-                }
-            } else {
-                const value = await this.getAttributeRecursively(profile, attr.name!)
-                const isArray = Array.isArray(value)
-                if (value) {
-                    const isObject = isArray ? typeof value[0] === 'object' : typeof value === 'object'
-                    let profile_type_id
-                    let referencedProfileType
-                    if (isObject) {
-                        profile_type_id = isArray ? value[0].profile_type_id : value.profile_type_id
-                        referencedProfileType = profile_type_id
-                    }
-
-                    if (attr.entitlement) {
-                        if (attr.schemaObjectType === referencedProfileType?.name) {
-                            //Is profile entitlement
-                            const ids = [value].flat().map((x) => x.id)
-                            if (attr.multi) {
-                                finalValue = ids
-                            } else {
-                                finalValue = ids[0]
-                            }
-                        } else {
-                            //Is not profile entitlement
-                            const names = [value].flat().map((x) => x.name)
-                            if (attr.multi) {
-                                finalValue = value
-                            } else {
-                                finalValue = isArray ? names.map((x) => `[${x}]`).join(' ') : names
+        // Use Promise.all to fetch and resolve all profile attributes in parallel instead of sequentially
+        // Since rate limiting is handled by axios-request-throttle, we can safely fire off these requests
+        await Promise.all(
+            schema.attributes!.map(async (attr) => {
+                let finalValue
+                if (ENTITLEMENT_ATTRIBUTES.includes(attr.name)) {
+                    if (attr.name === 'types') {
+                        finalValue = ['Profile']
+                        if (profile.attributes.user_id) {
+                            const user = await this.getUser(profile.attributes.user_id)
+                            if (user) {
+                                finalValue.push(user.type)
                             }
                         }
-                    } else {
-                        let names = [value].flat()
-                        if (referencedProfileType) {
-                            names = [value].flat().map((x) => x.name)
-                        }
-                        if (attr.multi) {
-                            finalValue = isArray ? names : names[0]
-                        } else {
-                            finalValue = isArray ? names.map((x) => `[${x}]`).join(' ') : names[0]
-                        }
+                        attributes[attr.name] = finalValue
                     }
-                    attributes[attr.name!] = finalValue
                 } else {
-                    const message = `"${attr.name}" attribute not found on profile "${profile.name}"`
-                    this.logDebug('resolveProfileAttributes', message)
+                    const value = await this.getAttributeRecursively(profile, attr.name!)
+                    const isArray = Array.isArray(value)
+                    if (value) {
+                        const isObject = isArray ? typeof value[0] === 'object' : typeof value === 'object'
+                        let profile_type_id
+                        let referencedProfileType
+                        if (isObject) {
+                            profile_type_id = isArray ? value[0].profile_type_id : value.profile_type_id
+                            referencedProfileType = profile_type_id
+                        }
+
+                        if (attr.entitlement) {
+                            if (attr.schemaObjectType === referencedProfileType?.name) {
+                                //Is profile entitlement
+                                const ids = [value].flat().map((x) => x.id)
+                                if (attr.multi) {
+                                    finalValue = ids
+                                } else {
+                                    finalValue = ids[0]
+                                }
+                            } else {
+                                //Is not profile entitlement
+                                const names = [value].flat().map((x) => x.name)
+                                if (attr.multi) {
+                                    finalValue = value
+                                } else {
+                                    finalValue = isArray ? names.map((x) => `[${x}]`).join(' ') : names
+                                }
+                            }
+                        } else {
+                            let names = [value].flat()
+                            if (referencedProfileType) {
+                                names = [value].flat().map((x) => x.name)
+                            }
+                            if (attr.multi) {
+                                finalValue = isArray ? names : names[0]
+                            } else {
+                                finalValue = isArray ? names.map((x) => `[${x}]`).join(' ') : names[0]
+                            }
+                        }
+                        attributes[attr.name!] = finalValue
+                    } else {
+                        const message = `"${attr.name}" attribute not found on profile "${profile.name}"`
+                        this.logDebug('resolveProfileAttributes', message)
+                    }
                 }
-            }
-        }
+            })
+        )
 
         return attributes
     }
@@ -831,10 +887,14 @@ export class NERMClient {
 
         try {
             let response = await this.listRequest(url, type, params)
+            const deletePromises: Promise<any>[] = []
             for await (const roleAssignment of response) {
-                url = `/user_role/${roleAssignment.id}`
-                await this.deleteRequest(url)
+                const deleteUrl = `/user_role/${roleAssignment.id}`
+                deletePromises.push(this.deleteRequest(deleteUrl).catch((e: any) => e))
             }
+            const results = await Promise.all(deletePromises)
+            const errors = results.filter((r) => r instanceof Error)
+            if (errors.length > 0) throw errors[0]
         } catch (error) {
             const message = `Failed to remove "${role_id}" role_id from "${user_id}" user_id`
             this.logError('removeRole', message)

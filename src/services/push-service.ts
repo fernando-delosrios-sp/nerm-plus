@@ -9,8 +9,7 @@ export class PushService {
 
     pushContents: CommandHandler = async (context, input, res) => {
         logger.debug(fnLog('pushContents', 'Pushing contents'))
-        const mappings =
-            this.ctx.config.mappings!.sort((a, b) => (a.nested ? (b.nested ? 0 : 1) : -1)) ?? []
+        const mappings = this.ctx.config.mappings!.sort((a, b) => (a.nested ? (b.nested ? 0 : 1) : -1)) ?? []
         const masterProfileMap: Map<string, any[]> = new Map()
         const masterEntityMap: Map<string, any[]> = new Map()
 
@@ -27,9 +26,25 @@ export class PushService {
                 let entities = await this.ctx.isc.search(search, index)
                 let children: Map<string, Set<string>> = new Map()
 
+                let parentObjectsMap: Map<string, string[]> | undefined
+
                 if (nested) {
                     const parents = masterEntityMap.get(parent_index!)!
                     children = parents2children(parents, index)
+
+                    // ⚡ Bolt: Build a map of parent objects for O(1) lookups instead of filtering array per entity
+                    // Impact: Reduces time complexity from O(N*M) to O(N+M) during nested profile resolution
+                    const parentObjects = masterProfileMap.get(parent_index!)
+                    if (parentObjects) {
+                        parentObjectsMap = new Map()
+                        for (const p of parentObjects) {
+                            const pId = p.attributes[id]
+                            if (!parentObjectsMap.has(pId)) {
+                                parentObjectsMap.set(pId, [])
+                            }
+                            parentObjectsMap.get(pId)!.push(p.id)
+                        }
+                    }
                 }
 
                 for (const entity of entities) {
@@ -40,11 +55,14 @@ export class PushService {
 
                     if (nested && profile) {
                         const childParents = children?.get(entity.id as string) ?? new Set()
-                        const parentObjects = masterProfileMap.get(parent_index!)
-                        if (parentObjects) {
-                            const childParentProfiles = parentObjects
-                                .filter((x) => childParents.has(x.attributes[id]))
-                                .map((x) => x.id)
+                        if (parentObjectsMap) {
+                            const childParentProfiles: string[] = []
+                            for (const parentId of childParents) {
+                                const mappedIds = parentObjectsMap.get(parentId)
+                                if (mappedIds) {
+                                    childParentProfiles.push(...mappedIds)
+                                }
+                            }
                             profile.attributes[attribute!] = childParentProfiles
                         }
                     }
@@ -72,9 +90,11 @@ export class PushService {
 
                 if (!nested) {
                     existingProfiles = this.ctx.nerm.listProfiles(params)
-                    const ids = entities.map((x) => x.id)
+                    // ⚡ Bolt: Convert ids array to a Set for O(1) lookups instead of O(N) array.includes() inside the loop
+                    // Impact: Reduces time complexity from O(N²) to O(N) when syncing profiles
+                    const ids = new Set(entities.map((x) => x.id))
                     for await (const profile of existingProfiles) {
-                        if (ids.includes(profile.attributes[id])) {
+                        if (ids.has(profile.attributes[id])) {
                             profiles.push(profile)
                         }
                     }

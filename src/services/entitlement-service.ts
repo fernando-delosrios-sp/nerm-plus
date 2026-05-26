@@ -18,75 +18,74 @@ export class EntitlementService {
 
         logger.info(`Adding ${type} type to ${account.uuid}`)
         const name = account.uuid as string
-        let loginValue: string | undefined
-        switch (type) {
-            case 'Profile':
-                const message = `"Add Profile type" operation not supported`
-                throw new ConnectorError(message)
-            default:
-                if (this.ctx.config.account_type !== 'Profile') {
-                    const message = `"Only one user type is allowed per account`
-                    throw new ConnectorError(message)
-                }
 
-                const user_id = account.attributes.user_id as string
-                if (user_id) {
-                    const response = await this.ctx.nerm.getUser(user_id)
-                    if (response) {
-                        const roleAssignments = await this.ctx.nerm.getUserRoleAssignments(user_id)
-                        if (roleAssignments) {
-                            account.attributes.roles = roleAssignments.map((x: { role_id: any }) => x.role_id)
-                        }
-                    }
-                } else {
-                    const login = this.ctx.config.login_attribute
-                        ? (account.attributes[this.ctx.config.login_attribute] as string)
-                        : undefined
-                    if (!login) {
-                        const message = 'Missing login attribute for user creation'
-                        throw new ConnectorError(message)
-                    } else {
-                        const attributes = { ...account.attributes, login, name }
-                        let response = await this.ctx.nerm.getUserByLoginAndType(login, type)
-                        if (!response) {
-                            const body = await this.accountService.buildNERMAccountBody(attributes, type)
-                            response = await this.ctx.nerm.createUser(body)
-                        }
-                        if (response) {
-                            account.attributes.user_id = response.id
-                            await this.ctx.nerm.setProfileAttribute(account.identity!, 'user_id', response.id)
-                        } else {
-                            throw new ConnectorError(`Failed to add "${type}" type to ${account.uuid}`)
-                        }
-                        loginValue = response.login
-                    }
-                }
+        if (type === 'Profile') {
+            throw new ConnectorError(`"Add Profile type" operation not supported`)
         }
+
+        if (this.ctx.config.account_type !== 'Profile') {
+            throw new ConnectorError(`Only one user type is allowed per account`)
+        }
+
+        const user_id = account.attributes.user_id as string
+        if (user_id) {
+            const response = await this.ctx.nerm.getUser(user_id)
+            if (response) {
+                const roleAssignments = await this.ctx.nerm.getUserRoleAssignments(user_id)
+                if (roleAssignments) {
+                    account.attributes.roles = roleAssignments.map((x: { role_id: any }) => x.role_id)
+                }
+            }
+
+            updateTypes(account.attributes, type)
+            return
+        }
+
+        const login = this.ctx.config.login_attribute
+            ? (account.attributes[this.ctx.config.login_attribute] as string)
+            : undefined
+
+        if (!login) {
+            throw new ConnectorError('Missing login attribute for user creation')
+        }
+
+        const attributes = { ...account.attributes, login, name }
+        let response = await this.ctx.nerm.getUserByLoginAndType(login, type)
+        if (!response) {
+            const body = await this.accountService.buildNERMAccountBody(attributes, type)
+            response = await this.ctx.nerm.createUser(body)
+        }
+
+        if (response) {
+            account.attributes.user_id = response.id
+            await this.ctx.nerm.setProfileAttribute(account.identity!, 'user_id', response.id)
+        } else {
+            throw new ConnectorError(`Failed to add "${type}" type to ${account.uuid}`)
+        }
+
         updateTypes(account.attributes, type)
     }
-
     async removeType(account: StdAccountListOutput, type: AccountType) {
         logger.info(`Removing ${type} type to ${account.uuid}`)
         if (this.ctx.config.account_type === type) {
             const message = `Cannot remove account base type`
             throw new ConnectorError(message)
-        } else {
-            const id = account.attributes.user_id as string
-            if (id) {
-                await this.ctx.nerm.deleteUser(id)
-                await this.attributeService.setAttribute(account, 'user_id', undefined)
-                const types = account.attributes.types as string[]
-                types.splice(types.indexOf(type), 1)
-            } else {
-                const message = `User not found for "${account.uuid}" profile`
-                logger.error(message)
-            }
         }
+
+        const id = account.attributes.user_id as string
+        if (!id) {
+            const message = `User not found for "${account.uuid}" profile`
+            logger.error(message)
+            return
+        }
+
+        await this.ctx.nerm.deleteUser(id)
+        await this.attributeService.setAttribute(account, 'user_id', undefined)
+        const types = account.attributes.types as string[]
+        types.splice(types.indexOf(type), 1)
     }
 
-    async addRole(account: StdAccountListOutput, role_id: string) {
-        logger.info(`Adding ${role_id} role to ${account.uuid}`)
-        let id: string
+    private async resolveUserIdForRole(account: StdAccountListOutput, role_id: string): Promise<string> {
         const role = await this.ctx.nerm.getRole(role_id)
         const type = getRoleType(role)
         switch (this.ctx.config.account_type) {
@@ -98,12 +97,15 @@ export class EntitlementService {
                         await this.addType(account, 'NeaccessUser')
                     }
                 }
-                id = account.attributes.user_id as string
-                break
+                return account.attributes.user_id as string
             default:
-                id = account.identity!
-                break
+                return account.identity!
         }
+    }
+
+    async addRole(account: StdAccountListOutput, role_id: string) {
+        logger.info(`Adding ${role_id} role to ${account.uuid}`)
+        const id = await this.resolveUserIdForRole(account, role_id)
 
         account.attributes.roles = account.attributes.roles ?? []
         const roles = account.attributes.roles as string[]
@@ -116,24 +118,7 @@ export class EntitlementService {
 
     async removeRole(account: StdAccountListOutput, role_id: string) {
         logger.info(`Removing ${role_id} role to ${account.uuid}`)
-        let id: string
-        const role = await this.ctx.nerm.getRole(role_id)
-        const type = getRoleType(role)
-        switch (this.ctx.config.account_type) {
-            case 'Profile':
-                if (!account.attributes.user_id) {
-                    if (type === 'NeprofileUser') {
-                        await this.addType(account, 'NeprofileUser')
-                    } else {
-                        await this.addType(account, 'NeaccessUser')
-                    }
-                }
-                id = account.attributes.user_id as string
-                break
-            default:
-                id = account.identity!
-                break
-        }
+        const id = await this.resolveUserIdForRole(account, role_id)
 
         account.attributes.roles = account.attributes.roles ?? []
         const roles = account.attributes.roles as string[]
@@ -162,22 +147,23 @@ export class EntitlementService {
         } else {
             requester_id = account.attributes[requester]
         }
-        if (requester_id) {
-            const body: { [key: string]: any } = {
-                workflow_id,
-                requester_id,
-                requester_type,
-            }
-            if (account.identity !== '') {
-                body.profile_id = account.identity
-            }
-            const response = await this.ctx.nerm.createWorkflowSession(body, wait)
-            if (response) {
-                return response
-            }
-        } else {
+        if (!requester_id) {
             const message = `Unable to resolve ${requester} for workflow ${workflow_id}`
             logger.error(message)
+            return
+        }
+
+        const body: { [key: string]: any } = {
+            workflow_id,
+            requester_id,
+            requester_type,
+        }
+        if (account.identity !== '') {
+            body.profile_id = account.identity
+        }
+        const response = await this.ctx.nerm.createWorkflowSession(body, wait)
+        if (response) {
+            return response
         }
     }
 
@@ -191,19 +177,20 @@ export class EntitlementService {
     async addWorkflow(account: StdAccountListOutput, workflow_id: string, waitFlag: boolean = false) {
         logger.debug(`Adding workflow ${workflow_id} to account ${account.uuid}`)
         const workflow = this.ctx.config.workflows?.find((x) => x.workflow === workflow_id)
-        if (workflow) {
-            const { requester_id } = workflow
-            await this.runWorkflow(account, workflow_id, requester_id, waitFlag)
-            const persistent =
-                this.ctx.config.workflows?.find((x) => x.workflow === workflow_id)?.persistent ?? false
-            if (persistent) {
-                const current = (account.attributes.workflows as string[]) ?? []
-                current.push(workflow_id)
-                await this.attributeService.setAttribute(account, 'workflows', current)
-            }
-        } else {
+
+        if (!workflow) {
             const message = `Unable to find configuration for workflow ${workflow_id}`
             throw new ConnectorError(message)
+        }
+
+        const { requester_id } = workflow
+        await this.runWorkflow(account, workflow_id, requester_id, waitFlag)
+
+        const persistent = this.ctx.config.workflows?.find((x) => x.workflow === workflow_id)?.persistent ?? false
+        if (persistent) {
+            const current = (account.attributes.workflows as string[]) ?? []
+            current.push(workflow_id)
+            await this.attributeService.setAttribute(account, 'workflows', current)
         }
     }
 

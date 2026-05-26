@@ -1,8 +1,4 @@
-import {
-    logger,
-    StdAccountCreateHandler,
-    StdAccountListOutput,
-} from '@sailpoint/connector-sdk'
+import { logger, StdAccountCreateHandler, StdAccountListOutput } from '@sailpoint/connector-sdk'
 import { ConnectorContext } from '../connector-context'
 import { AccountService } from '../services/account-service'
 import { AttributeService } from '../services/attribute-service'
@@ -49,8 +45,7 @@ export function createStdAccountCreate(
             const workflows = [input.attributes.workflows].flat()
             let wait = false
             const workflowPromises = workflows.map(async (workflow) => {
-                const workflowWait =
-                    ctx.config.workflows?.find((x) => x.workflow === workflow)?.wait || false
+                const workflowWait = ctx.config.workflows?.find((x) => x.workflow === workflow)?.wait || false
                 if (workflowWait) {
                     wait = true
                 }
@@ -77,11 +72,7 @@ export function createStdAccountCreate(
         if (account && ctx.config.account_type === 'Profile') {
             const accounts = await Promise.all(
                 operations.map((operation) =>
-                    operationService.processOperation(
-                        account as StdAccountListOutput,
-                        operation,
-                        input.schema
-                    )
+                    operationService.processOperation(account as StdAccountListOutput, operation, input.schema)
                 )
             )
             account = accounts.find((a) => a !== account) || account
