@@ -122,18 +122,6 @@ export class AccountService {
                 break
             }
             case 'NeprofileUser':
-                if (!this.ctx.config.login_attribute || !attributes[this.ctx.config.login_attribute]) {
-                    const message = 'Cannot create user without login'
-                    throw new ConnectorError(message)
-                }
-                body.type = type
-                for (const attribute of USERONLY_ATTRIBUTES) {
-                    const value = attributes[attribute]
-                    if (value) {
-                        body[attribute] = value
-                    }
-                }
-                break
             case 'NeaccessUser':
                 if (!this.ctx.config.login_attribute || !attributes[this.ctx.config.login_attribute]) {
                     const message = 'Cannot create user without login'
@@ -146,7 +134,9 @@ export class AccountService {
                         body[attribute] = value
                     }
                 }
-                body.profile_id = body.identity
+                if (type === 'NeaccessUser') {
+                    body.profile_id = body.identity
+                }
                 break
 
             default:
@@ -163,8 +153,6 @@ export class AccountService {
 
         switch (this.ctx.config.account_type) {
             case 'NeprofileUser':
-                response = await this.ctx.nerm.getUser(id)
-                break
             case 'NeaccessUser':
                 response = await this.ctx.nerm.getUser(id)
                 break
@@ -199,18 +187,16 @@ export class AccountService {
                 id = attributes.user_id as string
                 break
             case 'NeprofileUser':
-                account = new NeprofileUserAccount(nermObject)
+            case 'NeaccessUser':
+                account =
+                    this.ctx.config.account_type === 'NeprofileUser'
+                        ? new NeprofileUserAccount(nermObject)
+                        : new NeaccessUserAccount(nermObject)
                 attributes = resolveUserAttributes(nermObject, schema)
                 account.attributes[this.ctx.config.login_attribute] = nermObject.login
-                if (account.attributes.workflows) {
+                if (this.ctx.config.account_type === 'NeprofileUser' && account.attributes.workflows) {
                     account.attributes.workflows = (account.attributes.workflows as string).split(',')
                 }
-                id = account.identity
-                break
-            case 'NeaccessUser':
-                account = new NeaccessUserAccount(nermObject)
-                attributes = resolveUserAttributes(nermObject, schema)
-                account.attributes[this.ctx.config.login_attribute] = nermObject.login
                 id = account.identity
                 break
         }
@@ -254,10 +240,9 @@ export class AccountService {
                 rawAccount = await this.ctx.nerm.createProfile(body)
                 break
             case 'NeprofileUser':
-                rawAccount = await this.ctx.nerm.createUser(body)
-                break
             case 'NeaccessUser':
                 rawAccount = await this.ctx.nerm.createUser(body)
+                break
         }
 
         const account = await this.buildAccount(rawAccount, input.schema)
@@ -268,7 +253,6 @@ export class AccountService {
     async listAccounts(): Promise<AsyncGenerator<any>> {
         switch (this.ctx.config.account_type) {
             case 'NeprofileUser':
-                return this.ctx.nerm.listUsers(this.ctx.config.account_type)
             case 'NeaccessUser':
                 return this.ctx.nerm.listUsers(this.ctx.config.account_type)
             case 'Profile': {

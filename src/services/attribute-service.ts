@@ -36,10 +36,9 @@ export class AttributeService {
                 }
                 break
             case 'NeprofileUser':
-                await this.ctx.nerm.setUserAttribute(account.identity!, attribute, value)
-                break
             case 'NeaccessUser':
                 await this.ctx.nerm.setUserAttribute(account.identity!, attribute, value)
+                break
         }
 
         if (attribute === 'status') {
