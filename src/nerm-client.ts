@@ -72,6 +72,7 @@ export class NERMClient {
     private client: AxiosCacheInstance
     private attributesPromise?: Promise<Map<string, any>>
     private profileTypePromises = new Map<string, Promise<any>>()
+    private profileByIdPromises = new Map<string, Promise<any>>()
     private profilePromises = new Map<string, Promise<any>>()
     private profileByNamePromises = new Map<string, Promise<any>>()
     private userPromises = new Map<string, Promise<any>>()
@@ -282,11 +283,19 @@ export class NERMClient {
         yield* this.listRequest(url, type, params)
     }
 
+    // ⚡ Bolt: Cache getProfile results using a Promise map.
+    // Impact: Avoids N identical requests when synchronizing multiple accounts that
+    // reference the same profile ID, reducing redundant API calls and overhead.
     async getProfile(id: string): Promise<any> {
-        const url = `/profiles/${id}`
-        const type = 'profile'
-
-        return this.getRequest(url, type)
+        if (!this.profileByIdPromises.has(id)) {
+            const fetchProfile = async () => {
+                const url = `/profiles/${id}`
+                const type = 'profile'
+                return await this.getRequest(url, type)
+            }
+            this.profileByIdPromises.set(id, fetchProfile())
+        }
+        return this.profileByIdPromises.get(id)
     }
 
     // ⚡ Bolt: Cache getProfileByName results using a Promise map.
