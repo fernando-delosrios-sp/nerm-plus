@@ -59,22 +59,23 @@ export function createStdAccountUpdate(
                                         await entitlementService.addWorkflow(account, value, wait)
                                     }
                                     break
-                                default:
+                                default: {
                                     const entitlementSchema = input.schema?.attributes.find(
                                         (x) => x.name === change.attribute && x.schemaObjectType
                                     )
-                                    if (entitlementSchema && isProfile) {
-                                        operations.push(entitlementSchema.schemaObjectType as string)
-                                        await attributeService.profileAttributeOp(
-                                            account,
-                                            change.attribute,
-                                            change.value,
-                                            'add'
-                                        )
-                                    } else {
+                                    if (!entitlementSchema || !isProfile) {
                                         const message = `"${change.attribute}" entitlement attribute not supported`
                                         throw new ConnectorError(message)
                                     }
+                                    operations.push(entitlementSchema.schemaObjectType as string)
+                                    await attributeService.profileAttributeOp(
+                                        account,
+                                        change.attribute,
+                                        change.value,
+                                        'add'
+                                    )
+                                    break
+                                }
                             }
                             break
                         case 'Remove':
@@ -88,22 +89,23 @@ export function createStdAccountUpdate(
                                 case 'workflows':
                                     await entitlementService.removeWorkflow(account, value)
                                     break
-                                default:
+                                default: {
                                     if (
-                                        input.schema?.attributes.find(
+                                        !input.schema?.attributes.find(
                                             (x) => x.name === change.attribute && x.schemaObjectType
                                         )
                                     ) {
-                                        await attributeService.profileAttributeOp(
-                                            account,
-                                            change.attribute,
-                                            change.value,
-                                            'remove'
-                                        )
-                                    } else {
                                         const message = `"${change.attribute}" entitlement attribute not supported`
                                         throw new ConnectorError(message)
                                     }
+                                    await attributeService.profileAttributeOp(
+                                        account,
+                                        change.attribute,
+                                        change.value,
+                                        'remove'
+                                    )
+                                    break
+                                }
                             }
                             break
                         case 'Set':
