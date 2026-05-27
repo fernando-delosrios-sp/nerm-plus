@@ -33,6 +33,7 @@ export function createStdAccountUpdate(
             const roles = account.attributes.roles as string[]
             const isProfile = ctx.config.account_type === 'Profile'
             let isUser = types.includes('NeprofileUser') || types.includes('NeaccessUser') || roles.length > 0
+            const attributesToSet: Record<string, any> = {}
             for (const change of input.changes) {
                 const values = [change.value].flat()
                 for (const value of values) {
@@ -107,9 +108,13 @@ export function createStdAccountUpdate(
                             }
                             break
                         case 'Set':
-                            await attributeService.setAttribute(account, change.attribute, value)
+                            attributesToSet[change.attribute] = value
                     }
                 }
+            }
+
+            if (Object.keys(attributesToSet).length > 0) {
+                await attributeService.setAttributes(account, attributesToSet)
             }
 
             if (account) {
