@@ -144,7 +144,7 @@ export const entity2profile = (entity: SearchDocument, profile_type_id: string, 
 
 export const getRoleType = (role: any): 'NeprofileUser' | 'NeaccessUser' => {
     const uid = role.uid as string
-    if (uid.endsWith('neprofile_role')) {
+    if (uid && uid.endsWith('neprofile_role')) {
         return 'NeprofileUser'
     } else {
         return 'NeaccessUser'

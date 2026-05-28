@@ -1,4 +1,4 @@
-import { genericEntitlement2StdEntitlementListOutput } from '../src/utils'
+import { genericEntitlement2StdEntitlementListOutput, getRoleType } from '../src/utils'
 import { GenericEntitlement } from '../src/model/entitlement'
 
 describe('genericEntitlement2StdEntitlementListOutput', () => {
@@ -71,5 +71,32 @@ describe('genericEntitlement2StdEntitlementListOutput', () => {
                 name: 'admin',
             },
         })
+    })
+})
+
+describe('getRoleType', () => {
+    it('should return NeprofileUser when uid ends with neprofile_role', () => {
+        const role = { uid: 'some_user_neprofile_role' }
+        expect(getRoleType(role)).toBe('NeprofileUser')
+    })
+
+    it('should return NeaccessUser when uid does not end with neprofile_role', () => {
+        const role = { uid: 'some_user_other_role' }
+        expect(getRoleType(role)).toBe('NeaccessUser')
+    })
+
+    it('should return NeaccessUser when uid is an empty string', () => {
+        const role = { uid: '' }
+        expect(getRoleType(role)).toBe('NeaccessUser')
+    })
+
+    it('should return NeaccessUser when uid is undefined', () => {
+        const role = {}
+        expect(getRoleType(role)).toBe('NeaccessUser')
+    })
+
+    it('should return NeaccessUser when uid is null', () => {
+        const role = { uid: null }
+        expect(getRoleType(role)).toBe('NeaccessUser')
     })
 })
