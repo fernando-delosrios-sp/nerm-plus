@@ -1,4 +1,4 @@
-import { profile2Entitlement } from '../utils'
+import { profile2Entitlement, mergeProfileWithConfig } from '../utils'
 
 describe('profile2Entitlement', () => {
     it('should correctly map a profile to an entitlement with specified attributes', () => {
@@ -114,5 +114,27 @@ describe('profile2Entitlement', () => {
 
         const result = profile2Entitlement(mockProfile, type, attrs)
         expect(result.attributes.department).toBeUndefined()
+    })
+})
+
+describe('mergeProfileWithConfig', () => {
+    it('should overwrite profile attributes with conf attributes', () => {
+        const profile = { id: '1', name: 'Test', attributes: ['old'] }
+        const conf = { attributes: ['new1', 'new2'] }
+        expect(mergeProfileWithConfig(profile, conf)).toEqual({
+            id: '1',
+            name: 'Test',
+            attributes: ['new1', 'new2'],
+        })
+    })
+
+    it('should default to empty attributes array if conf attributes is undefined', () => {
+        const profile = { id: '2', name: 'Test2' }
+        const conf = {}
+        expect(mergeProfileWithConfig(profile, conf)).toEqual({
+            id: '2',
+            name: 'Test2',
+            attributes: [],
+        })
     })
 })

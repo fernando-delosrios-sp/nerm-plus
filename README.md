@@ -2,12 +2,12 @@
 
 ## Changelog
 
-- 0.1.13 (2026-05-26):
-    - Performance: Added promise map caching for profiles, users, and role assignments; parallelized attribute resolution; optimized array lookups with Set/Map
-    - Code Quality: Flattened nested conditionals with guard clauses; refactored switch statements using fall-through; extracted repeated logic into helpers
-    - Security: Fixed log redaction for tokens, secrets, authorization headers, and URL-encoded data; added cycle detection to prevent DoS in logging
-    - Testing: Added logging.spec.ts and expanded util test coverage
-- 0.1.12 (2026-05-08):
+-   0.1.13 (2026-05-26):
+    -   Performance: Added promise map caching for profiles, users, and role assignments; parallelized attribute resolution; optimized array lookups with Set/Map
+    -   Code Quality: Flattened nested conditionals with guard clauses; refactored switch statements using fall-through; extracted repeated logic into helpers
+    -   Security: Fixed log redaction for tokens, secrets, authorization headers, and URL-encoded data; added cycle detection to prevent DoS in logging
+    -   Testing: Added logging.spec.ts and expanded util test coverage
+-   0.1.12 (2026-05-08):
     -   Refactored monolith `index.ts` into layered architecture: operations, services, clients
     -   Extracted 12 connector operations into individual files under `src/operations/`
     -   Moved domain logic from handlers into `src/services/` (AccountService, EntitlementService, SchemaService, PushService)
