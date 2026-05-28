@@ -74,4 +74,20 @@ describe('logging', () => {
         expect(logged.api_key).toBe('[REDACTED]')
         expect(logged.status).toBe('active')
     })
+
+    it('falls back to String() when JSON.stringify fails (e.g. BigInt)', () => {
+        const input = { a: 1n }
+        const logStr = toLogString(input)
+        expect(logStr).toBe('[object Object]')
+    })
+
+    it('falls back to String() when an object property getter throws', () => {
+        const input = {
+            get a() {
+                throw new Error('fail')
+            },
+        }
+        const logStr = toLogString(input)
+        expect(logStr).toBe('[object Object]')
+    })
 })
