@@ -1,0 +1,5 @@
+🎯 **What:** The `try/catch` block inside the `Profile` class constructor (in `src/model/entitlement.ts`) was previously untested. This block silently swallows errors if `attrs.find` fails. A new test file `test/model/entitlement.spec.ts` was added to verify this logic.
+📊 **Coverage:** The new tests cover:
+  * The error condition where `attrs.find` throws an error (simulated by passing an object with `forEach` but lacking `find`).
+  * The happy path where a `description` attribute is successfully found and mapped.
+✨ **Result:** Increased test coverage by ensuring the `Profile` constructor gracefully handles type errors when mapping attributes.
