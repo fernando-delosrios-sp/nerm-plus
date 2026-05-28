@@ -61,3 +61,10 @@
 
 **Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
+
+## 2024-05-18 - Parallelizing Async Operations in Loops
+**Learning:** Sequential await calls inside array iteration loops (e.g. `for (const type of types) { await addType(...) }`) cause N+1 network request latency overhead since each network call blocks until the previous completes.
+**Action:** Replace `for (const ...)` loops that contain independent `await` operations with `Promise.all` using `map`. Map the arrays to Promises, then `await Promise.all(...)`. Add `.catch(e => e)` if you want to swallow errors, or catch blocks in the mapped promise to gracefully handle/log partial failures before awaiting all of them, to ensure optimal concurrency.
+## 2024-05-18 - Parallelizing Async Operations in Loops
+**Learning:** Sequential await calls inside array iteration loops (e.g. `for (const type of types) { await addType(...) }`) cause N+1 network request latency overhead since each network call blocks until the previous completes.
+**Action:** Replace `for (const ...)` loops that contain independent `await` operations with `Promise.all` using `map` (e.g. `await Promise.all(types.map(type => addType(...)))`). Be careful to preserve the original exception handling behavior instead of adding `.catch(e => e)` unless failing fast is explicitly not desired.
