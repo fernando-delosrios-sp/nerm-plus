@@ -62,4 +62,67 @@ describe('resolveUserAttributes', () => {
         }
         expect(resolveUserAttributes(attributes, schema)).toEqual({})
     })
+
+    test('should map empty attributes object to null values based on schema', () => {
+        const attributes: Attributes = {}
+        const schema: AccountSchema = {
+            identityAttribute: 'id',
+            displayAttribute: 'id',
+            groupAttribute: 'types',
+            attributes: [
+                { name: 'firstname', type: 'string', description: 'firstname' },
+                { name: 'age', type: 'int', description: 'age' },
+            ],
+        }
+        const expected: Attributes = {
+            firstname: null,
+            age: null,
+        }
+        expect(resolveUserAttributes(attributes, schema)).toEqual(expected)
+    })
+
+    test('should retain explicit null values in attributes', () => {
+        const attributes: Attributes = {
+            firstname: 'John',
+            age: null,
+        }
+        const schema: AccountSchema = {
+            identityAttribute: 'id',
+            displayAttribute: 'id',
+            groupAttribute: 'types',
+            attributes: [
+                { name: 'firstname', type: 'string', description: 'firstname' },
+                { name: 'age', type: 'int', description: 'age' },
+            ],
+        }
+        const expected: Attributes = {
+            firstname: 'John',
+            age: null,
+        }
+        expect(resolveUserAttributes(attributes, schema)).toEqual(expected)
+    })
+
+    test('should retain falsy values like 0, false, and empty string without converting to null', () => {
+        const attributes: Attributes = {
+            firstname: '',
+            age: 0,
+            active: false,
+        }
+        const schema: AccountSchema = {
+            identityAttribute: 'id',
+            displayAttribute: 'id',
+            groupAttribute: 'types',
+            attributes: [
+                { name: 'firstname', type: 'string', description: 'firstname' },
+                { name: 'age', type: 'int', description: 'age' },
+                { name: 'active', type: 'boolean', description: 'active' },
+            ],
+        }
+        const expected: Attributes = {
+            firstname: '',
+            age: 0,
+            active: false,
+        }
+        expect(resolveUserAttributes(attributes, schema)).toEqual(expected)
+    })
 })
