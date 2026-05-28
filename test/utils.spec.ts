@@ -1,4 +1,4 @@
-import { genericEntitlement2StdEntitlementListOutput } from '../src/utils'
+import { genericEntitlement2StdEntitlementListOutput, updateTypes } from '../src/utils'
 import { GenericEntitlement } from '../src/model/entitlement'
 
 describe('genericEntitlement2StdEntitlementListOutput', () => {
@@ -71,5 +71,46 @@ describe('genericEntitlement2StdEntitlementListOutput', () => {
                 name: 'admin',
             },
         })
+    })
+})
+
+describe('updateTypes', () => {
+    it('should add a type when attributes.types is undefined', () => {
+        const attributes: any = {}
+        const type = 'Profile'
+
+        updateTypes(attributes, type)
+
+        expect(attributes.types).toEqual(['Profile'])
+    })
+
+    it('should add a type when attributes.types already has some types', () => {
+        const attributes: any = { types: ['Profile'] }
+        const type = 'NeaccessUser'
+
+        updateTypes(attributes, type)
+
+        expect(attributes.types).toEqual(['Profile', 'NeaccessUser'])
+    })
+
+    it('should not add duplicate types', () => {
+        const attributes: any = { types: ['Profile'] }
+        const type = 'Profile'
+
+        updateTypes(attributes, type)
+
+        expect(attributes.types).toEqual(['Profile'])
+    })
+
+    it('should merge login properties when provided', () => {
+        const attributes: any = { types: ['Profile'] }
+        const type = 'NeaccessUser'
+        const login: any = { customAttr: 'value123', anotherAttr: true }
+
+        updateTypes(attributes, type, login)
+
+        expect(attributes.types).toEqual(['Profile', 'NeaccessUser'])
+        expect(attributes.customAttr).toEqual('value123')
+        expect(attributes.anotherAttr).toEqual(true)
     })
 })
