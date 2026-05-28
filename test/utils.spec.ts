@@ -1,4 +1,5 @@
-import { genericEntitlement2StdEntitlementListOutput } from '../src/utils'
+import { SearchDocument } from 'sailpoint-api-client'
+import { genericEntitlement2StdEntitlementListOutput, parents2children } from '../src/utils'
 import { GenericEntitlement } from '../src/model/entitlement'
 
 describe('genericEntitlement2StdEntitlementListOutput', () => {
@@ -71,5 +72,82 @@ describe('genericEntitlement2StdEntitlementListOutput', () => {
                 name: 'admin',
             },
         })
+    })
+})
+
+describe('parents2children', () => {
+    it('should return an empty map if parents array is empty', () => {
+        const parents: SearchDocument[] = []
+        const result = parents2children(parents, 'accessprofiles')
+        expect(result).toBeInstanceOf(Map)
+        expect(result.size).toBe(0)
+    })
+
+    it('should return an empty map if parent_type is undefined', () => {
+        const parents = [{ id: 'p1', name: 'parent1' }] as any as SearchDocument[]
+        const result = parents2children(parents, 'accessprofiles')
+        expect(result.size).toBe(0)
+    })
+
+    it('should return an empty map if attribute for type is not found', () => {
+        const parents = [{ _type: 'role', id: 'p1', name: 'parent1' }] as any as SearchDocument[]
+        // 'unknown_type' does not exist in PARENTCHILD_ATTRIBUTES['role']
+        const result = parents2children(parents, 'unknown_type')
+        expect(result.size).toBe(0)
+    })
+
+    it('should correctly map children to parents when attribute is not access', () => {
+        // PARENTCHILD_ATTRIBUTES.role.accessprofiles -> 'accessProfiles'
+        const parents = [
+            {
+                _type: 'role',
+                id: 'role1',
+                accessProfiles: [{ id: 'ap1' }, { id: 'ap2' }],
+            },
+            {
+                _type: 'role',
+                id: 'role2',
+                accessProfiles: [{ id: 'ap2' }, { id: 'ap3' }],
+            },
+        ] as any as SearchDocument[]
+
+        const result = parents2children(parents, 'accessprofiles')
+
+        expect(result.size).toBe(3)
+        expect(result.get('ap1')).toEqual(new Set(['role1']))
+        expect(result.get('ap2')).toEqual(new Set(['role1', 'role2']))
+        expect(result.get('ap3')).toEqual(new Set(['role2']))
+    })
+
+    it('should map and filter children when attribute is access', () => {
+        // PARENTCHILD_ATTRIBUTES.identity.roles -> 'access'
+        // TYPES.roles -> 'ROLE'
+        const parents = [
+            {
+                _type: 'identity',
+                id: 'identity1',
+                access: [
+                    { id: 'role1', type: 'ROLE' },
+                    { id: 'ap1', type: 'ACCESS_PROFILE' },
+                    { id: 'role2', type: 'ROLE' },
+                ],
+            },
+            {
+                _type: 'identity',
+                id: 'identity2',
+                access: [
+                    { id: 'role2', type: 'ROLE' },
+                    { id: 'ap2', type: 'ACCESS_PROFILE' },
+                ],
+            },
+        ] as any as SearchDocument[]
+
+        const result = parents2children(parents, 'roles')
+
+        expect(result.size).toBe(2)
+        expect(result.get('role1')).toEqual(new Set(['identity1']))
+        expect(result.get('role2')).toEqual(new Set(['identity1', 'identity2']))
+        expect(result.has('ap1')).toBeFalsy()
+        expect(result.has('ap2')).toBeFalsy()
     })
 })
