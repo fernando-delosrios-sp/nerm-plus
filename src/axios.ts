@@ -9,7 +9,7 @@ export const retriesConfig: IAxiosRetryConfig = {
     retryDelay: (retryCount, error) => {
         if (error.response?.headers) {
             const retryAfter = Number(error.response.headers['retry-after'])
-            if (retryAfter > 0) return retryAfter * 1000
+            if (retryAfter > 0) return Math.min(retryAfter * 1000, 300000)
         }
         return Math.min(1000 * Math.pow(2, retryCount - 1), 30000)
     },
