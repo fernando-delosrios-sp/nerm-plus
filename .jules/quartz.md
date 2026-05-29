@@ -51,3 +51,7 @@
 ## 2026-05-26 - Use string slicing for O(1) path resolution instead of arrays
 **Learning:** Using `.split('.').reverse().join('.')` (and similar variants) for path manipulation not only adds O(N) array allocation overhead but can silently introduce logical bugs by reversing the nested order of child path segments (e.g., parsing `a.b.c` incorrectly to `c.b`).
 **Action:** Avoid array-based tokenization for deep object paths and always favor O(1) string slicing using `indexOf('.')` and `slice()`.
+
+## 2024-05-29 - Flatten simple utility functions with guard clauses
+**Learning:** Small utility functions often become unnecessarily indented by using `if (valid) { do stuff }` or `if/else` structures.
+**Action:** Use early return guard clauses (e.g., `if (!valid) return`) and ternary operators to keep the primary logic at a shallow indentation level, making the functions easier to scan.

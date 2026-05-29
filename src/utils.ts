@@ -143,12 +143,7 @@ export const entity2profile = (entity: SearchDocument, profile_type_id: string, 
 }
 
 export const getRoleType = (role: any): 'NeprofileUser' | 'NeaccessUser' => {
-    const uid = role.uid as string
-    if (uid.endsWith('neprofile_role')) {
-        return 'NeprofileUser'
-    } else {
-        return 'NeaccessUser'
-    }
+    return (role.uid as string).endsWith('neprofile_role') ? 'NeprofileUser' : 'NeaccessUser'
 }
 
 export const updateTypes = (attributes: Attributes, type: AccountType, login?: Attributes) => {
@@ -161,23 +156,22 @@ export const updateTypes = (attributes: Attributes, type: AccountType, login?: A
 }
 
 export const resolveUserAttributes = (attributes: Attributes, schema?: AccountSchema): Attributes => {
-    let userAttributes: Attributes = {}
-    if (schema) {
-        for (const att of schema.attributes) {
-            userAttributes[att.name] = attributes[att.name] ?? null
-        }
+    if (!schema) return {}
+
+    const userAttributes: Attributes = {}
+    for (const att of schema.attributes) {
+        userAttributes[att.name] = attributes[att.name] ?? null
     }
 
     return userAttributes
 }
 
 export const getEmailFromUserAttribute = (userAttribute: string): string | undefined => {
-    if (typeof userAttribute === 'string') {
-        // Try to extract email in the format: Name (email)
-        const emailMatch = userAttribute.match(/\(([^\s@)]+@[^\s@)]+)\)/)
-        if (emailMatch) {
-            return emailMatch[1]
-        }
-    }
+    if (typeof userAttribute !== 'string') return undefined
+
+    // Try to extract email in the format: Name (email)
+    const emailMatch = userAttribute.match(/\(([^\s@)]+@[^\s@)]+)\)/)
+    if (emailMatch) return emailMatch[1]
+
     return undefined
 }
