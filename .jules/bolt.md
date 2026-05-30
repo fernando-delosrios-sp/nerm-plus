@@ -61,3 +61,6 @@
 
 **Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
+## 2024-05-19 - [FlatMap instead of Array Spread]
+**Learning:** Found a critical performance bottleneck in `src/services/push-service.ts` where spreading mapped ids with `childParentProfiles.push(...mappedIds)` inside an entity loop caused O(N*M) time complexity and can lead to "Maximum call stack size exceeded" errors for large mapping arrays.
+**Action:** Replace `push(...spread)` with `Array.prototype.flatMap` to accumulate mappings efficiently in O(N+M) time complexity, preventing call stack overflow.
