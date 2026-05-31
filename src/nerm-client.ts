@@ -78,6 +78,7 @@ export class NERMClient {
     private userPromises = new Map<string, Promise<any>>()
     private userByEmailPromises = new Map<string, Promise<any>>()
     private userRoleAssignmentsPromises = new Map<string, Promise<any>>()
+    private rolePromises = new Map<string, Promise<any>>()
     private instanceId?: string
 
     constructor(config: any) {
@@ -449,11 +450,18 @@ export class NERMClient {
         return this.userPromises.get(id)
     }
 
+    // ⚡ Bolt: Cache role resolutions to avoid N+1 API requests for the same role ID
     async getRole(id: string): Promise<any> {
-        const url = `/roles/${id}`
-        const type = 'role'
-
-        return await this.getRequest(url, type)
+        let promise = this.rolePromises.get(id)
+        if (!promise) {
+            promise = (async () => {
+                const url = `/roles/${id}`
+                const type = 'role'
+                return await this.getRequest(url, type)
+            })()
+            this.rolePromises.set(id, promise)
+        }
+        return promise
     }
 
     async *listRoles() {

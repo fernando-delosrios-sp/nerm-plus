@@ -61,3 +61,6 @@
 
 **Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
+## 2026-05-31 - Cache role resolutions to avoid N+1 API requests
+**Learning:** Role resolutions (`getRole` in `src/nerm-client.ts`) were hitting the API directly on every call. Because services (like `EntitlementService`) query roles repeatedly for the same ID, this caused redundant N+1 API requests and bottlenecked synchronization.
+**Action:** Implemented caching for `getRole` using `private rolePromises = new Map<string, Promise<any>>()` inside `NERMClient`. When building async caches that use Map structures, always use a single `.get(id)` lookup, and if empty, instantly initialize and `.set()` the promise before returning it, rather than awaiting it first.
