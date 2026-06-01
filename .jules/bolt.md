@@ -61,3 +61,7 @@
 
 **Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
+
+## 2024-05-22 - Optimize account creation with concurrent updates
+**Learning:** Sequential `await` in `for...of` loops during account creation (like adding types and roles) slows down initialization. Because NERM utilizes `axios-request-throttle` to safely manage API concurrency and order is strictly independent, these updates don't need to be sequential.
+**Action:** Use `Promise.all(array.map(...))` to concurrently dispatch independent service updates like `addType` and `addRole` to optimize initialization throughput.
