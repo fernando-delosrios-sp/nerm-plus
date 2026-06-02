@@ -887,14 +887,22 @@ export class NERMClient {
 
         try {
             let response = await this.listRequest(url, type, params)
-            const deletePromises: Promise<any>[] = []
+            let deletePromises: Promise<any>[] = []
             for await (const roleAssignment of response) {
                 const deleteUrl = `/user_role/${roleAssignment.id}`
                 deletePromises.push(this.deleteRequest(deleteUrl).catch((e: any) => e))
+                if (deletePromises.length >= BATCH_SIZE) {
+                    const results = await Promise.all(deletePromises)
+                    const errors = results.filter((r) => r instanceof Error)
+                    if (errors.length > 0) throw errors[0]
+                    deletePromises = []
+                }
             }
-            const results = await Promise.all(deletePromises)
-            const errors = results.filter((r) => r instanceof Error)
-            if (errors.length > 0) throw errors[0]
+            if (deletePromises.length > 0) {
+                const results = await Promise.all(deletePromises)
+                const errors = results.filter((r) => r instanceof Error)
+                if (errors.length > 0) throw errors[0]
+            }
         } catch (error) {
             const message = `Failed to remove "${role_id}" role_id from "${user_id}" user_id`
             this.logError('removeRole', message)
