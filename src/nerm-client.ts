@@ -470,7 +470,7 @@ export class NERMClient {
         yield* this.listRequest(url, type, params)
     }
 
-    async createProfile(body: any) {
+    async createProfile(body: Record<string, any>) {
         const url = `/profile`
         const type = 'profile'
 
@@ -507,7 +507,7 @@ export class NERMClient {
         await Promise.all(jobList.map(pollJob))
     }
 
-    async updateProfile(id: string, body: any) {
+    async updateProfile(id: string, body: Record<string, any>) {
         const url = `/profiles/${id}`
         const type = 'profile'
 
@@ -538,14 +538,14 @@ export class NERMClient {
         }
     }
 
-    async createUser(body: any) {
+    async createUser(body: Record<string, any>) {
         const url = '/user'
         const type = 'user'
 
         return await this.createRequest(url, type, body)
     }
 
-    async updateUser(id: string, body: any) {
+    async updateUser(id: string, body: Record<string, any>) {
         const url = `/users/${id}`
         const type = 'user'
 
@@ -616,7 +616,7 @@ export class NERMClient {
         return await this.getRequest(url, type)
     }
 
-    async createWorkflowSession(body: any, wait: boolean = false) {
+    async createWorkflowSession(body: Record<string, any>, wait: boolean = false) {
         const url = '/workflow_sessions'
         const type = 'workflow_session'
 
@@ -813,7 +813,7 @@ export class NERMClient {
 
     async setProfileAttribute(id: string, path: string, value: any): Promise<any> {
         let profile = await this.getProfile(id)
-        let body: any = {}
+        let body: Record<string, any> = {}
         value = value ?? ''
         const response = await this.resolveAttributePath(profile, path)
         if (response.profile === profile) {
