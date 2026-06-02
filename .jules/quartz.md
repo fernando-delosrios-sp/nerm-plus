@@ -51,3 +51,7 @@
 ## 2026-05-26 - Use string slicing for O(1) path resolution instead of arrays
 **Learning:** Using `.split('.').reverse().join('.')` (and similar variants) for path manipulation not only adds O(N) array allocation overhead but can silently introduce logical bugs by reversing the nested order of child path segments (e.g., parsing `a.b.c` incorrectly to `c.b`).
 **Action:** Avoid array-based tokenization for deep object paths and always favor O(1) string slicing using `indexOf('.')` and `slice()`.
+
+## 2024-06-03 - Replaced 'any' type in map types and array declarations
+**Learning:** Replaced `any` types by creating interface specific to project object needs (`NermProfile`). Explicit type structures lead to much robust code and self-documenting.
+**Action:** When working with types without proper interfaces or when using any, make sure to look at what attributes these items have, then define an explicit interface or use an already imported standard type.

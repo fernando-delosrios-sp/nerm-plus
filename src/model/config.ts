@@ -57,3 +57,11 @@ export interface Config {
     push_mode: boolean
     mappings?: Mapping[]
 }
+
+export interface NermProfile {
+    id?: string
+    profile_type_id?: string
+    status?: string
+    name?: string
+    attributes: Record<string, any>
+}

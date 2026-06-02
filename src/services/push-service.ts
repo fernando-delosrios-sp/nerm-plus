@@ -3,6 +3,8 @@ import { ConnectorContext } from '../connector-context'
 import { BATCH_SIZE } from '../data/constants'
 import { entity2profile, parents2children } from '../utils'
 import { fnLog } from '../logging'
+import { SearchDocument } from 'sailpoint-api-client'
+import { NermProfile } from '../model/config'
 
 export class PushService {
     constructor(private ctx: ConnectorContext) {}
@@ -10,8 +12,8 @@ export class PushService {
     pushContents: CommandHandler = async (context, input, res) => {
         logger.debug(fnLog('pushContents', 'Pushing contents'))
         const mappings = this.ctx.config.mappings!.sort((a, b) => (a.nested ? (b.nested ? 0 : 1) : -1)) ?? []
-        const masterProfileMap: Map<string, any[]> = new Map()
-        const masterEntityMap: Map<string, any[]> = new Map()
+        const masterProfileMap: Map<string, NermProfile[]> = new Map()
+        const masterEntityMap: Map<string, SearchDocument[]> = new Map()
 
         for (const conf of mappings) {
             const { nested, sync, index, profile, search, parent_index, attribute, id } = conf
@@ -20,8 +22,8 @@ export class PushService {
                 const params = {
                     profile_type_id: profileType.id,
                 }
-                const profileMap: Map<string, any> = new Map()
-                let profiles: any[] = []
+                const profileMap: Map<string, NermProfile> = new Map()
+                let profiles: NermProfile[] = []
                 let existingProfiles = this.ctx.nerm.listProfiles(params)
                 let entities = await this.ctx.isc.search(search, index)
                 let children: Map<string, Set<string>> = new Map()
@@ -42,7 +44,9 @@ export class PushService {
                             if (!parentObjectsMap.has(pId)) {
                                 parentObjectsMap.set(pId, [])
                             }
-                            parentObjectsMap.get(pId)!.push(p.id)
+                            if (p.id) {
+                                parentObjectsMap.get(pId)!.push(p.id)
+                            }
                         }
                     }
                 }
@@ -79,7 +83,7 @@ export class PushService {
                 if (nested) {
                     for (let offset = 0; offset < pendingProfiles.length; offset += BATCH_SIZE) {
                         const batchItems = pendingProfiles.slice(offset, offset + BATCH_SIZE)
-                        const responses: Promise<any>[] = batchItems.map((profile) =>
+                        const responses: Promise<unknown>[] = batchItems.map((profile) =>
                             this.ctx.nerm.createProfile(profile)
                         )
                         await Promise.all(responses)
