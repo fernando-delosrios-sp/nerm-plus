@@ -33,84 +33,116 @@ export function createStdAccountUpdate(
             const roles = account.attributes.roles as string[]
             const isProfile = ctx.config.account_type === 'Profile'
             let isUser = types.includes('NeprofileUser') || types.includes('NeaccessUser') || roles.length > 0
+            let accountReloadNeeded = false
+            const typePromises: Promise<any>[] = []
+            const otherPromises: Promise<any>[] = []
+
             for (const change of input.changes) {
                 const values = [change.value].flat()
                 for (const value of values) {
-                    switch (change.op) {
-                        case 'Add':
-                            switch (change.attribute) {
-                                case 'types':
+                    if (change.attribute === 'types') {
+                        typePromises.push(
+                            (async () => {
+                                if (change.op === 'Add') {
                                     if (value !== 'Profile') {
                                         await entitlementService.addType(account, value)
-                                        account = await accountService.getAccount(input.identity, input.schema)
-                                        isUser = true
+                                        accountReloadNeeded = true
                                     } else {
                                         await entitlementService.addType(account, value)
                                     }
-                                    break
-                                case 'roles':
-                                    if (isUser) {
-                                        await entitlementService.addRole(account, value)
-                                    }
-                                    break
-                                case 'workflows':
-                                    if (isProfile) {
-                                        wait = ctx.config.workflows?.find((x) => x.workflow === value)?.wait || wait
-                                        await entitlementService.addWorkflow(account, value, wait)
-                                    }
-                                    break
-                                default:
-                                    const entitlementSchema = input.schema?.attributes.find(
-                                        (x) => x.name === change.attribute && x.schemaObjectType
-                                    )
-                                    if (entitlementSchema && isProfile) {
-                                        operations.push(entitlementSchema.schemaObjectType as string)
-                                        await attributeService.profileAttributeOp(
-                                            account,
-                                            change.attribute,
-                                            change.value,
-                                            'add'
-                                        )
-                                    } else {
-                                        const message = `"${change.attribute}" entitlement attribute not supported`
-                                        throw new ConnectorError(message)
-                                    }
-                            }
-                            break
-                        case 'Remove':
-                            switch (change.attribute) {
-                                case 'types':
+                                } else if (change.op === 'Remove') {
                                     await entitlementService.removeType(account, value)
-                                    break
-                                case 'roles':
-                                    await entitlementService.removeRole(account, value)
-                                    break
-                                case 'workflows':
-                                    await entitlementService.removeWorkflow(account, value)
-                                    break
-                                default:
-                                    if (
-                                        input.schema?.attributes.find(
-                                            (x) => x.name === change.attribute && x.schemaObjectType
-                                        )
-                                    ) {
-                                        await attributeService.profileAttributeOp(
-                                            account,
-                                            change.attribute,
-                                            change.value,
-                                            'remove'
-                                        )
-                                    } else {
-                                        const message = `"${change.attribute}" entitlement attribute not supported`
-                                        throw new ConnectorError(message)
-                                    }
-                            }
-                            break
-                        case 'Set':
-                            await attributeService.setAttribute(account, change.attribute, value)
+                                }
+                            })().catch((e: any) => e)
+                        )
+                    } else {
+                        otherPromises.push(
+                            (async () => {
+                                switch (change.op) {
+                                    case 'Add':
+                                        switch (change.attribute) {
+                                            case 'roles':
+                                                if (isUser) {
+                                                    await entitlementService.addRole(account, value)
+                                                }
+                                                break
+                                            case 'workflows':
+                                                if (isProfile) {
+                                                    wait =
+                                                        ctx.config.workflows?.find((x: any) => x.workflow === value)
+                                                            ?.wait || wait
+                                                    await entitlementService.addWorkflow(account, value, wait)
+                                                }
+                                                break
+                                            default:
+                                                const entitlementSchema = input.schema?.attributes.find(
+                                                    (x: any) => x.name === change.attribute && x.schemaObjectType
+                                                )
+                                                if (entitlementSchema && isProfile) {
+                                                    operations.push(entitlementSchema.schemaObjectType as string)
+                                                    await attributeService.profileAttributeOp(
+                                                        account,
+                                                        change.attribute,
+                                                        change.value,
+                                                        'add'
+                                                    )
+                                                } else {
+                                                    throw new ConnectorError(
+                                                        `"${change.attribute}" entitlement attribute not supported`
+                                                    )
+                                                }
+                                        }
+                                        break
+                                    case 'Remove':
+                                        switch (change.attribute) {
+                                            case 'roles':
+                                                await entitlementService.removeRole(account, value)
+                                                break
+                                            case 'workflows':
+                                                await entitlementService.removeWorkflow(account, value)
+                                                break
+                                            default:
+                                                if (
+                                                    input.schema?.attributes.find(
+                                                        (x: any) => x.name === change.attribute && x.schemaObjectType
+                                                    )
+                                                ) {
+                                                    await attributeService.profileAttributeOp(
+                                                        account,
+                                                        change.attribute,
+                                                        change.value,
+                                                        'remove'
+                                                    )
+                                                } else {
+                                                    throw new ConnectorError(
+                                                        `"${change.attribute}" entitlement attribute not supported`
+                                                    )
+                                                }
+                                        }
+                                        break
+                                    case 'Set':
+                                        await attributeService.setAttribute(account, change.attribute, value)
+                                }
+                            })().catch((e: any) => e)
+                        )
                     }
                 }
             }
+
+            const typeResults = await Promise.all(typePromises)
+            typeResults.forEach((res) => {
+                if (res instanceof Error) throw res
+            })
+
+            if (accountReloadNeeded) {
+                account = await accountService.getAccount(input.identity, input.schema)
+                isUser = true
+            }
+
+            const otherResults = await Promise.all(otherPromises)
+            otherResults.forEach((res) => {
+                if (res instanceof Error) throw res
+            })
 
             if (account) {
                 const accounts = await Promise.all(
