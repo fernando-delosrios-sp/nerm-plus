@@ -24,7 +24,8 @@ type UserType = 'NeprofileUser' | 'NeaccessUser'
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function looksLikeUuid(value: string): boolean {
-    return UUID_PATTERN.test(value.trim())
+    const trimmed = value.trim()
+    return trimmed.length === 36 && UUID_PATTERN.test(trimmed)
 }
 
 /** NERM often returns only `error: "The Profile failed to create/update"`; merge status + full body for debugging. */

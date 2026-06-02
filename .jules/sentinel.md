@@ -32,3 +32,8 @@
 **Vulnerability:** URL-encoded form data (e.g. `client_id=123&client_secret=secret`) is sometimes sent or logged, leaking secrets in plain text because the `redact()` logger only checked JSON structures and object keys, not raw string parameters.
 **Learning:** External API tokens, passwords, and sensitive keys embedded within URL-encoded payload strings bypassing simple log redaction can still lead to secret leakage. Heuristics with strict constraints must be carefully crafted to avoid corrupting standard logging outputs.
 **Prevention:** Implement deep payload parsing by utilizing `URLSearchParams` to extract and redact sensitive query parameters from string payloads containing `&` and `=`, but avoid matching URLs directly or plain-text strings with spaces.
+
+## 2025-02-27 - Fix Insecure Regular Expression for UUID Validation
+**Vulnerability:** The UUID validation regex `^[0-9a-f]{8}-...$` was susceptible to bypasses or unhandled behavior when dealing with newlines, as JS regex boundaries `^` and `$` do not strictly prevent multi-line input anomalies unless strictly controlled.
+**Learning:** Even though `trim()` was used to remove trailing newlines, SAST tools and strict security postures flag `^` and `$` as insufficiently rigorous bounds in languages where strings can be artificially injected with multi-line characters.
+**Prevention:** Rather than creating complex or non-standard regex patterns, validate exact string length (e.g., `length === 36`) prior to testing the regex. This bypasses the regex engine entirely for malformed inputs, providing an absolute structural guarantee before pattern matching.
