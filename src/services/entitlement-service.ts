@@ -91,11 +91,7 @@ export class EntitlementService {
         switch (this.ctx.config.account_type) {
             case 'Profile':
                 if (!account.attributes.user_id) {
-                    if (type === 'NeprofileUser') {
-                        await this.addType(account, 'NeprofileUser')
-                    } else {
-                        await this.addType(account, 'NeaccessUser')
-                    }
+                    await this.addType(account, type)
                 }
                 return account.attributes.user_id as string
             default:
