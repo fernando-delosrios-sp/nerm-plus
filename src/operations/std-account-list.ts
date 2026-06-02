@@ -40,16 +40,43 @@ export function createStdAccountList(
 
             const listAndProcess = async (source: AsyncGenerator<any>) => {
                 let batch: any[] = []
+                const executing = new Set<Promise<void>>()
+                const errors: any[] = []
+                const MAX_CONCURRENT_BATCHES = 10
+
                 for await (const item of source) {
                     batch.push(item)
                     if (batch.length >= ACCOUNT_CONCURRENCY) {
-                        await processAccountBatch(batch)
+                        const currentBatch = batch
+                        const promise = processAccountBatch(currentBatch)
+                        executing.add(promise)
+
+                        promise
+                            .finally(() => executing.delete(promise))
+                            .catch((e) => {
+                                errors.push(e)
+                            })
+
+                        if (executing.size >= MAX_CONCURRENT_BATCHES) {
+                            await Promise.race(executing)
+                            if (errors.length > 0) throw errors[0]
+                        }
+
                         batch = []
                     }
                 }
                 if (batch.length > 0) {
-                    await processAccountBatch(batch)
+                    const promise = processAccountBatch(batch)
+                    executing.add(promise)
+                    promise
+                        .finally(() => executing.delete(promise))
+                        .catch((e) => {
+                            errors.push(e)
+                        })
                 }
+
+                await Promise.all(executing)
+                if (errors.length > 0) throw errors[0]
             }
 
             await listAndProcess(await accountService.listAccounts())
