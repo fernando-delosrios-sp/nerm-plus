@@ -9,6 +9,8 @@ describe('logging', () => {
             my_password: '123',
             clientSecret: '456',
             accessToken: '789',
+            client_id: 'abc',
+            clientId: 'xyz',
             normalKey: 'normalValue',
             changes: [
                 { attribute: 'password', value: 'secret1' },
@@ -26,6 +28,8 @@ describe('logging', () => {
         expect(logged.my_password).toBe('[REDACTED]')
         expect(logged.clientSecret).toBe('[REDACTED]')
         expect(logged.accessToken).toBe('[REDACTED]')
+        expect(logged.client_id).toBe('[REDACTED]')
+        expect(logged.clientId).toBe('[REDACTED]')
         expect(logged.normalKey).toBe('normalValue')
         expect(logged.changes[0].value).toBe('[REDACTED]')
         expect(logged.changes[1].value).toBe('[REDACTED]')

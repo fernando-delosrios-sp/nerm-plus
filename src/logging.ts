@@ -10,7 +10,9 @@ const isSensitiveKey = (key: string): boolean => {
         lower.includes('secret') ||
         lower.includes('authorization') ||
         lower.includes('api_key') ||
-        lower.includes('apikey')
+        lower.includes('apikey') ||
+        lower.includes('client_id') ||
+        lower.includes('clientid')
     )
 }
 

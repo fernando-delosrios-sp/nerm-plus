@@ -32,3 +32,7 @@
 **Vulnerability:** URL-encoded form data (e.g. `client_id=123&client_secret=secret`) is sometimes sent or logged, leaking secrets in plain text because the `redact()` logger only checked JSON structures and object keys, not raw string parameters.
 **Learning:** External API tokens, passwords, and sensitive keys embedded within URL-encoded payload strings bypassing simple log redaction can still lead to secret leakage. Heuristics with strict constraints must be carefully crafted to avoid corrupting standard logging outputs.
 **Prevention:** Implement deep payload parsing by utilizing `URLSearchParams` to extract and redact sensitive query parameters from string payloads containing `&` and `=`, but avoid matching URLs directly or plain-text strings with spaces.
+## 2025-06-02 - Insufficient Data Redaction in Logging
+**Vulnerability:** Client IDs (`client_id` and `clientid`) were not being redacted in log messages.
+**Learning:** The `isSensitiveKey` function manually checks a hardcoded list of string matches. When new sensitive concepts (like OAuth client configurations) are added or used, the redaction function needs explicit updates if the keys don't match existing substrings (like 'secret').
+**Prevention:** Regularly review logging outputs and redaction functions when introducing new types of sensitive configurations (like OAuth credentials) to ensure their specific key naming conventions are caught by the redaction logic.
