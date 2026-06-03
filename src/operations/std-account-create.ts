@@ -29,16 +29,14 @@ export function createStdAccountCreate(
 
         if (input.attributes.types) {
             const types = [input.attributes.types].flat()
-            for (const type of types) {
-                await entitlementService.addType(account, type)
-            }
+            // ⚡ Bolt: Execute independent addType operations concurrently instead of sequentially
+            await Promise.all(types.map((type) => entitlementService.addType(account, type)))
         }
 
         if (input.attributes.roles) {
             const roles = [input.attributes.roles].flat()
-            for (const role of roles) {
-                await entitlementService.addRole(account, role)
-            }
+            // ⚡ Bolt: Execute independent addRole operations concurrently to avoid N+1 API delays
+            await Promise.all(roles.map((role) => entitlementService.addRole(account, role)))
         }
 
         if (input.attributes.workflows && ctx.config.account_type === 'Profile') {
@@ -61,13 +59,15 @@ export function createStdAccountCreate(
         const entitlementSchemas = input.schema?.attributes.filter(
             (x) => x.schemaObjectType && !ENTITLEMENT_ATTRIBUTES.includes(x.name)
         )
+        const attributePromises: Promise<any>[] = []
         for (const [key, value] of Object.entries(input.attributes)) {
             const entitlementSchema = entitlementSchemas.find((x) => x.name === key)
             if (entitlementSchema) {
                 operations.push(entitlementSchema.schemaObjectType!)
-                await attributeService.profileAttributeOp(account, key, value as any, 'add')
+                attributePromises.push(attributeService.profileAttributeOp(account, key, value as any, 'add'))
             }
         }
+        await Promise.all(attributePromises)
 
         if (account && ctx.config.account_type === 'Profile') {
             const accounts = await Promise.all(

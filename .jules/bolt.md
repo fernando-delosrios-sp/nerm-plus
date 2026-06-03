@@ -61,3 +61,7 @@
 
 **Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
+## 2024-05-31 - Parallelize Independent Attribute Additions
+
+**Learning:** During account creation, multiple `addType`, `addRole`, and profile attribute operations are frequently requested as part of the initial account configuration. Iterating over array elements and `await`ing sequentially causes an N+1 API delay that scales linearly with the number of attributes requested, creating a substantial performance bottleneck in the provisioning pipeline.
+**Action:** Replace sequential `for` loops in account provisioning steps with `Promise.all(array.map(...))` to dispatch independent HTTP requests (like role assignments and type additions) concurrently. This correctly builds maximum throughput and resolves multiple attribute operations in parallel instead of one by one.
