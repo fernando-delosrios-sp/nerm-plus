@@ -61,3 +61,7 @@
 
 **Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
+## 2024-06-25 - Parallelize independent array operations using Promise.all
+
+**Learning:** When executing multiple independent asynchronous operations based on arrays, such as adding multiple "roles" or "types" to an account during creation, using sequential `await` inside a `for...of` loop leads to N+1 API query bottlenecks.
+**Action:** Use `Promise.all` alongside `.map()` (e.g., `await Promise.all(roles.map(...))`) to execute independent HTTP operations concurrently, significantly improving performance and overall execution time.
