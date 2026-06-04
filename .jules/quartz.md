@@ -27,27 +27,42 @@
 
 **Learning:** Extracting duplicated, complex setup or object-resolution logic spanning multiple methods (like user ID validation based on `account_type` in `EntitlementService`) into private helper methods reduces duplication and improves the clarity of main operation flows.
 **Action:** Identify repeated configuration checks and entity resolution blocks across service methods and extract them into focused, descriptive private helper methods.
+
 ## 2024-06-25 - Handle undefined attributes in profile2Entitlement gracefully
+
 **Learning:** Hard-coded property assignments in object mapping iterations are vulnerable to runtime errors if the source property is missing. Existing tests may accidentally "expect" this broken behavior rather than validating a correct fix.
 **Action:** Always use optional chaining (`?.[key]`) or safe fallbacks when mapping properties dynamically. Furthermore, always check if there are tests expecting `.toThrow()` for the exact error being fixed and update them to expect a graceful fallback.
+
 ## 2026-05-21 - Flatten conditionals with guard clauses
+
 **Learning:** When validating inputs or states in operations logic (e.g., `addType`, `addWorkflow` in `entitlement-service.ts`), deep nesting often occurs when using 'if-else' structures for primary failure or presence checks.
 **Action:** Use early return or throw guard clauses (e.g., `if (!workflow) throw...` or `if (user_id) { ... return }`) instead of nested switch or else blocks to avoid deeply nested 'arrow code' and keep the execution path at a shallow indentation level.
 
 ## 2026-05-19 - Use case fall-through to eliminate switch redundancy
+
 **Learning:** Services like AccountService and AttributeService sometimes process identical or nearly identical execution paths for multiple subtypes (e.g., NeprofileUser and NeaccessUser) inside large switch blocks.
 **Action:** Merge identical cases using switch case fall-through (`case A: case B: ... break;`), and extract any minor differences (like setting an extra property) into an internal `if` check. This reduces code duplication and improves scannability.
+
 ## 2026-05-19 - Refactor switch statements with case fall-through
 
 **Learning:** When switch statements in services (like AccountService) contain cases that share identical or nearly identical handling logic (e.g., for NeprofileUser and NeaccessUser), it leads to redundant code blocks that are harder to maintain and read.
 **Action:** Use case fall-through to merge identical logic for multiple switch cases. If there are minor type-specific differences, guard them with an internal conditional (e.g., `if (type === 'NeaccessUser') {...}`) within the combined block.
+
 ## 2025-05-13 - Deduplicate Similar Switch Cases in Service Layer
+
 **Learning:** When handling multiple configuration types (like `NeprofileUser` and `NeaccessUser`) in service methods, logic is often identically duplicated across parallel case statements, increasing visual noise and maintenance overhead.
 **Action:** Use case fall-through to merge identical logic in switch statements, guarding any small type-specific differences (such as assigning `profile_id`) with a conditional check, keeping the switch block concise and DRY.
 
 ## 2024-05-25 - Group identical switch cases via fall-through
+
 **Learning:** Service classes processing multiple specific types (like `NeprofileUser` and `NeaccessUser`) often implement identical handling logic across several lifecycle methods, leading to highly repetitive arrow code.
 **Action:** When handling structurally similar types, use `case` fall-throughs in `switch` statements to group logic and eliminate duplication, using a small inner guard for any minor type-specific deviations.
+
 ## 2026-05-26 - Use string slicing for O(1) path resolution instead of arrays
+
 **Learning:** Using `.split('.').reverse().join('.')` (and similar variants) for path manipulation not only adds O(N) array allocation overhead but can silently introduce logical bugs by reversing the nested order of child path segments (e.g., parsing `a.b.c` incorrectly to `c.b`).
 **Action:** Avoid array-based tokenization for deep object paths and always favor O(1) string slicing using `indexOf('.')` and `slice()`.
+
+## 2026-06-04 - Pass union types directly instead of unwrapping
+**Learning:** When a variable is strictly typed to a specific union (like 'NeprofileUser' | 'NeaccessUser'), it is often unwrapped with an if/else block to pass literal strings to a function. This is redundant.
+**Action:** Pass the union-typed variable directly to consuming functions to improve readability and eliminate branching.
