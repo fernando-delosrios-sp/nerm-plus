@@ -56,13 +56,9 @@ export class PushService {
                     if (nested && profile) {
                         const childParents = children?.get(entity.id as string) ?? new Set()
                         if (parentObjectsMap) {
-                            const childParentProfiles: string[] = []
-                            for (const parentId of childParents) {
-                                const mappedIds = parentObjectsMap.get(parentId)
-                                if (mappedIds) {
-                                    childParentProfiles.push(...mappedIds)
-                                }
-                            }
+                            const childParentProfiles = Array.from(childParents).flatMap(
+                                (parentId) => parentObjectsMap!.get(parentId) ?? []
+                            )
                             profile.attributes[attribute!] = childParentProfiles
                         }
                     }

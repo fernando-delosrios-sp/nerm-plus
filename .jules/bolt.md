@@ -61,3 +61,7 @@
 
 **Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
+## 2024-05-13 - Optimize nested profile parent lookup dynamically sized array lookups using Array.prototype.flatMap
+
+**Learning:** In `src/services/push-service.ts`, iterating over `childParents` inside an entity mapping loop and accumulating dynamically sized arrays using array spread `...` inside `.push()` (`childParentProfiles.push(...mappedIds)`) can result in Maximum call stack size exceeded errors if `mappedIds` is large, and introduces O(N*M) time complexity overhead due to array expansion.
+**Action:** Replaced `.push(...spread)` with `Array.prototype.flatMap()` to safely and efficiently merge multiple dynamically sized child ID arrays, avoiding call stack limits and improving mapping performance.
