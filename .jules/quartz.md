@@ -51,3 +51,8 @@
 ## 2026-05-26 - Use string slicing for O(1) path resolution instead of arrays
 **Learning:** Using `.split('.').reverse().join('.')` (and similar variants) for path manipulation not only adds O(N) array allocation overhead but can silently introduce logical bugs by reversing the nested order of child path segments (e.g., parsing `a.b.c` incorrectly to `c.b`).
 **Action:** Avoid array-based tokenization for deep object paths and always favor O(1) string slicing using `indexOf('.')` and `slice()`.
+
+## 2026-05-26 - Pass strictly typed union variables directly
+
+**Learning:** When variables are strictly typed to a specific union (e.g., `'NeprofileUser' | 'NeaccessUser'` via `getRoleType`), unwrapping them through redundant `if-else` blocks creates unnecessary visual noise and conditional branching.
+**Action:** Pass the union-typed variable directly to consuming functions (e.g., `await this.addType(account, type)`) rather than checking for one value and falling back to another.
