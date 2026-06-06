@@ -61,3 +61,8 @@
 
 **Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
+
+## 2024-06-25 - Cache Role fetches with Promise map
+
+**Learning:** API clients processing bulk identity entitlements may concurrently request the exact same role by ID multiple times, creating a network bottleneck without request-level caching.
+**Action:** Implemented caching for `getRole` using an in-memory Map of Promises, reusing pending lookups to prevent duplicate identical requests for the same role ID.

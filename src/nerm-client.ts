@@ -73,6 +73,7 @@ export class NERMClient {
     private attributesPromise?: Promise<Map<string, any>>
     private profileTypePromises = new Map<string, Promise<any>>()
     private profileByIdPromises = new Map<string, Promise<any>>()
+    private rolePromises = new Map<string, Promise<any>>()
     private profilePromises = new Map<string, Promise<any>>()
     private profileByNamePromises = new Map<string, Promise<any>>()
     private userPromises = new Map<string, Promise<any>>()
@@ -449,11 +450,19 @@ export class NERMClient {
         return this.userPromises.get(id)
     }
 
+    // ⚡ Bolt: Cache getRole results using a Promise map.
+    // Impact: Prevents N+1 identical requests for roles during concurrent entity syncing
+    // or when listing multiple entitlements.
     async getRole(id: string): Promise<any> {
-        const url = `/roles/${id}`
-        const type = 'role'
-
-        return await this.getRequest(url, type)
+        if (!this.rolePromises.has(id)) {
+            const fetchRole = async () => {
+                const url = `/roles/${id}`
+                const type = 'role'
+                return await this.getRequest(url, type)
+            }
+            this.rolePromises.set(id, fetchRole())
+        }
+        return this.rolePromises.get(id)
     }
 
     async *listRoles() {
