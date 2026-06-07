@@ -61,3 +61,6 @@
 
 **Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
+## 2024-06-25 - Parallelize concurrent entity attribute assignment
+**Learning:** Sequential `await` calls inside a `for...of` loop over an array of entities (such as types or roles) create an N+1 performance bottleneck.
+**Action:** To optimize performance for independent asynchronous operations across arrays, use `Promise.all(array.map(...))` to execute them concurrently instead of sequential `await` calls inside a `for...of` loop.
