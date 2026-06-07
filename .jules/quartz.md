@@ -51,3 +51,6 @@
 ## 2026-05-26 - Use string slicing for O(1) path resolution instead of arrays
 **Learning:** Using `.split('.').reverse().join('.')` (and similar variants) for path manipulation not only adds O(N) array allocation overhead but can silently introduce logical bugs by reversing the nested order of child path segments (e.g., parsing `a.b.c` incorrectly to `c.b`).
 **Action:** Avoid array-based tokenization for deep object paths and always favor O(1) string slicing using `indexOf('.')` and `slice()`.
+## 2024-06-07 - Simplify control flow in utility functions
+**Learning:** In utility functions, deeply nested conditionals or if/else blocks that return scalar values reduce scanability and increase cognitive load.
+**Action:** Use early return guard clauses to handle negative/null cases upfront, reducing the indentation of the primary logic (the "happy path"). Replace simple if/else variable assignment blocks with ternary operators.
