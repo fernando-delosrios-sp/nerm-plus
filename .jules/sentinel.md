@@ -32,3 +32,7 @@
 **Vulnerability:** URL-encoded form data (e.g. `client_id=123&client_secret=secret`) is sometimes sent or logged, leaking secrets in plain text because the `redact()` logger only checked JSON structures and object keys, not raw string parameters.
 **Learning:** External API tokens, passwords, and sensitive keys embedded within URL-encoded payload strings bypassing simple log redaction can still lead to secret leakage. Heuristics with strict constraints must be carefully crafted to avoid corrupting standard logging outputs.
 **Prevention:** Implement deep payload parsing by utilizing `URLSearchParams` to extract and redact sensitive query parameters from string payloads containing `&` and `=`, but avoid matching URLs directly or plain-text strings with spaces.
+## 2024-06-07 - Prevent Path Traversal and URL Injection
+**Vulnerability:** Dynamic path parameters used in API routes in `NERMClient` were not sanitized via URL encoding (e.g., `const url = \`/profiles/${id}\``).
+**Learning:** Even internal entity IDs passed to API clients can be manipulated to introduce URL breaking characters, leading to SSRF, path traversal, or unexpected backend route matching.
+**Prevention:** Always use `encodeURIComponent()` when interpolating dynamic data into URL paths.
