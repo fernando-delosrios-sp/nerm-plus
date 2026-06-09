@@ -32,3 +32,7 @@
 **Vulnerability:** URL-encoded form data (e.g. `client_id=123&client_secret=secret`) is sometimes sent or logged, leaking secrets in plain text because the `redact()` logger only checked JSON structures and object keys, not raw string parameters.
 **Learning:** External API tokens, passwords, and sensitive keys embedded within URL-encoded payload strings bypassing simple log redaction can still lead to secret leakage. Heuristics with strict constraints must be carefully crafted to avoid corrupting standard logging outputs.
 **Prevention:** Implement deep payload parsing by utilizing `URLSearchParams` to extract and redact sensitive query parameters from string payloads containing `&` and `=`, but avoid matching URLs directly or plain-text strings with spaces.
+## 2025-02-18 - Prevent Path Traversal in API Client
+**Vulnerability:** API endpoint paths were constructed using unsafe string interpolation for dynamic variables like IDs, which could allow path traversal or URL injection if malicious characters like `../` or `?` were passed.
+**Learning:** Hardcoded interpolations must be sanitized using `encodeURIComponent()` to ensure dynamic parameters are always properly encoded and cannot alter the intended path structure.
+**Prevention:** Always wrap dynamic path parameters in `encodeURIComponent()` when constructing URL templates.
