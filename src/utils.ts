@@ -121,7 +121,18 @@ export const getAttribute = (object: { [key: string]: any }, attributePath: stri
     if (!object) {
         return undefined
     }
-    return attributePath.split('.').reduce((obj, key) => (obj ? obj[key] : undefined), object)
+    // ⚡ Bolt: Replace `.split('.').reduce()` with iterative string slicing using `.indexOf()` and `.slice()`.
+    // Impact: Avoids allocating a full array per lookup in hot mapping operations, greatly reducing memory footprint.
+    let obj = object
+    let start = 0
+    let end = attributePath.indexOf('.')
+    while (end !== -1) {
+        obj = obj[attributePath.slice(start, end)]
+        if (!obj) return undefined
+        start = end + 1
+        end = attributePath.indexOf('.', start)
+    }
+    return obj[attributePath.slice(start)]
 }
 
 export const entity2profile = (entity: SearchDocument, profile_type_id: string, conf: Mapping): any => {

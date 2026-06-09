@@ -36,7 +36,10 @@ export class AccountService {
 
                 const relevantAttrs = schema!.attributes.filter((attr) => {
                     if (ENTITLEMENT_ATTRIBUTES.includes(attr.name)) return false
-                    const leaf = attr.name.split('.').pop()!
+                    // ⚡ Bolt: Replace `.split('.').pop()` with `.lastIndexOf()` and `.slice()` to avoid O(N) array allocation.
+                    // Impact: Significantly reduces string evaluation overhead in hot attribute matching paths.
+                    const idx = attr.name.lastIndexOf('.')
+                    const leaf = idx === -1 ? attr.name : attr.name.slice(idx + 1)
                     const hasExact = attributes[attr.name] !== undefined && attributes[attr.name] !== null
                     const hasLeaf = attributes[leaf] !== undefined && attributes[leaf] !== null
                     return hasExact || hasLeaf
@@ -45,7 +48,10 @@ export class AccountService {
                 const attrResults = (
                     await Promise.all(
                         relevantAttrs.map(async (attribute) => {
-                            const leaf = attribute.name.split('.').pop()!
+                            // ⚡ Bolt: Replace `.split('.').pop()` with `.lastIndexOf()` and `.slice()` to avoid O(N) array allocation.
+                            // Impact: Avoids array allocation on every attribute being resolved during async map.
+                            const idx = attribute.name.lastIndexOf('.')
+                            const leaf = idx === -1 ? attribute.name : attribute.name.slice(idx + 1)
                             const rawValue =
                                 attributes[attribute.name] !== undefined && attributes[attribute.name] !== null
                                     ? attributes[attribute.name]
