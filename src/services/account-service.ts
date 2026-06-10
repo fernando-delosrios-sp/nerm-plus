@@ -36,7 +36,9 @@ export class AccountService {
 
                 const relevantAttrs = schema!.attributes.filter((attr) => {
                     if (ENTITLEMENT_ATTRIBUTES.includes(attr.name)) return false
-                    const leaf = attr.name.split('.').pop()!
+                    // ⚡ Bolt: O(1) leaf path extraction
+                    const leafDot = attr.name.lastIndexOf('.')
+                    const leaf = leafDot === -1 ? attr.name : attr.name.slice(leafDot + 1)
                     const hasExact = attributes[attr.name] !== undefined && attributes[attr.name] !== null
                     const hasLeaf = attributes[leaf] !== undefined && attributes[leaf] !== null
                     return hasExact || hasLeaf
@@ -45,7 +47,9 @@ export class AccountService {
                 const attrResults = (
                     await Promise.all(
                         relevantAttrs.map(async (attribute) => {
-                            const leaf = attribute.name.split('.').pop()!
+                            // ⚡ Bolt: O(1) leaf path extraction
+                            const leafDot = attribute.name.lastIndexOf('.')
+                            const leaf = leafDot === -1 ? attribute.name : attribute.name.slice(leafDot + 1)
                             const rawValue =
                                 attributes[attribute.name] !== undefined && attributes[attribute.name] !== null
                                     ? attributes[attribute.name]
