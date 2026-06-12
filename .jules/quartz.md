@@ -51,3 +51,7 @@
 ## 2026-05-26 - Use string slicing for O(1) path resolution instead of arrays
 **Learning:** Using `.split('.').reverse().join('.')` (and similar variants) for path manipulation not only adds O(N) array allocation overhead but can silently introduce logical bugs by reversing the nested order of child path segments (e.g., parsing `a.b.c` incorrectly to `c.b`).
 **Action:** Avoid array-based tokenization for deep object paths and always favor O(1) string slicing using `indexOf('.')` and `slice()`.
+
+## 2026-06-12 - Simplify verbose nullish checks
+**Learning:** Verbose property presence checks (e.g., `value !== undefined && value !== null`) combined with ternary fallbacks add significant visual noise and cognitive load, making the core intention harder to scan.
+**Action:** Use loose inequality (`!= null`) for combined null/undefined checks and the nullish coalescing operator (`??`) for fallbacks to dramatically simplify the logic.
