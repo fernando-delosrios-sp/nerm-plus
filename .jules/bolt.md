@@ -61,3 +61,6 @@
 
 **Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
+## 2025-02-27 - Replace array allocations with string slicing in hot loops
+**Learning:** Using `split('.').reduce()` or `split('.').pop()` in iterative hot loops like `getAttribute` and account schema mapping introduces severe O(N) allocation overhead that slows down synchronization execution. Furthermore, `obj ? obj[key] : undefined` fails to properly preserve falsy values like `0` or `false`.
+**Action:** Use allocation-free O(1) string slicing (`indexOf`, `lastIndexOf`, `slice`) and explicit `obj == null` checks to maximize throughput and fix semantic bugs.

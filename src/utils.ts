@@ -121,7 +121,18 @@ export const getAttribute = (object: { [key: string]: any }, attributePath: stri
     if (!object) {
         return undefined
     }
-    return attributePath.split('.').reduce((obj, key) => (obj ? obj[key] : undefined), object)
+    // ⚡ Bolt: Allocation-free iterative string slicing
+    if (attributePath === '') return object['']
+    let obj = object
+    let start = 0
+    while (start <= attributePath.length) {
+        let end = attributePath.indexOf('.', start)
+        if (end === -1) end = attributePath.length
+        if (obj == null) return undefined
+        obj = obj[attributePath.slice(start, end)]
+        start = end + 1
+    }
+    return obj
 }
 
 export const entity2profile = (entity: SearchDocument, profile_type_id: string, conf: Mapping): any => {
