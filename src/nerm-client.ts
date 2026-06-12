@@ -256,7 +256,7 @@ export class NERMClient {
     }
 
     async getProfileType(id: string): Promise<any> {
-        const url = `/profile_types/${id}`
+        const url = `/profile_types/${encodeURIComponent(String(id))}`
         const type = 'profile_type'
 
         return this.getRequest(url, type)
@@ -289,7 +289,7 @@ export class NERMClient {
     async getProfile(id: string): Promise<any> {
         if (!this.profileByIdPromises.has(id)) {
             const fetchProfile = async () => {
-                const url = `/profiles/${id}`
+                const url = `/profiles/${encodeURIComponent(String(id))}`
                 const type = 'profile'
                 return await this.getRequest(url, type)
             }
@@ -440,7 +440,7 @@ export class NERMClient {
     async getUser(id: string): Promise<any> {
         if (!this.userPromises.has(id)) {
             const fetchUser = async () => {
-                const url = `/users/${id}`
+                const url = `/users/${encodeURIComponent(String(id))}`
                 const type = 'user'
                 return await this.getRequest(url, type)
             }
@@ -450,7 +450,7 @@ export class NERMClient {
     }
 
     async getRole(id: string): Promise<any> {
-        const url = `/roles/${id}`
+        const url = `/roles/${encodeURIComponent(String(id))}`
         const type = 'role'
 
         return await this.getRequest(url, type)
@@ -508,14 +508,14 @@ export class NERMClient {
     }
 
     async updateProfile(id: string, body: any) {
-        const url = `/profiles/${id}`
+        const url = `/profiles/${encodeURIComponent(String(id))}`
         const type = 'profile'
 
         return await this.updateRequest(url, type, body)
     }
 
     async deleteProfile(profile_id: string): Promise<any> {
-        const url = `/profiles/${profile_id}`
+        const url = `/profiles/${encodeURIComponent(String(profile_id))}`
 
         const response = await this.deleteRequest(url)
         if (response) {
@@ -527,7 +527,7 @@ export class NERMClient {
     }
 
     async deleteUser(user_id: string): Promise<any> {
-        const url = `/users/${user_id}`
+        const url = `/users/${encodeURIComponent(String(user_id))}`
 
         const response = await this.deleteRequest(url)
         if (response) {
@@ -546,7 +546,7 @@ export class NERMClient {
     }
 
     async updateUser(id: string, body: any) {
-        const url = `/users/${id}`
+        const url = `/users/${encodeURIComponent(String(id))}`
         const type = 'user'
 
         return await this.updateRequest(url, type, body)
@@ -610,7 +610,7 @@ export class NERMClient {
     }
 
     async getWorkflowSession(id: any) {
-        const url = `/workflow_sessions/${id}`
+        const url = `/workflow_sessions/${encodeURIComponent(String(id))}`
         const type = 'workflow_session'
 
         return await this.getRequest(url, type)
@@ -889,7 +889,7 @@ export class NERMClient {
             let response = await this.listRequest(url, type, params)
             const deletePromises: Promise<any>[] = []
             for await (const roleAssignment of response) {
-                const deleteUrl = `/user_role/${roleAssignment.id}`
+                const deleteUrl = `/user_role/${encodeURIComponent(String(roleAssignment.id))}`
                 deletePromises.push(this.deleteRequest(deleteUrl).catch((e: any) => e))
             }
             const results = await Promise.all(deletePromises)
