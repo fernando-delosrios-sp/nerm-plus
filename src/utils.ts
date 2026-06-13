@@ -121,7 +121,25 @@ export const getAttribute = (object: { [key: string]: any }, attributePath: stri
     if (!object) {
         return undefined
     }
-    return attributePath.split('.').reduce((obj, key) => (obj ? obj[key] : undefined), object)
+
+    if (attributePath === '') {
+        return object[''] !== undefined ? object[''] : undefined
+    }
+
+    // ⚡ Bolt: Replaced allocation-heavy .split('.').reduce() with O(1) iterative string slicing to reduce GC pressure in hot paths.
+    let obj = object
+    let path = attributePath
+    let dotIndex = path.indexOf('.')
+
+    while (dotIndex !== -1) {
+        const key = path.slice(0, dotIndex)
+        obj = obj[key]
+        if (obj == null) return undefined
+        path = path.slice(dotIndex + 1)
+        dotIndex = path.indexOf('.')
+    }
+
+    return obj[path]
 }
 
 export const entity2profile = (entity: SearchDocument, profile_type_id: string, conf: Mapping): any => {
