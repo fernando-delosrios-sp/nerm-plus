@@ -118,10 +118,29 @@ export const parents2children = (parents: SearchDocument[], type: string): Map<s
 }
 
 export const getAttribute = (object: { [key: string]: any }, attributePath: string): any => {
-    if (!object) {
+    // ⚡ Bolt: optimized O(1) allocation path traversal using string slicing
+    if (object == null) {
         return undefined
     }
-    return attributePath.split('.').reduce((obj, key) => (obj ? obj[key] : undefined), object)
+    if (attributePath === '') {
+        return object['']
+    }
+
+    let obj = object
+    let startIndex = 0
+    let dotIndex = attributePath.indexOf('.')
+
+    while (dotIndex !== -1) {
+        const key = attributePath.slice(startIndex, dotIndex)
+        obj = obj[key]
+        if (obj == null) return undefined
+
+        startIndex = dotIndex + 1
+        dotIndex = attributePath.indexOf('.', startIndex)
+    }
+
+    const finalKey = attributePath.slice(startIndex)
+    return obj[finalKey]
 }
 
 export const entity2profile = (entity: SearchDocument, profile_type_id: string, conf: Mapping): any => {
