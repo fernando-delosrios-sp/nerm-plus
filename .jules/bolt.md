@@ -61,3 +61,6 @@
 
 **Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
+## $(date +%Y-%m-%d) - Optimize hot path property extraction
+**Learning:** Using array-based tokenization like `.split('.').reduce()` or `.split('.').pop()!` for path manipulation adds O(N) allocation overhead in hot loops and can slow down data mappings.
+**Action:** Always favor O(1) allocation-free string slicing using `lastIndexOf('.')`, `indexOf('.')`, and `slice()` for deep object paths to significantly improve throughput.
