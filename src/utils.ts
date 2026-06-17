@@ -117,11 +117,25 @@ export const parents2children = (parents: SearchDocument[], type: string): Map<s
     return childrenMap
 }
 
+// ⚡ Bolt: Replace array-based tokenization with string slicing to reduce allocation overhead in hot loops
 export const getAttribute = (object: { [key: string]: any }, attributePath: string): any => {
     if (!object) {
         return undefined
     }
-    return attributePath.split('.').reduce((obj, key) => (obj ? obj[key] : undefined), object)
+
+    let obj = object
+    let start = 0
+    let dotIdx = attributePath.indexOf('.')
+
+    while (dotIdx !== -1) {
+        if (obj == null) return undefined
+        obj = obj[attributePath.slice(start, dotIdx)]
+        start = dotIdx + 1
+        dotIdx = attributePath.indexOf('.', start)
+    }
+
+    if (obj == null) return undefined
+    return obj[attributePath.slice(start)]
 }
 
 export const entity2profile = (entity: SearchDocument, profile_type_id: string, conf: Mapping): any => {
