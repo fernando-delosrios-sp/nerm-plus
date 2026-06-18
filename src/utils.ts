@@ -121,7 +121,23 @@ export const getAttribute = (object: { [key: string]: any }, attributePath: stri
     if (!object) {
         return undefined
     }
-    return attributePath.split('.').reduce((obj, key) => (obj ? obj[key] : undefined), object)
+    if (!attributePath) {
+        return object['']
+    }
+
+    let obj = object
+    let start = 0
+    let dotIndex = attributePath.indexOf('.')
+
+    while (dotIndex !== -1) {
+        if (obj == null) return undefined
+        obj = obj[attributePath.slice(start, dotIndex)]
+        start = dotIndex + 1
+        dotIndex = attributePath.indexOf('.', start)
+    }
+
+    if (obj == null) return undefined
+    return obj[attributePath.slice(start)]
 }
 
 export const entity2profile = (entity: SearchDocument, profile_type_id: string, conf: Mapping): any => {
