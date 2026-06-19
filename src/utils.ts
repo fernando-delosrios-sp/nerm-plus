@@ -117,11 +117,28 @@ export const parents2children = (parents: SearchDocument[], type: string): Map<s
     return childrenMap
 }
 
+// ⚡ Bolt: optimized deep object access by avoiding array allocations and using string slicing
 export const getAttribute = (object: { [key: string]: any }, attributePath: string): any => {
     if (!object) {
         return undefined
     }
-    return attributePath.split('.').reduce((obj, key) => (obj ? obj[key] : undefined), object)
+    if (!attributePath) {
+        return object[attributePath]
+    }
+    let obj = object
+    let startIndex = 0
+    let dotIndex = attributePath.indexOf('.')
+
+    while (dotIndex !== -1) {
+        const key = attributePath.slice(startIndex, dotIndex)
+        if (obj == null) return undefined
+        obj = obj[key]
+        startIndex = dotIndex + 1
+        dotIndex = attributePath.indexOf('.', startIndex)
+    }
+
+    if (obj == null) return undefined
+    return obj[attributePath.slice(startIndex)]
 }
 
 export const entity2profile = (entity: SearchDocument, profile_type_id: string, conf: Mapping): any => {

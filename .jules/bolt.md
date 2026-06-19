@@ -61,3 +61,7 @@
 
 **Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
+## 2024-05-24 - Avoid array allocations in hot path tokenization
+
+**Learning:** Using array-based tokenization like `.split('.').reduce()` or `.split('.').pop()!` for path manipulation in high-frequency loops adds O(N) allocation overhead. In hot paths like attribute extraction, this leads to significant performance degradation during entity synchronization.
+**Action:** Always favor O(1) allocation-free string slicing using `indexOf('.')`, `lastIndexOf('.')`, and `slice()` for string path manipulations in performance-critical sections.
