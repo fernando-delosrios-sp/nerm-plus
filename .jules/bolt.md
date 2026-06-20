@@ -61,3 +61,7 @@
 
 **Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
+## 2024-05-32 - O(N) Array Path Tokenization Bottleneck in getAttribute
+
+**Learning:** Using array-based tokenization like `.split('.').reduce()` for deeply nested property extraction inside a hot path (e.g. `getAttribute` in `utils.ts`, which is executed for every attribute across every profile and entity) creates significant array allocation overhead and traversal inefficiencies.
+**Action:** Replaced `.split('.').reduce()` with O(1) allocation-free string slicing (`indexOf('.')` and `.substring()`) combined with an iterative `while` loop, dramatically reducing execution time and object allocation churn without modifying external behavior. Falsy checks were explicitly preserved.
