@@ -61,3 +61,7 @@
 
 **Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
+## 2026-05-15 - [Zero-Allocation String Slicing for Path Traversal]
+
+**Learning:** Using array-based tokenization methods like `split('.').reduce()` or `split('.').pop()` to traverse deep object paths or extract property leaves creates O(N) allocation overhead in hot loops. During synchronization and attribute mapping, this results in significant performance degradation.
+**Action:** Replace `split` array allocations with O(1) zero-allocation iterative string operations (`indexOf`, `lastIndexOf`, and `slice`) for rapid string processing, ensuring exact parity with falsy value handling.
