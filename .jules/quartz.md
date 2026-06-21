@@ -51,3 +51,7 @@
 ## 2026-05-26 - Use string slicing for O(1) path resolution instead of arrays
 **Learning:** Using `.split('.').reverse().join('.')` (and similar variants) for path manipulation not only adds O(N) array allocation overhead but can silently introduce logical bugs by reversing the nested order of child path segments (e.g., parsing `a.b.c` incorrectly to `c.b`).
 **Action:** Avoid array-based tokenization for deep object paths and always favor O(1) string slicing using `indexOf('.')` and `slice()`.
+
+## 2024-06-21 - Simplify Attribute Null Checks
+**Learning:** In highly iterative attribute processing paths like `account-service.ts`, verbose checks like `foo !== undefined && foo !== null` and subsequent fallback ternaries (`check ? foo : fallback`) create dense visual noise.
+**Action:** Use loose inequality (`!= null`) to catch both `null` and `undefined`, and favor the native nullish coalescing operator (`??`) to replace manual existence-check ternary fallbacks, dramatically improving scanability.
