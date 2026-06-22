@@ -37,3 +37,7 @@
 **Vulnerability:** API request paths in `NERMClient` were constructed using unsanitized template literals (e.g., `/users/${id}`).
 **Learning:** This exposes the application to URL injection and path traversal if an attacker provides a crafted `id` (like `../admin/users`), especially when relying on dynamic identifiers.
 **Prevention:** Always sanitize dynamic path parameters by wrapping them in `encodeURIComponent(String(param))` to neutralize malicious path characters and handle non-string values safely.
+## 2024-05-27 - Prevent Path Traversal and Injection in API Paths
+**Vulnerability:** Path parameters like IDs were directly interpolated into URL paths in `NERMClient` (e.g., `\`/users/\${id}\``), which is vulnerable to path traversal and injection if the variables originate from uncontrolled input.
+**Learning:** URL construction involving user input must always sanitize path parameters via encodeURIComponent to guarantee path integrity.
+**Prevention:** To prevent path traversal and URL injection vulnerabilities when constructing API request paths (e.g., in NERMClient), always sanitize dynamic path parameters by explicitly casting to string and wrapping them in `encodeURIComponent(String(param))` to safely handle non-string or nullish inputs.

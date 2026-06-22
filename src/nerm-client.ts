@@ -711,7 +711,7 @@ export class NERMClient {
                             if (childrenProfiles) {
                                 if (Array.isArray(childrenProfiles)) {
                                     isMulti = true
-                                    values = values.concat(childrenProfiles.filter((x) => x !== undefined))
+                                    values = values.concat(childrenProfiles.filter((x) => x != null))
                                 } else {
                                     values.push(childrenProfiles)
                                 }
@@ -725,7 +725,7 @@ export class NERMClient {
                         const referencedProfiles = await Promise.all(
                             profileNames.map((x) => this.resolveProfileByValueOrName(x, attributeType.profile_type_id))
                         )
-                        values = referencedProfiles.filter((x) => x !== undefined)
+                        values = referencedProfiles.filter((x) => x != null)
                     } else {
                         values = [profileAttribute].flat()
                     }
@@ -889,7 +889,7 @@ export class NERMClient {
             let response = await this.listRequest(url, type, params)
             const deletePromises: Promise<any>[] = []
             for await (const roleAssignment of response) {
-                const deleteUrl = `/user_role/${roleAssignment.id}`
+                const deleteUrl = `/user_role/${encodeURIComponent(String(roleAssignment.id))}`
                 deletePromises.push(this.deleteRequest(deleteUrl).catch((e: any) => e))
             }
             const results = await Promise.all(deletePromises)
