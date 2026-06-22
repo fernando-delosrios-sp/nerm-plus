@@ -34,9 +34,15 @@ export class AccountService {
                 body.profile_type_id = profileType.id
                 body.attributes = {}
 
+                // ⚡ Bolt: Optimize path leaf extraction by avoiding array allocations via split
+                const getLeaf = (path: string) => {
+                    const lastDot = path.lastIndexOf('.')
+                    return lastDot !== -1 ? path.slice(lastDot + 1) : path
+                }
+
                 const relevantAttrs = schema!.attributes.filter((attr) => {
                     if (ENTITLEMENT_ATTRIBUTES.includes(attr.name)) return false
-                    const leaf = attr.name.split('.').pop()!
+                    const leaf = getLeaf(attr.name)
                     const hasExact = attributes[attr.name] !== undefined && attributes[attr.name] !== null
                     const hasLeaf = attributes[leaf] !== undefined && attributes[leaf] !== null
                     return hasExact || hasLeaf
@@ -45,7 +51,7 @@ export class AccountService {
                 const attrResults = (
                     await Promise.all(
                         relevantAttrs.map(async (attribute) => {
-                            const leaf = attribute.name.split('.').pop()!
+                            const leaf = getLeaf(attribute.name)
                             const rawValue =
                                 attributes[attribute.name] !== undefined && attributes[attribute.name] !== null
                                     ? attributes[attribute.name]
