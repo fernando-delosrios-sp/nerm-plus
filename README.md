@@ -2,7 +2,7 @@
 
 ## Changelog
 
-- 0.1.13 (2026-05-26):
+- 0.1.14 (2026-06-22):
     - Performance: Added promise map caching for profiles, users, and role assignments; parallelized attribute resolution; optimized array lookups with Set/Map
     - Code Quality: Flattened nested conditionals with guard clauses; refactored switch statements using fall-through; extracted repeated logic into helpers
     - Security: Fixed log redaction for tokens, secrets, authorization headers, and URL-encoded data; added cycle detection to prevent DoS in logging
