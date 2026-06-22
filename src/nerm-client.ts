@@ -711,7 +711,7 @@ export class NERMClient {
                             if (childrenProfiles) {
                                 if (Array.isArray(childrenProfiles)) {
                                     isMulti = true
-                                    values = values.concat(childrenProfiles.filter((x) => x !== undefined))
+                                    values = values.concat(childrenProfiles.filter((x) => x != null))
                                 } else {
                                     values.push(childrenProfiles)
                                 }
@@ -725,7 +725,7 @@ export class NERMClient {
                         const referencedProfiles = await Promise.all(
                             profileNames.map((x) => this.resolveProfileByValueOrName(x, attributeType.profile_type_id))
                         )
-                        values = referencedProfiles.filter((x) => x !== undefined)
+                        values = referencedProfiles.filter((x) => x != null)
                     } else {
                         values = [profileAttribute].flat()
                     }
