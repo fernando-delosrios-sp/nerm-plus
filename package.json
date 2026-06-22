@@ -15,27 +15,27 @@
     },
     "private": true,
     "dependencies": {
-        "@sailpoint/connector-sdk": "1.1.38",
-        "axios-cache-interceptor": "^1.6.2",
+        "@sailpoint/connector-sdk": "1.2.3",
+        "axios-cache-interceptor": "^1.12.0",
         "axios-request-throttle": "^1.0.0",
         "axios-retry": "^4.5.0",
-        "form-data": "^4.0.1",
+        "form-data": "^4.0.6",
         "nerm-plus": "file:",
-        "sailpoint-api-client": "1.7.1"
+        "sailpoint-api-client": "1.8.66"
     },
     "devDependencies": {
-        "@types/express": "^5.0.1",
+        "@types/express": "^5.0.6",
         "@types/jest": "^30.0.0",
-        "@types/nock": "^10.0.3",
-        "@types/node": "^20.11.17",
-        "@vercel/ncc": "^0.34.0",
+        "@types/nock": "^11.1.0",
+        "@types/node": "^26.0.0",
+        "@vercel/ncc": "^0.44.0",
         "axios-mock-adapter": "^2.1.0",
-        "jest": "^30.3.0",
+        "jest": "^30.4.2",
         "nock": "^14.0.15",
-        "prettier": "^2.3.2",
-        "shx": "^0.3.3",
-        "ts-jest": "^29.4.9",
-        "typescript": "^5.7.2"
+        "prettier": "^3.8.4",
+        "shx": "^0.4.0",
+        "ts-jest": "^29.4.11",
+        "typescript": "^6.0.3"
     },
     "prettier": {
         "printWidth": 120,
