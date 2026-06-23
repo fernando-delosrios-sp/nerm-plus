@@ -117,11 +117,16 @@ export const parents2children = (parents: SearchDocument[], type: string): Map<s
     return childrenMap
 }
 
+// ⚡ Bolt: Optimize property extraction. Replaced allocation-heavy split().reduce() with iterative parts loop.
 export const getAttribute = (object: { [key: string]: any }, attributePath: string): any => {
-    if (!object) {
-        return undefined
+    if (object == null) return undefined
+    const parts = attributePath.split('.')
+    let obj = object
+    for (let i = 0, len = parts.length; i < len; i++) {
+        if (obj == null) return undefined
+        obj = obj[parts[i]]
     }
-    return attributePath.split('.').reduce((obj, key) => (obj ? obj[key] : undefined), object)
+    return obj
 }
 
 export const entity2profile = (entity: SearchDocument, profile_type_id: string, conf: Mapping): any => {

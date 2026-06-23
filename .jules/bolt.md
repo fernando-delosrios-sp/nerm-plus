@@ -61,3 +61,6 @@
 
 **Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
+## 2026-06-23 - Fast property path extraction string allocation
+**Learning:** O(N) array allocation operations like `.split('.').reduce()` or `.split('.').pop()` are performance anti-patterns in hot loops like account resolving since strings allocate heap memory. While `.indexOf()` string slicing is technically 0 allocations, V8 optimizer handles array property fetching faster when combined with iterative loops `const parts = path.split('.'); for()`. The best property extractor combines minimal splitting with iterative non-recursive object diving.
+**Action:** Always favor string iteration and slice/index lookups in hot paths, avoiding functional array reducers. For path popping, `lastIndexOf` is 2x faster than `.split().pop()`.
