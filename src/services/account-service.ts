@@ -42,6 +42,15 @@ export class AccountService {
                     return hasExact || hasLeaf
                 })
 
+                // Pre-fetch attribute types to avoid awaiting getAttribute for each attribute in the map
+                const uniqueKeys = Array.from(new Set(relevantAttrs.map((attr) => attr.name.split('.').pop()!)))
+                const attributeTypes = new Map<string, any>()
+                await Promise.all(
+                    uniqueKeys.map(async (key) => {
+                        attributeTypes.set(key, await this.ctx.nerm.getAttribute(key))
+                    })
+                )
+
                 const attrResults = (
                     await Promise.all(
                         relevantAttrs.map(async (attribute) => {
@@ -55,7 +64,7 @@ export class AccountService {
                             }
 
                             const key = leaf
-                            const attributeType = await this.ctx.nerm.getAttribute(key)
+                            const attributeType = attributeTypes.get(key)
                             const values = [rawValue].flat()
                             const isMulti = attribute.multi ?? Array.isArray(rawValue)
 
