@@ -183,9 +183,8 @@ export class NERMClient {
             item = type ? response.data[type] : response.data
         } catch (error) {
             this.logError('getRequest', (error as any).response?.data?.error ?? `${error}`)
-        } finally {
-            return item
         }
+        return item
     }
 
     private async createRequest(url: string, type: string, data: any): Promise<any> {
@@ -236,9 +235,8 @@ export class NERMClient {
             item = response.data
         } catch (error) {
             this.logError('deleteRequest', (error as any).response?.data?.error ?? `${error}`)
-        } finally {
-            return item
         }
+        return item
     }
 
     getJobStatus = async (id: string): Promise<any> => {
