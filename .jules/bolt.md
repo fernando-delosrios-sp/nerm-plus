@@ -61,3 +61,7 @@
 
 **Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
+
+## $(date +%Y-%m-%d) - Early Termination for Unbounded Async Iterators
+**Learning:** When using an async generator (`for await`) to eagerly evaluate a finite subset of in-memory pending items against an unbounded remote dataset, iterating completely over the remote generator causes unnecessary I/O overhead once the pending set is exhausted.
+**Action:** Always wrap the iterator in an `if (pendingSet.size > 0)` guard and `break` early (`if (pendingSet.size === 0) break`) after removals to short-circuit the generator and save execution time.
