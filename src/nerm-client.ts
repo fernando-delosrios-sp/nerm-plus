@@ -394,6 +394,92 @@ export class NERMClient {
      * NERM user-reference attributes (Owner/Contributor Search/Select) expect the user id (UUID).
      * UUIDs are sent as-is; `Name (email)` or bare email is resolved to a user id when possible.
      */
+    /**
+     * NERM user-reference attributes expect the user id (UUID).
+     * This batches resolving multiple users by email.
+     */
+    async resolveUsersByValuesForApi(values: string[]): Promise<(string | undefined)[]> {
+        const results = new Array(values.length).fill(undefined)
+        const emailMap = new Map<string, number[]>()
+        const emailsToFetch: string[] = []
+
+        for (let i = 0; i < values.length; i++) {
+            const v = typeof values[i] === 'string' ? values[i].trim() : String(values[i]).trim()
+            if (!v) {
+                this.logWarn('resolveUsersByValuesForApi', 'Empty value after trim (cannot resolve user reference)')
+                continue
+            }
+            if (looksLikeUuid(v)) {
+                results[i] = v
+                continue
+            }
+            const email = getEmailFromUserAttribute(v) ?? (v.includes('@') ? v.trim() : undefined)
+            if (email) {
+                if (!emailMap.has(email)) {
+                    emailMap.set(email, [])
+                }
+                emailMap.get(email)!.push(i)
+            } else {
+                this.logWarn(
+                    'resolveUsersByValuesForApi',
+                    `Could not parse email or UUID from value=${toLogString(values[i])}; passing through unchanged`
+                )
+                results[i] = v
+            }
+        }
+
+        const uniqueEmails = Array.from(emailMap.keys())
+        if (uniqueEmails.length > 0) {
+            const fetchUsersByEmails = async (emails: string[]) => {
+                const url = `/users`
+                const type = 'users'
+                const params = { 'query[email][in]': emails.join(',') }
+                const users = new Map<string, any>()
+                for await (const user of this.listRequest(url, type, params)) {
+                    if (user.email) {
+                        users.set(user.email, user)
+                    } else if (user.login) {
+                        users.set(user.login, user)
+                    }
+                }
+                return users
+            }
+
+            for (const email of uniqueEmails) {
+                if (!this.userByEmailPromises.has(email)) {
+                    emailsToFetch.push(email)
+                }
+            }
+
+            if (emailsToFetch.length > 0) {
+                const batchedPromise = fetchUsersByEmails(emailsToFetch)
+                for (const email of emailsToFetch) {
+                    this.userByEmailPromises.set(
+                        email,
+                        batchedPromise.then((map) => map.get(email))
+                    )
+                }
+            }
+
+            for (const email of uniqueEmails) {
+                try {
+                    const user = await this.userByEmailPromises.get(email)
+                    if (!user?.id) {
+                        this.logWarn('resolveUsersByValuesForApi', `No user found for email=${email}`)
+                    } else {
+                        for (const index of emailMap.get(email)!) {
+                            results[index] = user.id
+                        }
+                    }
+                } catch (e) {
+                    // ignore
+                }
+            }
+        }
+
+        return results
+    }
+
     async resolveUserReferenceValueForApi(value: string): Promise<string | undefined> {
         const v = typeof value === 'string' ? value.trim() : String(value).trim()
         if (!v) {

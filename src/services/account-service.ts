@@ -86,10 +86,8 @@ export class AccountService {
                                 finalValue = profiles.filter((p) => p).map((p) => p.id)
                             } else if (USERTYPE_ATTRIBUTES.includes(attributeType?.type)) {
                                 const uniqueUserValues = Array.from(new Set(values))
-                                const uniqueIds = await Promise.all(
-                                    uniqueUserValues.map((v) =>
-                                        this.ctx.nerm.resolveUserReferenceValueForApi(String(v))
-                                    )
+                                const uniqueIds = await this.ctx.nerm.resolveUsersByValuesForApi(
+                                    uniqueUserValues.map(String)
                                 )
                                 const userMap = new Map(uniqueUserValues.map((v, i) => [v, uniqueIds[i]]))
                                 const ids = values.map((v) => userMap.get(v))
