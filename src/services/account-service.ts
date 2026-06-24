@@ -22,6 +22,55 @@ import { toLogString } from '../logging'
 export class AccountService {
     constructor(private ctx: ConnectorContext) {}
 
+    private async resolveProfileAttribute(
+        attributeName: string,
+        key: string,
+        values: any[],
+        profileTypeId: string
+    ): Promise<string[]> {
+        const uniqueValues = Array.from(new Set(values))
+        const uniqueProfiles = await Promise.all(
+            uniqueValues.map((v) => this.ctx.nerm.resolveProfileByValueOrName(String(v), profileTypeId))
+        )
+        const profileMap = new Map(uniqueValues.map((v, i) => [v, uniqueProfiles[i]]))
+        const profiles = values.map((v) => profileMap.get(v))
+
+        const unresolvedProfileValues = values.filter((_, i) => !profiles[i])
+        if (unresolvedProfileValues.length > 0) {
+            logger.warn(
+                `buildNERMAccountBody: profile reference not resolved for attribute "${attributeName}" (key=${key}, profile_type_id=${profileTypeId}): ${unresolvedProfileValues
+                    .map((v) => toLogString(v))
+                    .join('; ')}`
+            )
+        }
+        return profiles.filter((p) => p).map((p) => p.id)
+    }
+
+    private async resolveUserAttribute(
+        attributeName: string,
+        key: string,
+        values: any[],
+        isMulti: boolean
+    ): Promise<any> {
+        const uniqueUserValues = Array.from(new Set(values))
+        const uniqueIds = await Promise.all(
+            uniqueUserValues.map((v) => this.ctx.nerm.resolveUserReferenceValueForApi(String(v)))
+        )
+        const userMap = new Map(uniqueUserValues.map((v, i) => [v, uniqueIds[i]]))
+        const ids = values.map((v) => userMap.get(v))
+
+        const unresolvedUserValues = values.filter((_, i) => !ids[i])
+        if (unresolvedUserValues.length > 0) {
+            logger.warn(
+                `buildNERMAccountBody: user reference not resolved to a user id for attribute "${attributeName}" (key=${key}): ${unresolvedUserValues
+                    .map((v) => toLogString(v))
+                    .join('; ')}`
+            )
+        }
+        const resolved = ids.filter((id): id is string => Boolean(id))
+        return isMulti ? resolved : resolved[0]
+    }
+
     async buildNERMAccountBody(attributes: Attributes, type: AccountType, schema?: AccountSchema): Promise<any> {
         logger.debug(`Building NERM account body for type: ${type}`)
         let body: any = {
@@ -70,49 +119,14 @@ export class AccountService {
 
                             let finalValue
                             if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
-                                const uniqueValues = Array.from(new Set(values))
-                                const uniqueProfiles = await Promise.all(
-                                    uniqueValues.map((v) =>
-                                        this.ctx.nerm.resolveProfileByValueOrName(
-                                            v as string,
-                                            attributeType.profile_type_id
-                                        )
-                                    )
+                                finalValue = await this.resolveProfileAttribute(
+                                    attribute.name,
+                                    key,
+                                    values,
+                                    attributeType.profile_type_id
                                 )
-                                const profileMap = new Map(uniqueValues.map((v, i) => [v, uniqueProfiles[i]]))
-                                const profiles = values.map((v) => profileMap.get(v))
-
-                                const unresolvedProfileValues = values.filter((_, i) => !profiles[i])
-                                if (unresolvedProfileValues.length > 0) {
-                                    logger.warn(
-                                        `buildNERMAccountBody: profile reference not resolved for attribute "${
-                                            attribute.name
-                                        }" (key=${key}, profile_type_id=${
-                                            attributeType.profile_type_id
-                                        }): ${unresolvedProfileValues.map((v) => toLogString(v)).join('; ')}`
-                                    )
-                                }
-                                finalValue = profiles.filter((p) => p).map((p) => p.id)
                             } else if (USERTYPE_ATTRIBUTES.includes(attributeType?.type)) {
-                                const uniqueUserValues = Array.from(new Set(values))
-                                const uniqueIds = await Promise.all(
-                                    uniqueUserValues.map((v) =>
-                                        this.ctx.nerm.resolveUserReferenceValueForApi(String(v))
-                                    )
-                                )
-                                const userMap = new Map(uniqueUserValues.map((v, i) => [v, uniqueIds[i]]))
-                                const ids = values.map((v) => userMap.get(v))
-
-                                const unresolvedUserValues = values.filter((_, i) => !ids[i])
-                                if (unresolvedUserValues.length > 0) {
-                                    logger.warn(
-                                        `buildNERMAccountBody: user reference not resolved to a user id for attribute "${
-                                            attribute.name
-                                        }" (key=${key}): ${unresolvedUserValues.map((v) => toLogString(v)).join('; ')}`
-                                    )
-                                }
-                                const resolved = ids.filter((id): id is string => Boolean(id))
-                                finalValue = isMulti ? resolved : resolved[0]
+                                finalValue = await this.resolveUserAttribute(attribute.name, key, values, isMulti)
                             } else {
                                 finalValue = isMulti ? values : values[0]
                             }
