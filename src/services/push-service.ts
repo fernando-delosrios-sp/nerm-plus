@@ -72,8 +72,14 @@ export class PushService {
                     }
                 }
 
-                for await (const profile of existingProfiles) {
-                    profileMap.delete(profile.attributes[id])
+                // ⚡ Bolt: Only iterate existing profiles if there are pending creations,
+                // and break early once all pending profiles have been evaluated against existing ones.
+                // Impact: Avoids unnecessary iterations and API fetching overhead when syncing with no new profiles to create or when all pending are found.
+                if (profileMap.size > 0) {
+                    for await (const profile of existingProfiles) {
+                        profileMap.delete(profile.attributes[id])
+                        if (profileMap.size === 0) break
+                    }
                 }
                 const pendingProfiles = [...profileMap.values()]
                 if (nested) {
