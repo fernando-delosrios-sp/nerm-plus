@@ -55,3 +55,8 @@
 
 **Learning:** Verbose checks for both `!== undefined` and `!== null` combined with ternary fallbacks add unnecessary visual noise and make the code harder to scan, especially in deeply nested loops or attribute mappers.
 **Action:** Use loose inequality (`!= null`) to check for both `null` and `undefined` simultaneously. Use the nullish coalescing operator (`??`) to provide fallbacks instead of verbose ternary operators. This drastically reduces boilerplate and highlights the intent.
+
+## 2024-06-25 - Pass evaluated generic types directly instead of using conditional branches
+
+**Learning:** When a variable's type is dynamically resolved into a strict union type (like `'NeprofileUser' | 'NeaccessUser'`), it's a common anti-pattern to write explicit conditional branches (e.g., `if (type === 'NeprofileUser') addType('NeprofileUser') else addType('NeaccessUser')`) to dispatch exactly the same operation using hardcoded string literals. This clutters the flow and creates unnecessary mental overhead.
+**Action:** Simply pass the resolved type variable directly to the consuming function (e.g., `await this.addType(account, type)`), which handles the type-checking and behavior itself. This dramatically reduces boilerplate and clearly communicates the intent.
