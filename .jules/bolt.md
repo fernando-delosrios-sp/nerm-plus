@@ -61,3 +61,7 @@
 
 **Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
+
+## 2024-05-30 - Optimize hot path property extraction in getAttribute
+**Learning:** In `src/utils.ts`, `getAttribute` is a highly iterative hot path used during account synchronization and property extraction. Using functional array reducers like `.split('.').reduce()` causes unnecessary O(N) heap allocation overhead and closures, which limits throughput.
+**Action:** In hot loops, avoid functional array reducers for deep object extraction. Instead, use a minimal `const parts = path.split('.'); for(...)` loop, which is highly optimized in V8 and significantly outperforms the array reducer approach. Ensure semantic parity by explicitly checking for `obj != null` to accurately preserve or handle falsy values.
