@@ -61,3 +61,11 @@
 
 **Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
+
+## 2025-02-13 - ResolveAttributePath Optimization
+**Learning:** Sequential N+1 queries in recursive path resolutions can drastically slow down deep path evaluation.
+**Action:** When successive API queries depend only on the path definition and not the intermediate resolved values (like in getProfileByNameAndType for NERM), pre-fetch all needed references in parallel (`Promise.all`) up front and evaluate iteratively instead of resolving recursively.
+
+## 2025-02-13 - Safe ResolveAttributePath Optimization
+**Learning:** Eagerly evaluating all segments of a dynamic path using `Promise.all` can crash the application if short-circuit logic is required to bypass invalid segments (like array indices).
+**Action:** When parallelizing API queries for a path, iterate sequentially through fast/cached metadata endpoints first to safely evaluate short-circuit conditions, build a validated queue of tasks, and only then dispatch the safe, parallelizable network lookups via `Promise.all`.
