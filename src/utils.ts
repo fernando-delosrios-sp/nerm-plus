@@ -118,10 +118,16 @@ export const parents2children = (parents: SearchDocument[], type: string): Map<s
 }
 
 export const getAttribute = (object: { [key: string]: any }, attributePath: string): any => {
-    if (!object) {
-        return undefined
+    if (!object) return undefined
+
+    // ⚡ Bolt: Optimize deep object extraction hot path by replacing Array.reduce with a for loop
+    const parts = attributePath.split('.')
+    let obj = object
+    for (let i = 0; i < parts.length; i++) {
+        if (obj == null) return undefined
+        obj = obj[parts[i]]
     }
-    return attributePath.split('.').reduce((obj, key) => (obj ? obj[key] : undefined), object)
+    return obj
 }
 
 export const entity2profile = (entity: SearchDocument, profile_type_id: string, conf: Mapping): any => {
