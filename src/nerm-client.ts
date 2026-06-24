@@ -655,23 +655,35 @@ export class NERMClient {
     }
 
     async resolveAttributePath(profile: any, path: string): Promise<{ profile: any; path: string }> {
-        const dotIndex = path.indexOf('.')
-        const hasChildren = dotIndex !== -1
-        const parent = hasChildren ? path.slice(0, dotIndex) : path
-        const children = hasChildren ? path.slice(dotIndex + 1) : ''
-        const attributeType = await this.getAttribute(parent)
-
-        //Need to check other multi-valued attribute types like tags
-        if (attributeType?.allow_multiple_selections) {
+        const parts = path.split('.')
+        if (parts.length <= 1) {
             return { profile, path }
         }
 
-        if (hasChildren) {
-            const referencedProfile = await this.getProfileByNameAndType(parent, attributeType.profile_type_id)
-            const childAttributePath = this.resolveAttributePath(referencedProfile, children)
-            return childAttributePath
-        } else {
-            return { profile, path }
+        const resolvedParts = []
+        let stopIndex = parts.length - 1
+
+        for (let i = 0; i < parts.length - 1; i++) {
+            const part = parts[i]
+            const attributeType = await this.getAttribute(part)
+
+            if (attributeType?.allow_multiple_selections) {
+                stopIndex = i
+                break
+            }
+
+            resolvedParts.push({ part, typeId: attributeType?.profile_type_id })
+        }
+
+        if (resolvedParts.length === 0) {
+            return { profile, path: parts.slice(stopIndex).join('.') }
+        }
+
+        const profiles = await Promise.all(resolvedParts.map((p) => this.getProfileByNameAndType(p.part, p.typeId)))
+
+        return {
+            profile: profiles[profiles.length - 1],
+            path: parts.slice(stopIndex).join('.'),
         }
     }
 
