@@ -65,3 +65,10 @@
 ## $(date +%Y-%m-%d) - Early Termination for Unbounded Async Iterators
 **Learning:** When using an async generator (`for await`) to eagerly evaluate a finite subset of in-memory pending items against an unbounded remote dataset, iterating completely over the remote generator causes unnecessary I/O overhead once the pending set is exhausted.
 **Action:** Always wrap the iterator in an `if (pendingSet.size > 0)` guard and `break` early (`if (pendingSet.size === 0) break`) after removals to short-circuit the generator and save execution time.
+## 2025-02-13 - ResolveAttributePath Optimization
+**Learning:** Sequential N+1 queries in recursive path resolutions can drastically slow down deep path evaluation.
+**Action:** When successive API queries depend only on the path definition and not the intermediate resolved values (like in getProfileByNameAndType for NERM), pre-fetch all needed references in parallel (`Promise.all`) up front and evaluate iteratively instead of resolving recursively.
+
+## 2025-02-13 - Safe ResolveAttributePath Optimization
+**Learning:** Eagerly evaluating all segments of a dynamic path using `Promise.all` can crash the application if short-circuit logic is required to bypass invalid segments (like array indices).
+**Action:** When parallelizing API queries for a path, iterate sequentially through fast/cached metadata endpoints first to safely evaluate short-circuit conditions, build a validated queue of tasks, and only then dispatch the safe, parallelizable network lookups via `Promise.all`.
