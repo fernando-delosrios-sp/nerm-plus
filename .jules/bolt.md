@@ -61,6 +61,9 @@
 
 **Learning:** During account list aggregation or resolution of profiles that are associated with the same portal user ID, the `getUserRoleAssignments` method is called repeatedly. Because this wasn't cached, it resulted in an N+1 query problem, issuing redundant network requests for identical user IDs and slowing down overall synchronization.
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
+## 2025-02-18 - Batch await lookup to avoid repeated async calls
+**Learning:** When mapping over items and executing an `await` function on properties that could be duplicate or independently batched, executing the await in each map iteration introduces sequential Promise-spawning overhead (microtasks) even if the underlying function caches its internal promises.
+**Action:** Pre-fetch values uniquely upfront using `Promise.all` and store them in a local Map, allowing synchronous retrieval inside the main mapping loop.
 
 ## $(date +%Y-%m-%d) - Early Termination for Unbounded Async Iterators
 **Learning:** When using an async generator (`for await`) to eagerly evaluate a finite subset of in-memory pending items against an unbounded remote dataset, iterating completely over the remote generator causes unnecessary I/O overhead once the pending set is exhausted.
