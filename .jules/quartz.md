@@ -51,6 +51,9 @@
 ## 2026-05-26 - Use string slicing for O(1) path resolution instead of arrays
 **Learning:** Using `.split('.').reverse().join('.')` (and similar variants) for path manipulation not only adds O(N) array allocation overhead but can silently introduce logical bugs by reversing the nested order of child path segments (e.g., parsing `a.b.c` incorrectly to `c.b`).
 **Action:** Avoid array-based tokenization for deep object paths and always favor O(1) string slicing using `indexOf('.')` and `slice()`.
+## 2024-11-20 - Remove return from finally block anti-pattern
+**Learning:** Returning from a `finally` block silently swallows any unhandled exceptions in the `catch` block (e.g., logger throws an error) because `finally` always wins the return hierarchy, disrupting standard error propagation.
+**Action:** When a method needs to ensure code is executed before returning (and swallows specific known errors in `catch`), place the `return` statement at the very end of the function body *outside* the `try-catch-finally` chain instead of inside `finally`.
 ## 2024-10-27 - Extract large inline logic from functions
 **Learning:** Overly large functions that contain significant inline logic (e.g., `AccountService.buildNERMAccountBody` resolving users and profiles dynamically) become much more readable when that complex inner logic is extracted to dedicated, strongly typed private helper methods.
 **Action:** When working on methods that span more than 50-70 lines due to large `if`/`switch` blocks containing async business logic, extract the bodies into descriptively named `private async` methods within the same class.
