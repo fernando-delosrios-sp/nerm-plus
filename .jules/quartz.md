@@ -60,3 +60,7 @@
 
 **Learning:** When a variable's type is dynamically resolved into a strict union type (like `'NeprofileUser' | 'NeaccessUser'`), it's a common anti-pattern to write explicit conditional branches (e.g., `if (type === 'NeprofileUser') addType('NeprofileUser') else addType('NeaccessUser')`) to dispatch exactly the same operation using hardcoded string literals. This clutters the flow and creates unnecessary mental overhead.
 **Action:** Simply pass the resolved type variable directly to the consuming function (e.g., `await this.addType(account, type)`), which handles the type-checking and behavior itself. This dramatically reduces boilerplate and clearly communicates the intent.
+
+## 2026-06-25 - Extract identical logic from conditional branches
+**Learning:** In deeply nested conditionals (like processing logic for specific types in `AccountService`), subsequent state mapping (like assigning `roles`) is often copy-pasted verbatim into both branches of the conditional to handle minor fetching differences.
+**Action:** Extract the identical mapping or assignment logic completely out of the conditional block. Execute the distinct fetching logic inside the branches, store the results in a shared variable, and apply the mapping once at the end of the block.
