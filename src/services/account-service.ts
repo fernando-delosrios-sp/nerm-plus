@@ -36,14 +36,18 @@ export class AccountService {
 
                 const relevantAttrs = schema!.attributes.filter((attr) => {
                     if (ENTITLEMENT_ATTRIBUTES.includes(attr.name)) return false
-                    const leaf = attr.name.split('.').pop()!
+                    // ⚡ Bolt: Optimize leaf extraction hot path by replacing array-allocating split().pop() with slice()
+                    const leafIdx = attr.name.lastIndexOf('.')
+                    const leaf = leafIdx !== -1 ? attr.name.slice(leafIdx + 1) : attr.name
                     return attributes[attr.name] != null || attributes[leaf] != null
                 })
 
                 const attrResults = (
                     await Promise.all(
                         relevantAttrs.map(async (attribute) => {
-                            const leaf = attribute.name.split('.').pop()!
+                            // ⚡ Bolt: Optimize leaf extraction hot path by replacing array-allocating split().pop() with slice()
+                            const leafIdx = attribute.name.lastIndexOf('.')
+                            const leaf = leafIdx !== -1 ? attribute.name.slice(leafIdx + 1) : attribute.name
                             const rawValue = attributes[attribute.name] ?? attributes[leaf]
                             if (rawValue == null) {
                                 return null
