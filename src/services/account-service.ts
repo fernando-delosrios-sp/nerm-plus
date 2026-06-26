@@ -110,7 +110,7 @@ export class AccountService {
                             return { key, finalValue }
                         })
                     )
-                ).filter((r): r is { key: string; finalValue: any } => r !== null)
+                ).filter((r): r is { key: string; finalValue: any } => r != null)
                 for (const { key, finalValue } of attrResults) {
                     if (PROFILE_ROOTATTRIBUTES.includes(key)) {
                         body[key] = finalValue
@@ -203,8 +203,10 @@ export class AccountService {
         account.attributes = { ...attributes, ...account.attributes }
 
         if (id) {
+            let roleAssignments: any[] | undefined
             if (this.ctx.config.account_type === 'Profile') {
-                const [user, roleAssignments] = await Promise.all([
+                let user: any
+                ;[user, roleAssignments] = await Promise.all([
                     this.ctx.nerm.getUser(id),
                     this.ctx.nerm.getUserRoleAssignments(id),
                 ])
@@ -216,14 +218,12 @@ export class AccountService {
                         updateTypes(account.attributes, type)
                     }
                 }
-                if (roleAssignments) {
-                    account.attributes.roles = roleAssignments.map((x: { role_id: any }) => x.role_id)
-                }
             } else {
-                const roleAssignments = await this.ctx.nerm.getUserRoleAssignments(id)
-                if (roleAssignments) {
-                    account.attributes.roles = roleAssignments.map((x: { role_id: any }) => x.role_id)
-                }
+                roleAssignments = await this.ctx.nerm.getUserRoleAssignments(id)
+            }
+
+            if (roleAssignments) {
+                account.attributes.roles = roleAssignments.map((x: { role_id: any }) => x.role_id)
             }
         }
 
