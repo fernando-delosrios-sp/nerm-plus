@@ -65,3 +65,7 @@
 ## 2024-05-30 - Optimize hot path property extraction in getAttribute
 **Learning:** In `src/utils.ts`, `getAttribute` is a highly iterative hot path used during account synchronization and property extraction. Using functional array reducers like `.split('.').reduce()` causes unnecessary O(N) heap allocation overhead and closures, which limits throughput.
 **Action:** In hot loops, avoid functional array reducers for deep object extraction. Instead, use a minimal `const parts = path.split('.'); for(...)` loop, which is highly optimized in V8 and significantly outperforms the array reducer approach. Ensure semantic parity by explicitly checking for `obj != null` to accurately preserve or handle falsy values.
+
+## 2024-06-26 - Optimize Leaf Extraction in Account Service
+**Learning:** Using `.split('.').pop()` to extract a property suffix allocates a full array in the heap just to read the final element. In hot paths like account schema property mapping (which is highly iterative), this causes significant memory and GC churn.
+**Action:** Prioritize allocation-free string operations: use `lastIndexOf('.')` and `.slice()` to extract substrings without intermediary array creation.
