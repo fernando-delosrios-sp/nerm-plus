@@ -106,8 +106,10 @@ export const parents2children = (parents: SearchDocument[], type: string): Map<s
                 if (child.type !== accessType) continue
             }
 
-            if (childrenMap.has(child.id)) {
-                childrenMap.get(child.id)?.add(parent.id)
+            // ⚡ Bolt: Optimize Map population by removing redundant .has() check and lookup
+            let childSet = childrenMap.get(child.id)
+            if (childSet) {
+                childSet.add(parent.id)
             } else {
                 childrenMap.set(child.id, new Set([parent.id]))
             }
