@@ -69,3 +69,7 @@
 ## 2024-06-26 - Optimize Leaf Extraction in Account Service
 **Learning:** Using `.split('.').pop()` to extract a property suffix allocates a full array in the heap just to read the final element. In hot paths like account schema property mapping (which is highly iterative), this causes significant memory and GC churn.
 **Action:** Prioritize allocation-free string operations: use `lastIndexOf('.')` and `.slice()` to extract substrings without intermediary array creation.
+
+## 2024-06-27 - Implement concurrent batch processing with backpressure
+**Learning:** To optimize performance when consuming items from an asynchronous generator (`for await`), sequentially awaiting each batch blocks the generator from fetching the next items, leading to significant idle time.
+**Action:** Decouple stream consumption from batch processing by executing batches concurrently. Use a `Set` to track in-flight promises and enforce backpressure by calling `await Promise.race()` when the active pool reaches a maximum concurrency limit. Always track errors in a dedicated array to avoid silent failures.
