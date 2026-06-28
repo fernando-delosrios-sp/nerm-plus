@@ -74,4 +74,18 @@ describe('logging', () => {
         expect(logged.api_key).toBe('[REDACTED]')
         expect(logged.status).toBe('active')
     })
+
+    it('redacts secrets inside URL-like strings', () => {
+        const u1 = 'https://example.com/oauth/token?client_id=123&client_secret=secret123'
+        const r1 = toLogString(u1)
+        expect(r1).toBe('https://example.com/oauth/token?client_id=123&client_secret=%5BREDACTED%5D')
+
+        const u2 = '/api/v1/auth?token=supersecret&id=5'
+        const r2 = toLogString(u2)
+        expect(r2).toBe('/api/v1/auth?token=%5BREDACTED%5D&id=5')
+
+        const u3 = '?password=123'
+        const r3 = toLogString(u3)
+        expect(r3).toBe('?password=%5BREDACTED%5D')
+    })
 })

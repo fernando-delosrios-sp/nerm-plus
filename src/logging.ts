@@ -28,7 +28,32 @@ const redact = (obj: any, seen: WeakSet<any> = new WeakSet()): any => {
             }
         }
 
-        if (str.includes('=') && str.includes('&') && !str.includes(' ') && !str.includes('://')) {
+        if (str.includes('=') && !str.includes(' ')) {
+            // Check if it's a URL
+            if (str.includes('://') || str.startsWith('/') || str.startsWith('?')) {
+                try {
+                    const url = new URL(str, str.startsWith('/') || str.startsWith('?') ? 'http://dummy' : undefined)
+                    let modified = false
+                    const params = url.searchParams
+                    for (const [key, value] of Array.from(params.entries())) {
+                        if (isSensitiveKey(key)) {
+                            params.set(key, '[REDACTED]')
+                            modified = true
+                        }
+                    }
+                    if (modified) {
+                        const result = url.toString()
+                        if (str.startsWith('?')) {
+                            return url.search
+                        } else if (str.startsWith('/')) {
+                            return url.pathname + url.search
+                        }
+                        return result
+                    }
+                } catch (e) {
+                    // Ignore URL parse errors
+                }
+            }
             try {
                 const params = new URLSearchParams(str)
                 let modified = false
