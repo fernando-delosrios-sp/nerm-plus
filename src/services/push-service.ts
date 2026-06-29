@@ -56,14 +56,11 @@ export class PushService {
                     if (nested && profile) {
                         const childParents = children?.get(entity.id as string) ?? new Set()
                         if (parentObjectsMap) {
-                            const childParentProfiles: string[] = []
-                            for (const parentId of childParents) {
-                                const mappedIds = parentObjectsMap.get(parentId)
-                                if (mappedIds) {
-                                    childParentProfiles.push(...mappedIds)
-                                }
-                            }
-                            profile.attributes[attribute!] = childParentProfiles
+                            // ⚡ Bolt: Prevent 'Maximum call stack size exceeded' and O(N*M) performance overhead
+                            // by using flatMap instead of array spread operator (...) in push() inside the loop.
+                            profile.attributes[attribute!] = Array.from(childParents).flatMap(
+                                (parentId) => parentObjectsMap!.get(parentId) ?? []
+                            )
                         }
                     }
 

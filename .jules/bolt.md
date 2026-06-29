@@ -69,3 +69,6 @@
 ## 2024-06-26 - Optimize Leaf Extraction in Account Service
 **Learning:** Using `.split('.').pop()` to extract a property suffix allocates a full array in the heap just to read the final element. In hot paths like account schema property mapping (which is highly iterative), this causes significant memory and GC churn.
 **Action:** Prioritize allocation-free string operations: use `lastIndexOf('.')` and `.slice()` to extract substrings without intermediary array creation.
+## 2024-06-29 - Prevent Maximum Call Stack on Large Array Spread
+**Learning:** Using the array spread operator (`...`) inside a `.push()` loop to accumulate dynamic arrays can exceed the JavaScript maximum call stack size if the arrays are large, and introduces O(N*M) allocation overhead.
+**Action:** Use `Array.prototype.flatMap()` when accumulating multiple array chunks inside a loop to safely and efficiently build a flat array structure.
