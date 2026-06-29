@@ -64,3 +64,7 @@
 ## 2026-06-25 - Extract identical logic from conditional branches
 **Learning:** In deeply nested conditionals (like processing logic for specific types in `AccountService`), subsequent state mapping (like assigning `roles`) is often copy-pasted verbatim into both branches of the conditional to handle minor fetching differences.
 **Action:** Extract the identical mapping or assignment logic completely out of the conditional block. Execute the distinct fetching logic inside the branches, store the results in a shared variable, and apply the mapping once at the end of the block.
+
+## 2026-06-25 - Simplify redundant boolean ternary operators
+**Learning:** Redundant boolean ternary operators like `condition ? false : true` or `condition ? true : false` add unnecessary visual noise and cognitive overhead, hiding the fact that the expression is simply a boolean evaluation.
+**Action:** Replace `condition ? false : true` with the direct negation `!condition` (or inequality like `!==`). Replace `condition ? true : false` with a direct boolean cast `Boolean(condition)`. This makes the code easier to scan and clearly communicates the underlying evaluation.
