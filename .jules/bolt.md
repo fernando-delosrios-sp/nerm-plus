@@ -69,3 +69,7 @@
 ## 2024-06-26 - Optimize Leaf Extraction in Account Service
 **Learning:** Using `.split('.').pop()` to extract a property suffix allocates a full array in the heap just to read the final element. In hot paths like account schema property mapping (which is highly iterative), this causes significant memory and GC churn.
 **Action:** Prioritize allocation-free string operations: use `lastIndexOf('.')` and `.slice()` to extract substrings without intermediary array creation.
+
+## 2024-07-25 - Avoid sequential awaits for independent API requests
+**Learning:** In `stdAccountCreate`, adding multiple roles or types using a `for...of` loop with sequential `await` calls creates an N+1 performance bottleneck. Because the project leverages `axios-request-throttle` to manage API concurrency limits, these independent API requests can be safely parallelized.
+**Action:** Use `Promise.all(array.map(...))` to execute independent asynchronous operations concurrently during batch creation or updates, significantly improving throughput without sacrificing readability.
