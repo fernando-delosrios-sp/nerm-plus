@@ -11,7 +11,7 @@ export class ProfileAccount implements StdAccountListOutput {
     attributes: Attributes
 
     constructor(input: any) {
-        this.disabled = input.status === 'Active' ? false : true
+        this.disabled = input.status !== 'Active'
         this.identity = input.id
         this.uuid = input.name ?? ''
         this.attributes = {
@@ -29,7 +29,7 @@ export class NeprofileUserAccount implements StdAccountListOutput {
     attributes: Attributes
 
     constructor(input: any) {
-        this.disabled = input.status === 'Active' ? false : true
+        this.disabled = input.status !== 'Active'
         this.identity = input.id
         this.uuid = input.name ?? ''
         this.attributes = { types: ['NeprofileUser'] }
@@ -43,7 +43,7 @@ export class NeaccessUserAccount implements StdAccountListOutput {
     attributes: Attributes
 
     constructor(input: any) {
-        this.disabled = input.status === 'Active' ? false : true
+        this.disabled = input.status !== 'Active'
         this.identity = input.id
         this.uuid = input.name ?? ''
         this.attributes = { types: ['NeaccessUser'] }
