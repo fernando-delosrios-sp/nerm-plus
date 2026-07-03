@@ -42,7 +42,7 @@ export class AttributeService {
         }
 
         if (attribute === 'status') {
-            account.disabled = value === 'Active' ? false : true
+            account.disabled = value !== 'Active'
             if (account.attributes.user_id) {
                 const user_id = account.attributes.user_id as string
                 try {
