@@ -68,3 +68,16 @@
 ## 2026-06-28 - Simplify redundant boolean ternary operators
 **Learning:** Using ternary operators to explicitly return `true` or `false` (e.g., `condition ? false : true` or `condition ? true : false`) adds unnecessary visual noise and cognitive load, obscuring the simple boolean logic underneath.
 **Action:** Replace these redundant ternaries with direct boolean evaluations using logical operators (like `!condition`, `!==`) or `Boolean(condition)`. This clarifies intent and reduces visual clutter.
+## 2026-06-30 - Simplify redundant boolean ternaries with direct evaluations
+**Learning:** Verbose ternary operators that return boolean literals (like `condition ? false : true` or `condition ? true : false`) create visual noise and distract from the actual conditional logic.
+**Action:** Replace them with direct boolean evaluations using operators like `!==`, `!condition`, or `Boolean(condition)` to clarify intent and reduce cognitive load.
+## 2024-07-01 - Simplify Redundant Boolean Ternaries
+**Learning:** The codebase contained multiple instances of redundant ternary operators for boolean assignment (e.g., `account.disabled = value === 'Active' ? false : true`). This forces the reader to mentally map the string state to boolean branches.
+**Action:** Replace verbose `condition ? false : true` ternaries with direct boolean evaluations like `!== 'Active'` to immediately communicate intent and reduce visual noise.
+
+## 2026-06-25 - Simplify redundant boolean ternary operators
+**Learning:** Code often uses redundant ternary operators like `condition === 'Value' ? false : true` or `condition ? true : false`. This adds visual noise and forces the reader to mentally parse the inversion or unnecessary explicitly returned booleans.
+**Action:** Simplify these by using direct boolean evaluations, such as `condition !== 'Value'` or `Boolean(condition)`. This clarifies intent and reduces cognitive load.
+## 2026-06-25 - Simplify redundant boolean logic and ternary operators
+**Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
+**Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
