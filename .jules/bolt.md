@@ -47,13 +47,19 @@
 
 **Learning:** Checking for element existence in an array inside a loop (using `.includes()`) leads to O(N\*M) time complexity, which can severely degrade performance as array sizes increase.
 **Action:** Always preprocess mapped data arrays into a `Set` or `Map` outside of iterative processing loops to enable O(1) lookups instead of `.includes()`, reducing time complexity to O(N+M).
+
 ## 2024-06-25 - Avoid N+1 requests in user attribute sequential updates
+
 **Learning:** Checking individual properties and immediately calling the update API (like `setUserAttribute`) repeatedly in sequential `if` blocks can lead to N+1 API request patterns.
 **Action:** When conditionally updating multiple fields on the same entity, accumulate the modified fields into a single request body dictionary (e.g. `userUpdates`) and then execute a single unified API update (e.g. `updateUser(id, userUpdates)`).
+
 ## 2024-05-21 - Optimize removeRole with concurrent deletion
+
 **Learning:** Sequential await within a \`for await\` loop for independent HTTP DELETE requests creates an N+1 performance bottleneck. Because the project leverages \`axios-request-throttle\` to manage API concurrency limits, these requests can be safely parallelized.
 **Action:** Used \`Promise.all\` to dispatch independent HTTP requests concurrently within asynchronous generator iteration blocks.
+
 ## 2025-01-06 - Implement Profile Cache by ID
+
 **Learning:** Calling `Promise.all` with a generator yielding mapping objects can result in N identical HTTP API queries if the method invoked isn't cached, leading to a performance cliff when generating lists.
 **Action:** When implementing caching mechanisms, review all signature variations of an API retrieval function. Ensure basic fetch-by-ID operations use the same promise-map caching structure as complex multi-property lookup methods.
 
@@ -63,9 +69,26 @@
 **Action:** Implemented caching for `getUserRoleAssignments` using a Promise Map (similar to how `getUser` is cached). Now, parallel or subsequent resolutions for the same user wait on a single `Promise`, significantly decreasing redundant API calls and increasing performance.
 
 ## 2024-05-30 - Optimize hot path property extraction in getAttribute
+
 **Learning:** In `src/utils.ts`, `getAttribute` is a highly iterative hot path used during account synchronization and property extraction. Using functional array reducers like `.split('.').reduce()` causes unnecessary O(N) heap allocation overhead and closures, which limits throughput.
 **Action:** In hot loops, avoid functional array reducers for deep object extraction. Instead, use a minimal `const parts = path.split('.'); for(...)` loop, which is highly optimized in V8 and significantly outperforms the array reducer approach. Ensure semantic parity by explicitly checking for `obj != null` to accurately preserve or handle falsy values.
 
 ## 2024-06-26 - Optimize Leaf Extraction in Account Service
+
 **Learning:** Using `.split('.').pop()` to extract a property suffix allocates a full array in the heap just to read the final element. In hot paths like account schema property mapping (which is highly iterative), this causes significant memory and GC churn.
 **Action:** Prioritize allocation-free string operations: use `lastIndexOf('.')` and `.slice()` to extract substrings without intermediary array creation.
+## 2024-06-27 - Optimize Map Population Overheads
+
+**Learning:** When populating a `Map` or checking if an item exists before mutating it, using `.has(key)` followed by `.get(key)` and/or `.set(key, value)` creates redundant hash lookups. This pattern introduces unnecessary overhead in hot paths or iterative loops.
+**Action:** Optimize Map population by using a single `.get(key)` lookup. Conditionally initialize the entry (and use `.set(key, newValue)`) only if it does not exist. This cuts map lookups in half and improves performance significantly.
+
+## 2024-06-27 - Implement concurrent batch processing with backpressure
+**Learning:** To optimize performance when consuming items from an asynchronous generator (`for await`), sequentially awaiting each batch blocks the generator from fetching the next items, leading to significant idle time.
+**Action:** Decouple stream consumption from batch processing by executing batches concurrently. Use a `Set` to track in-flight promises and enforce backpressure by calling `await Promise.race()` when the active pool reaches a maximum concurrency limit. Always track errors in a dedicated array to avoid silent failures.
+## 2024-05-31 - Optimize addType and addRole with concurrent addition
+**Learning:** Sequential await within a `for` loop for independent HTTP API requests (such as adding types or roles during account creation) creates an N+1 performance bottleneck. Because the project leverages `axios-request-throttle` to manage API concurrency limits, these requests can be safely parallelized.
+**Action:** Used `Promise.all` to dispatch independent HTTP requests concurrently within asynchronous mapping operations.
+## 2024-05-18 - Avoid array push spread operator in loops
+
+**Learning:** Using the array spread operator inside `.push()` (e.g., `array.push(...spread)`) within a loop to accumulate dynamically sized arrays causes O(N*M) time complexity and can lead to "Maximum call stack size exceeded" errors if the accumulated arrays are large. This was a significant performance bottleneck in `src/services/push-service.ts`.
+**Action:** Use `Array.prototype.flatMap()` instead to efficiently map and flatten elements without the call stack limits or overhead of the spread operator.

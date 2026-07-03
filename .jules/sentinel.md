@@ -29,16 +29,19 @@
 **Prevention:** Check strings to see if they might be stringified JSON objects/arrays. If they are, safely run `JSON.parse`, redact the resulting object, and `JSON.stringify` it back to a string before returning. Ensure comprehensive `try...catch` behavior to prevent crashes on invalid strings.
 
 ## 2024-05-26 - URL-encoded Secret Redaction
+
 **Vulnerability:** URL-encoded form data (e.g. `client_id=123&client_secret=secret`) is sometimes sent or logged, leaking secrets in plain text because the `redact()` logger only checked JSON structures and object keys, not raw string parameters.
 **Learning:** External API tokens, passwords, and sensitive keys embedded within URL-encoded payload strings bypassing simple log redaction can still lead to secret leakage. Heuristics with strict constraints must be carefully crafted to avoid corrupting standard logging outputs.
 **Prevention:** Implement deep payload parsing by utilizing `URLSearchParams` to extract and redact sensitive query parameters from string payloads containing `&` and `=`, but avoid matching URLs directly or plain-text strings with spaces.
 
 ## 2024-06-23 - Prevent Path Traversal and URL Injection
+
 **Vulnerability:** API endpoints in `nerm-client.ts` were constructed via template literals interpolating dynamic variables without URL-encoding them (e.g., `` `/profiles/${id}` ``).
 **Learning:** If a malicious or malformed `id` containing characters like `/`, `?`, or `%` is passed, it can alter the API route resulting in path traversal or bypassing expected endpoint logic.
 **Prevention:** Always wrap dynamically interpolated path or query variables with `encodeURIComponent(String(var))` when building API routes to safely neutralize any special HTTP characters.
 
 ## 2026-06-23 - Prevent Regex Denial of Service (ReDoS) in String Validation
+
 **Vulnerability:** A Regular Expression Denial of Service (ReDoS) vulnerability could be triggered in UUID validation if the regex engine processed untrusted, dynamically-sized strings without bounds checking.
 **Learning:** Even well-anchored regular expressions can experience performance degradation or trigger static analysis security warnings if they are applied to unbound, arbitrarily long string inputs from untrusted sources.
 **Prevention:** Enforce strict string length checks (e.g., `value.length === 36`) prior to executing regular expressions on specific formats to safely neutralize ReDoS risks and ensure optimal regex engine performance by short-circuiting fast on non-compliant input.

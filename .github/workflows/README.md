@@ -51,9 +51,9 @@ Add these in **Settings > Secrets and variables > Actions**.
 
 ## Workflows Directory
 
--   `.github/workflows/ai-*-cursor.yml` -- Cursor-based agents
--   `.github/workflows/ai-*-opencode.yml` -- OpenCode-based agents
--   `.github/workflows/ai-cursor-review.yml` -- Cursor wrapper
--   `.github/workflows/ai-opencode-review.yml` -- OpenCode wrapper
--   `.github/workflows/new-version-full-review.yml` -- Main orchestrator
--   `.github/workflows/yaml-lint.yml` -- YAML syntax validation
+- `.github/workflows/ai-*-cursor.yml` -- Cursor-based agents
+- `.github/workflows/ai-*-opencode.yml` -- OpenCode-based agents
+- `.github/workflows/ai-cursor-review.yml` -- Cursor wrapper
+- `.github/workflows/ai-opencode-review.yml` -- OpenCode wrapper
+- `.github/workflows/new-version-full-review.yml` -- Main orchestrator
+- `.github/workflows/yaml-lint.yml` -- YAML syntax validation

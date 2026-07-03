@@ -29,16 +29,14 @@ export function createStdAccountCreate(
 
         if (input.attributes.types) {
             const types = [input.attributes.types].flat()
-            for (const type of types) {
-                await entitlementService.addType(account, type)
-            }
+            // ⚡ Bolt: Use Promise.all to execute independent addType operations concurrently instead of sequential awaits
+            await Promise.all(types.map((type) => entitlementService.addType(account, type)))
         }
 
         if (input.attributes.roles) {
             const roles = [input.attributes.roles].flat()
-            for (const role of roles) {
-                await entitlementService.addRole(account, role)
-            }
+            // ⚡ Bolt: Use Promise.all to execute independent addRole operations concurrently instead of sequential awaits
+            await Promise.all(roles.map((role) => entitlementService.addRole(account, role)))
         }
 
         if (input.attributes.workflows && ctx.config.account_type === 'Profile') {

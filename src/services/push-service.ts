@@ -39,10 +39,13 @@ export class PushService {
                         parentObjectsMap = new Map()
                         for (const p of parentObjects) {
                             const pId = p.attributes[id]
-                            if (!parentObjectsMap.has(pId)) {
-                                parentObjectsMap.set(pId, [])
+                            // ⚡ Bolt: Optimize Map population overhead by replacing .has(), .set(), .get() with a single .get()
+                            let list = parentObjectsMap.get(pId)
+                            if (!list) {
+                                list = []
+                                parentObjectsMap.set(pId, list)
                             }
-                            parentObjectsMap.get(pId)!.push(p.id)
+                            list.push(p.id)
                         }
                     }
                 }
@@ -56,14 +59,10 @@ export class PushService {
                     if (nested && profile) {
                         const childParents = children?.get(entity.id as string) ?? new Set()
                         if (parentObjectsMap) {
-                            const childParentProfiles: string[] = []
-                            for (const parentId of childParents) {
-                                const mappedIds = parentObjectsMap.get(parentId)
-                                if (mappedIds) {
-                                    childParentProfiles.push(...mappedIds)
-                                }
-                            }
-                            profile.attributes[attribute!] = childParentProfiles
+                            // ⚡ Bolt: Replace push(...spread) with flatMap to prevent call stack overflow and optimize accumulation
+                            profile.attributes[attribute!] = Array.from(childParents).flatMap(
+                                (parentId) => parentObjectsMap.get(parentId) ?? []
+                            )
                         }
                     }
 
