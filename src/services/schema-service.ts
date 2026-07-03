@@ -77,7 +77,7 @@ export class SchemaService {
                         schemaObjectType: profile.name,
                         entitlement: true,
                         managed: true,
-                        multi: profileAttribute?.allow_multiple_selections ? true : false,
+                        multi: Boolean(profileAttribute?.allow_multiple_selections),
                     }
                     profileEntitlements.push(attribute)
                 } else {
