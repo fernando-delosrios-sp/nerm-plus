@@ -77,6 +77,9 @@
 
 **Learning:** In deeply nested conditionals (like processing logic for specific types in `AccountService`), subsequent state mapping (like assigning `roles`) is often copy-pasted verbatim into both branches of the conditional to handle minor fetching differences.
 **Action:** Extract the identical mapping or assignment logic completely out of the conditional block. Execute the distinct fetching logic inside the branches, store the results in a shared variable, and apply the mapping once at the end of the block.
+## 2024-06-27 - Simplify redundant ternary boolean logic
+**Learning:** The codebase has instances of redundant ternary operators for boolean assignment (e.g. `=== 'Active' ? false : true`). This increases cognitive load and hides the intent.
+**Action:** Use simple boolean evaluations (like `!== 'Active'` or `Boolean(...)`) to clarify the assignment and reduce verbosity.
 
 ## 2026-06-28 - Simplify redundant boolean ternary operators
 **Learning:** Using ternary operators to explicitly return `true` or `false` (e.g., `condition ? false : true` or `condition ? true : false`) adds unnecessary visual noise and cognitive load, obscuring the simple boolean logic underneath.
