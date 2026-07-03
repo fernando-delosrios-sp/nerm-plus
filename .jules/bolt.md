@@ -69,3 +69,11 @@
 ## 2024-06-26 - Optimize Leaf Extraction in Account Service
 **Learning:** Using `.split('.').pop()` to extract a property suffix allocates a full array in the heap just to read the final element. In hot paths like account schema property mapping (which is highly iterative), this causes significant memory and GC churn.
 **Action:** Prioritize allocation-free string operations: use `lastIndexOf('.')` and `.slice()` to extract substrings without intermediary array creation.
+
+## 2024-05-31 - Optimize addType and addRole with concurrent addition
+**Learning:** Sequential await within a `for` loop for independent HTTP API requests (such as adding types or roles during account creation) creates an N+1 performance bottleneck. Because the project leverages `axios-request-throttle` to manage API concurrency limits, these requests can be safely parallelized.
+**Action:** Used `Promise.all` to dispatch independent HTTP requests concurrently within asynchronous mapping operations.
+## 2024-05-18 - Avoid array push spread operator in loops
+
+**Learning:** Using the array spread operator inside `.push()` (e.g., `array.push(...spread)`) within a loop to accumulate dynamically sized arrays causes O(N*M) time complexity and can lead to "Maximum call stack size exceeded" errors if the accumulated arrays are large. This was a significant performance bottleneck in `src/services/push-service.ts`.
+**Action:** Use `Array.prototype.flatMap()` instead to efficiently map and flatten elements without the call stack limits or overhead of the spread operator.
