@@ -73,3 +73,7 @@
 ## 2024-05-31 - Optimize addType and addRole with concurrent addition
 **Learning:** Sequential await within a `for` loop for independent HTTP API requests (such as adding types or roles during account creation) creates an N+1 performance bottleneck. Because the project leverages `axios-request-throttle` to manage API concurrency limits, these requests can be safely parallelized.
 **Action:** Used `Promise.all` to dispatch independent HTTP requests concurrently within asynchronous mapping operations.
+## 2024-05-18 - Avoid array push spread operator in loops
+
+**Learning:** Using the array spread operator inside `.push()` (e.g., `array.push(...spread)`) within a loop to accumulate dynamically sized arrays causes O(N*M) time complexity and can lead to "Maximum call stack size exceeded" errors if the accumulated arrays are large. This was a significant performance bottleneck in `src/services/push-service.ts`.
+**Action:** Use `Array.prototype.flatMap()` instead to efficiently map and flatten elements without the call stack limits or overhead of the spread operator.
