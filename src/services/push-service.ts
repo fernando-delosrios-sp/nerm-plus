@@ -39,10 +39,13 @@ export class PushService {
                         parentObjectsMap = new Map()
                         for (const p of parentObjects) {
                             const pId = p.attributes[id]
-                            if (!parentObjectsMap.has(pId)) {
-                                parentObjectsMap.set(pId, [])
+                            // ⚡ Bolt: Optimize Map population overhead by replacing .has(), .set(), .get() with a single .get()
+                            let list = parentObjectsMap.get(pId)
+                            if (!list) {
+                                list = []
+                                parentObjectsMap.set(pId, list)
                             }
-                            parentObjectsMap.get(pId)!.push(p.id)
+                            list.push(p.id)
                         }
                     }
                 }
