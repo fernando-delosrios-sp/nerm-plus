@@ -50,3 +50,9 @@
 **Vulnerability:** Full URLs (e.g., `https://...` or `/api/...`) containing sensitive query parameters (like `client_secret` or `token`) were not redacted by the logger because the heuristic explicitly ignored strings containing `://` or lacked base domains.
 **Learning:** Only parsing pure query string formats (e.g., `a=1&b=2`) leaves full URLs exposed when they are inadvertently logged in request objects or errors (e.g., `AxiosError.config.url`). Furthermore, valid search parameter strings without an `&` (`?password=1`) may bypass basic match heuristics.
 **Prevention:** Attempt to parse string patterns containing `=` and `&` natively using the `URL` API (handling relative paths and bare query strings gracefully with dummy origins). If successful, extract and sanitize `url.searchParams` before reconstructing the string exactly.
+
+## 2024-07-07 - Prevent secrets leaking in string interpolations
+
+**Vulnerability:** Stringified JSON payloads and full URLs containing secrets were leaking in error messages and logs when interpolated with text prefixes (e.g. `HTTP 400: ${data}`) before being passed to the `toLogString` redaction function.
+**Learning:** Concatenating sensitive data strings with other text before passing them to a generic redaction utility bypasses JSON/URL parsing heuristics, as the composite string no longer resembles a pure JSON object or URL, leaving embedded secrets unredacted.
+**Prevention:** Always wrap variables containing potentially sensitive strings or JSON explicitly with `toLogString(var)` *before* interpolating them into larger template strings or log messages.
