@@ -775,7 +775,8 @@ export class NERMClient {
                         if (attr.entitlement) {
                             if (attr.schemaObjectType === referencedProfileType?.name) {
                                 //Is profile entitlement
-                                const ids = [value].flat().map((x) => x.id)
+                                // ⚡ Bolt: Replace array-allocating [value].flat().map with allocation-free ternary
+                                const ids = isArray ? value.map((x: any) => x.id) : [value.id]
                                 if (attr.multi) {
                                     finalValue = ids
                                 } else {
@@ -783,22 +784,24 @@ export class NERMClient {
                                 }
                             } else {
                                 //Is not profile entitlement
-                                const names = [value].flat().map((x) => x.name)
+                                // ⚡ Bolt: Replace array-allocating [value].flat().map with allocation-free ternary
+                                const names = isArray ? value.map((x: any) => x.name) : [value.name]
                                 if (attr.multi) {
                                     finalValue = value
                                 } else {
-                                    finalValue = isArray ? names.map((x) => `[${x}]`).join(' ') : names
+                                    finalValue = isArray ? names.map((x: any) => `[${x}]`).join(' ') : names
                                 }
                             }
                         } else {
-                            let names = [value].flat()
+                            // ⚡ Bolt: Replace array-allocating [value].flat() with allocation-free ternary
+                            let names = isArray ? value : [value]
                             if (referencedProfileType) {
-                                names = [value].flat().map((x) => x.name)
+                                names = isArray ? value.map((x: any) => x.name) : [value.name]
                             }
                             if (attr.multi) {
                                 finalValue = isArray ? names : names[0]
                             } else {
-                                finalValue = isArray ? names.map((x) => `[${x}]`).join(' ') : names[0]
+                                finalValue = isArray ? names.map((x: any) => `[${x}]`).join(' ') : names[0]
                             }
                         }
                         attributes[attr.name!] = finalValue
