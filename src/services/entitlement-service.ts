@@ -86,17 +86,18 @@ export class EntitlementService {
     }
 
     private async resolveUserIdForRole(account: StdAccountListOutput, role_id: string): Promise<string> {
+        // ⚡ Bolt: Add early return for non-Profile accounts to skip unnecessary getRole API call
+        if (this.ctx.config.account_type !== 'Profile') {
+            return account.identity!
+        }
+
         const role = await this.ctx.nerm.getRole(role_id)
         const type = getRoleType(role)
-        switch (this.ctx.config.account_type) {
-            case 'Profile':
-                if (!account.attributes.user_id) {
-                    await this.addType(account, type)
-                }
-                return account.attributes.user_id as string
-            default:
-                return account.identity!
+
+        if (!account.attributes.user_id) {
+            await this.addType(account, type)
         }
+        return account.attributes.user_id as string
     }
 
     async addRole(account: StdAccountListOutput, role_id: string) {

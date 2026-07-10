@@ -92,3 +92,6 @@
 
 **Learning:** Using the array spread operator inside `.push()` (e.g., `array.push(...spread)`) within a loop to accumulate dynamically sized arrays causes O(N*M) time complexity and can lead to "Maximum call stack size exceeded" errors if the accumulated arrays are large. This was a significant performance bottleneck in `src/services/push-service.ts`.
 **Action:** Use `Array.prototype.flatMap()` instead to efficiently map and flatten elements without the call stack limits or overhead of the spread operator.
+## 2024-07-10 - Prevent unnecessary API call in EntitlementService
+**Learning:** In `src/services/entitlement-service.ts`, the `resolveUserIdForRole` method made an API call `this.ctx.nerm.getRole(role_id)` unconditionally, but the result was only needed for the `Profile` account type. This creates a hidden N+1-style performance issue when resolving roles for many `NeprofileUser` or `NeaccessUser` accounts, as an unnecessary HTTP request is dispatched for every single role check.
+**Action:** When a method branches heavily on a configuration parameter (like `account_type`), extract the branches that don't depend on asynchronous resources into early returns at the top of the function. This prevents unneeded I/O and significantly speeds up processing for those branches.
