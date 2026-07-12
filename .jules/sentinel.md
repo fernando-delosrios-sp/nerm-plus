@@ -50,3 +50,8 @@
 **Vulnerability:** Full URLs (e.g., `https://...` or `/api/...`) containing sensitive query parameters (like `client_secret` or `token`) were not redacted by the logger because the heuristic explicitly ignored strings containing `://` or lacked base domains.
 **Learning:** Only parsing pure query string formats (e.g., `a=1&b=2`) leaves full URLs exposed when they are inadvertently logged in request objects or errors (e.g., `AxiosError.config.url`). Furthermore, valid search parameter strings without an `&` (`?password=1`) may bypass basic match heuristics.
 **Prevention:** Attempt to parse string patterns containing `=` and `&` natively using the `URL` API (handling relative paths and bare query strings gracefully with dummy origins). If successful, extract and sanitize `url.searchParams` before reconstructing the string exactly.
+
+## 2026-06-25 - Prevent secrets leaking in template string interpolations
+**Vulnerability:** Stringified JSON error payloads in `formatHttpError` (nerm-client.ts) and raw interpolated URLs in `axios onRetry` logs (axios.ts) were bypassing the `toLogString` utility, potentially leaking sensitive values like passwords or tokens in plain-text logs.
+**Learning:** If you interpolate a raw string (`${data}`) into another string before passing it to `toLogString`, `toLogString` might fail to correctly parse it as JSON or as a clean URL if it is surrounded by other log text (e.g., `axios onRetry: Retrying API [https...]`).
+**Prevention:** Wrap raw string data (`data`) and URLs (`requestConfig.url`) individually with `toLogString()` *before* template string interpolation so they are parsed and redacted correctly.
