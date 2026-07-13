@@ -92,3 +92,8 @@
 
 **Learning:** Using the array spread operator inside `.push()` (e.g., `array.push(...spread)`) within a loop to accumulate dynamically sized arrays causes O(N*M) time complexity and can lead to "Maximum call stack size exceeded" errors if the accumulated arrays are large. This was a significant performance bottleneck in `src/services/push-service.ts`.
 **Action:** Use `Array.prototype.flatMap()` instead to efficiently map and flatten elements without the call stack limits or overhead of the spread operator.
+
+## 2024-07-13 - Optimize lookups for constant attribute arrays
+
+**Learning:** Checking for element existence in static configuration arrays (like `PROFILE_ROOTATTRIBUTES`) using `Array.prototype.includes()` leads to O(N) overhead during membership testing in iterative hot loops (such as schema and attribute mapping).
+**Action:** Always define static configuration lists as `Set` objects rather than arrays, and use `Set.prototype.has()` instead of `Array.prototype.includes()` to reduce lookup complexity to O(1).
