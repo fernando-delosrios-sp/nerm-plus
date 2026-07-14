@@ -92,3 +92,7 @@
 
 **Learning:** Using the array spread operator inside `.push()` (e.g., `array.push(...spread)`) within a loop to accumulate dynamically sized arrays causes O(N*M) time complexity and can lead to "Maximum call stack size exceeded" errors if the accumulated arrays are large. This was a significant performance bottleneck in `src/services/push-service.ts`.
 **Action:** Use `Array.prototype.flatMap()` instead to efficiently map and flatten elements without the call stack limits or overhead of the spread operator.
+
+## 2024-07-26 - Optimize Single-Object/Array Mapping Operations
+**Learning:** When dealing with variables that can be either a single object or an array of objects, using `[value].flat().map(...)` inside a hot loop (like `resolveProfileAttributes`) creates significant GC pressure. This is because every iteration allocates a new intermediate array before flattening and mapping.
+**Action:** Minimize array allocation overhead by explicitly checking `isArray` and using a ternary operator (e.g. `isArray ? value.map(...) : [value.property]`) instead of wrapping the value in a new array.
