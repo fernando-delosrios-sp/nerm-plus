@@ -42,16 +42,19 @@ function formatHttpError(err: any): string {
         return `${prefix}: ${err.message ?? ''}`.trim()
     }
     if (typeof data === 'string') {
-        return `${prefix}: ${data}`
+        // 🛡️ Sentinel: Sanitize string data before logging to prevent credential leakage
+        return `${prefix}: ${toLogString(data)}`
     }
     const pieces: string[] = []
     if (typeof data.error === 'string') {
-        pieces.push(data.error)
+        // 🛡️ Sentinel: Sanitize string error before logging
+        pieces.push(toLogString(data.error))
     } else if (data.error != null) {
         pieces.push(`error: ${toLogString(data.error)}`)
     }
     if (data.message != null && String(data.message) !== String(data.error)) {
-        pieces.push(String(data.message))
+        // 🛡️ Sentinel: Sanitize string message before logging
+        pieces.push(toLogString(String(data.message)))
     }
     if (data.errors != null) {
         pieces.push(`errors: ${toLogString(data.errors)}`)

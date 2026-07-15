@@ -50,3 +50,7 @@
 **Vulnerability:** Full URLs (e.g., `https://...` or `/api/...`) containing sensitive query parameters (like `client_secret` or `token`) were not redacted by the logger because the heuristic explicitly ignored strings containing `://` or lacked base domains.
 **Learning:** Only parsing pure query string formats (e.g., `a=1&b=2`) leaves full URLs exposed when they are inadvertently logged in request objects or errors (e.g., `AxiosError.config.url`). Furthermore, valid search parameter strings without an `&` (`?password=1`) may bypass basic match heuristics.
 **Prevention:** Attempt to parse string patterns containing `=` and `&` natively using the `URL` API (handling relative paths and bare query strings gracefully with dummy origins). If successful, extract and sanitize `url.searchParams` before reconstructing the string exactly.
+## 2025-02-28 - Information Exposure in String Interpolation
+**Vulnerability:** Stringified JSON payloads and URLs were directly interpolated into error messages without passing through the redaction utility (`toLogString`), bypassing its parsing logic and risking plaintext credential exposure in logs.
+**Learning:** `toLogString` relies on explicit execution to parse and sanitize stringified JSON or URLs. Directly treating variables as safe strings because they are of type `string` circumvents these checks.
+**Prevention:** Always pass external string payloads through redaction utilities before interpolating them into log statements or error messages.
