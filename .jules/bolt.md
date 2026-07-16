@@ -92,3 +92,8 @@
 
 **Learning:** Using the array spread operator inside `.push()` (e.g., `array.push(...spread)`) within a loop to accumulate dynamically sized arrays causes O(N*M) time complexity and can lead to "Maximum call stack size exceeded" errors if the accumulated arrays are large. This was a significant performance bottleneck in `src/services/push-service.ts`.
 **Action:** Use `Array.prototype.flatMap()` instead to efficiently map and flatten elements without the call stack limits or overhead of the spread operator.
+
+## 2024-05-31 - Optimize array inclusions using Set
+
+**Learning:** In highly iterative contexts like attribute property extraction or schema generation (`src/services/account-service.ts` and `src/nerm-client.ts`), utilizing `Array.prototype.includes()` against static exported constants creates an O(N) lookup overhead.
+**Action:** Always define static configuration lists in `src/data/constants.ts` as `Set` objects rather than arrays, and use `Set.prototype.has()` instead of `Array.prototype.includes()` to enable O(1) membership checks and boost mapping throughput.
