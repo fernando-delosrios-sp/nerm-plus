@@ -92,3 +92,8 @@
 
 **Learning:** Using the array spread operator inside `.push()` (e.g., `array.push(...spread)`) within a loop to accumulate dynamically sized arrays causes O(N*M) time complexity and can lead to "Maximum call stack size exceeded" errors if the accumulated arrays are large. This was a significant performance bottleneck in `src/services/push-service.ts`.
 **Action:** Use `Array.prototype.flatMap()` instead to efficiently map and flatten elements without the call stack limits or overhead of the spread operator.
+
+## 2024-05-31 - Replace array allocation .flat() with inline ternary checks
+
+**Learning:** Using `[value].flat()` (or `.flat().map()`) to coerce variables into arrays incurs substantial performance overhead due to array allocations and garbage collection in hot paths (e.g. iterating over 1M records was ~900ms vs ~30ms).
+**Action:** To minimize array allocation overhead and garbage collection pressure when handling variables that could be either a single object or an array, avoid using `[value].flat().map(...)`. Instead, use an allocation-free ternary with an explicit type check, such as `Array.isArray(value) ? value.map(...) : [value.property]`.

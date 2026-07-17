@@ -34,7 +34,8 @@ export function createStdAccountUpdate(
             const isProfile = ctx.config.account_type === 'Profile'
             let isUser = types.includes('NeprofileUser') || types.includes('NeaccessUser') || roles.length > 0
             for (const change of input.changes) {
-                const values = [change.value].flat()
+                // ⚡ Bolt: Replace [].flat() with allocation-free ternary checks
+                const values = Array.isArray(change.value) ? change.value : [change.value]
                 for (const value of values) {
                     switch (change.op) {
                         case 'Add':

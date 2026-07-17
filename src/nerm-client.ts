@@ -720,7 +720,7 @@ export class NERMClient {
                             }
                         }
                     } else {
-                        values = [profileAttribute].flat()
+                        values = Array.isArray(profileAttribute) ? profileAttribute : [profileAttribute]
                     }
                 } else {
                     if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
@@ -729,7 +729,7 @@ export class NERMClient {
                         )
                         values = referencedProfiles.filter((x) => x != null)
                     } else {
-                        values = [profileAttribute].flat()
+                        values = Array.isArray(profileAttribute) ? profileAttribute : [profileAttribute]
                     }
                 }
             }
@@ -775,7 +775,8 @@ export class NERMClient {
                         if (attr.entitlement) {
                             if (attr.schemaObjectType === referencedProfileType?.name) {
                                 //Is profile entitlement
-                                const ids = [value].flat().map((x) => x.id)
+                                // ⚡ Bolt: Replace [].flat() with allocation-free ternary checks
+                                const ids = Array.isArray(value) ? value.map((x: any) => x.id) : [value.id]
                                 if (attr.multi) {
                                     finalValue = ids
                                 } else {
@@ -783,7 +784,8 @@ export class NERMClient {
                                 }
                             } else {
                                 //Is not profile entitlement
-                                const names = [value].flat().map((x) => x.name)
+                                // ⚡ Bolt: Replace [].flat() with allocation-free ternary checks
+                                const names = Array.isArray(value) ? value.map((x: any) => x.name) : [value.name]
                                 if (attr.multi) {
                                     finalValue = value
                                 } else {
@@ -791,9 +793,10 @@ export class NERMClient {
                                 }
                             }
                         } else {
-                            let names = [value].flat()
+                            // ⚡ Bolt: Replace [].flat() with allocation-free ternary checks
+                            let names = Array.isArray(value) ? value : [value]
                             if (referencedProfileType) {
-                                names = [value].flat().map((x) => x.name)
+                                names = Array.isArray(value) ? value.map((x: any) => x.name) : [value.name]
                             }
                             if (attr.multi) {
                                 finalValue = isArray ? names : names[0]
