@@ -28,21 +28,24 @@ export function createStdAccountCreate(
         let account = await accountService.createAccount(input)
 
         if (input.attributes.types) {
-            const types = [input.attributes.types].flat()
+            // ⚡ Bolt: Replace [].flat() with allocation-free ternary checks
+            const types = Array.isArray(input.attributes.types) ? input.attributes.types : [input.attributes.types]
             // ⚡ Bolt: Use Promise.all to execute independent addType operations concurrently instead of sequential awaits
-            await Promise.all(types.map((type) => entitlementService.addType(account, type)))
+            await Promise.all(types.map((type: any) => entitlementService.addType(account, type)))
         }
 
         if (input.attributes.roles) {
-            const roles = [input.attributes.roles].flat()
+            const roles = Array.isArray(input.attributes.roles) ? input.attributes.roles : [input.attributes.roles]
             // ⚡ Bolt: Use Promise.all to execute independent addRole operations concurrently instead of sequential awaits
-            await Promise.all(roles.map((role) => entitlementService.addRole(account, role)))
+            await Promise.all(roles.map((role: any) => entitlementService.addRole(account, role)))
         }
 
         if (input.attributes.workflows && ctx.config.account_type === 'Profile') {
-            const workflows = [input.attributes.workflows].flat()
+            const workflows = Array.isArray(input.attributes.workflows)
+                ? input.attributes.workflows
+                : [input.attributes.workflows]
             let wait = false
-            const workflowPromises = workflows.map(async (workflow) => {
+            const workflowPromises = workflows.map(async (workflow: any) => {
                 const workflowWait = ctx.config.workflows?.find((x) => x.workflow === workflow)?.wait || false
                 if (workflowWait) {
                     wait = true

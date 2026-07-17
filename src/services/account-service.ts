@@ -55,7 +55,8 @@ export class AccountService {
 
                             const key = leaf
                             const attributeType = await this.ctx.nerm.getAttribute(key)
-                            const values = [rawValue].flat()
+                            // ⚡ Bolt: Replace [].flat() with allocation-free ternary checks
+                            const values = Array.isArray(rawValue) ? rawValue : [rawValue]
                             const isMulti = attribute.multi ?? Array.isArray(rawValue)
 
                             let finalValue
