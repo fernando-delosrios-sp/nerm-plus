@@ -4,8 +4,9 @@ export const PROCESSINGWAIT = 60 * 1000
 export const RETRIES = 5
 export const QUERYLIMIT = 100
 export const QUERYORDER = 'created_at'
-export const PROFILEONLY_ATTRIBUTES = ['user_id']
-export const PROFILE_ROOTATTRIBUTES = [
+// ⚡ Bolt: Convert arrays to Sets for O(1) lookups instead of O(N) array.includes() inside schema and entity loops
+export const PROFILEONLY_ATTRIBUTES = new Set(['user_id'])
+export const PROFILE_ROOTATTRIBUTES = new Set([
     'id',
     'uid',
     'name',
@@ -14,8 +15,8 @@ export const PROFILE_ROOTATTRIBUTES = [
     'id_proofing_status',
     'updated_at',
     'created_at',
-]
-export const USERONLY_ATTRIBUTES = [
+])
+export const USERONLY_ATTRIBUTES = new Set([
     'type',
     'email',
     'title',
@@ -26,16 +27,16 @@ export const USERONLY_ATTRIBUTES = [
     'locale',
     'group_strings',
     'avatar_url',
-]
-export const PROFILETYPE_ATTRIBUTES = ['ProfileSearchAttribute', 'ProfileSelectAttribute']
-export const USERTYPE_ATTRIBUTES = [
+])
+export const PROFILETYPE_ATTRIBUTES = new Set(['ProfileSearchAttribute', 'ProfileSelectAttribute'])
+export const USERTYPE_ATTRIBUTES = new Set([
     'ContributorSearchAttribute',
     'ContributorSelectAttribute',
     'OwnerSearchAttribute',
     'OwnerSelectAttribute',
-]
-export const WORKFLOW_PENDINGSTATUSES = ['pending request', 'pending set attribute']
-export const ENTITLEMENT_ATTRIBUTES = ['types', 'workflows', 'roles']
+])
+export const WORKFLOW_PENDINGSTATUSES = new Set(['pending request', 'pending set attribute'])
+export const ENTITLEMENT_ATTRIBUTES = new Set(['types', 'workflows', 'roles'])
 export const BATCH_SIZE = 100
 export const ACCOUNT_CONCURRENCY = 5
 export const TYPES: { [key: string]: string } = {

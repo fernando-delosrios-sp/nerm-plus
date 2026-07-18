@@ -97,7 +97,7 @@ export class SchemaService {
 
         switch (this.ctx.config.account_type) {
             case 'Profile':
-                schema.attributes = schema.attributes.filter((x) => !USERONLY_ATTRIBUTES.includes(x.name))
+                schema.attributes = schema.attributes.filter((x) => !USERONLY_ATTRIBUTES.has(x.name))
                 if (this.ctx.config.login_attribute) {
                     const login: SchemaAttribute = {
                         name: this.ctx.config.login_attribute,
@@ -118,7 +118,7 @@ export class SchemaService {
 
             default:
                 schema.attributes = schema.attributes
-                    .filter((x) => !PROFILEONLY_ATTRIBUTES.includes(x.name))
+                    .filter((x) => !PROFILEONLY_ATTRIBUTES.has(x.name))
                     .filter((x) => !x.name.includes('.'))
         }
 
