@@ -97,3 +97,7 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
+
+## 2024-07-01 - Flatten conditional flows with early returns
+**Learning:** In operations that require verifying specific account types and then performing a sequence of actions (like `changePassword` in `AccountService`), wrapping the primary execution logic within `if`/`else if` blocks creates unnecessary nesting. Returning a generic fallback error in an `else` block forces readers to hold the preceding conditions in their head.
+**Action:** Use early `return` statements at the end of each valid branch to eliminate the need for `else` or `else if` blocks, allowing fallback error states to sit at the highest scope level. This flattens the function and clarifies the execution paths.
