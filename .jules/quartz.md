@@ -97,3 +97,7 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
+
+## 2024-11-04 - Extract identical logic from conditional branches
+**Learning:** Extracting duplicated execution paths (like API calls or shared state mutations) completely out of conditional branches (`if`/`else`) reduces visual redundancy and makes the core divergent logic inside the conditional much easier to scan.
+**Action:** When you see the exact same method invocation in both an `if` and `else` block, pull it above or below the conditional so it runs unconditionally.
