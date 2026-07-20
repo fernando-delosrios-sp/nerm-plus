@@ -92,3 +92,8 @@
 
 **Learning:** Using the array spread operator inside `.push()` (e.g., `array.push(...spread)`) within a loop to accumulate dynamically sized arrays causes O(N*M) time complexity and can lead to "Maximum call stack size exceeded" errors if the accumulated arrays are large. This was a significant performance bottleneck in `src/services/push-service.ts`.
 **Action:** Use `Array.prototype.flatMap()` instead to efficiently map and flatten elements without the call stack limits or overhead of the spread operator.
+
+## 2024-07-20 - Use Set for attribute constants
+
+**Learning:** Static arrays used for filtering attributes (e.g., `PROFILEONLY_ATTRIBUTES.includes(x.name)`) introduce O(N) lookup overhead in loops during schema discovery and payload building. While arrays are fine for small sets, converting them to `Set` and using `.has()` changes lookup to O(1) time complexity, saving CPU cycles in hot paths.
+**Action:** When filtering objects iteratively against static lists of known property names or types, define the constants as `Set` structures rather than plain arrays to ensure fast O(1) lookup times.
