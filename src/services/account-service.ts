@@ -282,17 +282,19 @@ export class AccountService {
             await this.ctx.nerm.getUser(identity)
             logger.debug(`Changing password for user ${identity}`)
             await this.ctx.nerm.setUserAttribute(identity, 'password', password)
-        } else if (this.ctx.config.account_type === 'Profile') {
+            return
+        }
+
+        if (this.ctx.config.account_type === 'Profile') {
             const account = await this.getAccount(identity, schema)
             const user_id = account.attributes.user_id as string
             if (user_id) {
                 logger.debug(`Changing password for portal user ${user_id} associated with profile ${identity}`)
                 await this.ctx.nerm.setUserAttribute(user_id, 'password', password)
-            } else {
-                throw new ConnectorError('Password changes are only supported for portal users.')
+                return
             }
-        } else {
-            throw new ConnectorError('Password changes are only supported for portal users.')
         }
+
+        throw new ConnectorError('Password changes are only supported for portal users.')
     }
 }
