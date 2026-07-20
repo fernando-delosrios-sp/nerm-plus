@@ -50,3 +50,7 @@
 **Vulnerability:** Full URLs (e.g., `https://...` or `/api/...`) containing sensitive query parameters (like `client_secret` or `token`) were not redacted by the logger because the heuristic explicitly ignored strings containing `://` or lacked base domains.
 **Learning:** Only parsing pure query string formats (e.g., `a=1&b=2`) leaves full URLs exposed when they are inadvertently logged in request objects or errors (e.g., `AxiosError.config.url`). Furthermore, valid search parameter strings without an `&` (`?password=1`) may bypass basic match heuristics.
 **Prevention:** Attempt to parse string patterns containing `=` and `&` natively using the `URL` API (handling relative paths and bare query strings gracefully with dummy origins). If successful, extract and sanitize `url.searchParams` before reconstructing the string exactly.
+## 2024-07-20 - Exposing sensitive data in HTTP error response string
+**Vulnerability:** The `formatHttpError` function in `src/nerm-client.ts` directly interpolates HTTP error response data strings into error messages/logs without redaction.
+**Learning:** If the API returns a stringified JSON payload or a URL string containing sensitive data (e.g. passwords, tokens), directly interpolating it bypasses the `toLogString` utility, causing sensitive credentials to leak in plain text.
+**Prevention:** Always pass any potentially sensitive string payloads from external APIs through redaction utilities (like `toLogString`) before interpolating them into logs or error messages.
