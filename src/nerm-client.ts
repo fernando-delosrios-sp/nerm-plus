@@ -114,7 +114,7 @@ export class NERMClient {
     }
 
     private getProfileAttribute(profile: any, attribute: string): any {
-        if (PROFILE_ROOTATTRIBUTES.includes(attribute)) {
+        if (PROFILE_ROOTATTRIBUTES.has(attribute)) {
             return profile[attribute]
         } else {
             return profile.attributes[attribute]
@@ -627,7 +627,7 @@ export class NERMClient {
         if (wait) {
             while (count++ < RETRIES && response) {
                 const { id, status } = response
-                if (WORKFLOW_PENDINGSTATUSES.includes(status)) {
+                if (WORKFLOW_PENDINGSTATUSES.has(status)) {
                     await new Promise((r) => setTimeout(r, 1000))
                     response = await this.getWorkflowSession(id)
                 } else {
@@ -641,7 +641,7 @@ export class NERMClient {
     }
 
     async getAttribute(name: string): Promise<any> {
-        if (!PROFILE_ROOTATTRIBUTES.includes(name)) {
+        if (!PROFILE_ROOTATTRIBUTES.has(name)) {
             if (!this.attributesPromise) {
                 this.attributesPromise = (async () => {
                     const map = new Map<string, any>()
@@ -688,7 +688,7 @@ export class NERMClient {
 
         const profileAttribute = this.getProfileAttribute(profile, parent)
         if (profileAttribute) {
-            if (USERTYPE_ATTRIBUTES.includes(attributeType?.type)) {
+            if (USERTYPE_ATTRIBUTES.has(attributeType?.type)) {
                 const email = getEmailFromUserAttribute(profileAttribute)
                 if (email) {
                     const user = await this.getUserByEmail(email)
@@ -699,7 +699,7 @@ export class NERMClient {
             } else {
                 const profileNames: string[] = profileAttribute.split(', ')
                 if (hasChildren) {
-                    if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
+                    if (PROFILETYPE_ATTRIBUTES.has(attributeType?.type)) {
                         const profilePromises = profileNames.map(async (profileName) => {
                             const referencedProfile = await this.resolveProfileByValueOrName(
                                 profileName,
@@ -723,7 +723,7 @@ export class NERMClient {
                         values = [profileAttribute].flat()
                     }
                 } else {
-                    if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
+                    if (PROFILETYPE_ATTRIBUTES.has(attributeType?.type)) {
                         const referencedProfiles = await Promise.all(
                             profileNames.map((x) => this.resolveProfileByValueOrName(x, attributeType.profile_type_id))
                         )
@@ -749,7 +749,7 @@ export class NERMClient {
         await Promise.all(
             schema.attributes!.map(async (attr) => {
                 let finalValue
-                if (ENTITLEMENT_ATTRIBUTES.includes(attr.name)) {
+                if (ENTITLEMENT_ATTRIBUTES.has(attr.name)) {
                     if (attr.name === 'types') {
                         finalValue = ['Profile']
                         if (profile.attributes.user_id) {
@@ -819,7 +819,7 @@ export class NERMClient {
         value = value ?? ''
         const response = await this.resolveAttributePath(profile, path)
         if (response.profile === profile) {
-            if (PROFILE_ROOTATTRIBUTES.includes(response.path)) {
+            if (PROFILE_ROOTATTRIBUTES.has(response.path)) {
                 body = {
                     [response.path]: value,
                 }
@@ -832,14 +832,14 @@ export class NERMClient {
             }
         } else if (response.profile) {
             const attributeType = await this.getAttribute(response.path)
-            if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
+            if (PROFILETYPE_ATTRIBUTES.has(attributeType?.type)) {
                 const referencedProfile = await this.getProfileByNameAndType(
                     response.path,
                     attributeType.profile_type_id
                 )
                 body = { attributes: { [response.path]: referencedProfile.id } }
             } else {
-                if (PROFILE_ROOTATTRIBUTES.includes(response.path)) {
+                if (PROFILE_ROOTATTRIBUTES.has(response.path)) {
                     body = {
                         [response.path]: response.profile[response.path],
                     }
