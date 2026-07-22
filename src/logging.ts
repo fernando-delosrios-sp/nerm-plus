@@ -2,7 +2,7 @@
 
 import { logger } from '@sailpoint/connector-sdk'
 
-const isSensitiveKey = (key: string): boolean => {
+export const isSensitiveKey = (key: string): boolean => {
     const lower = key.toLowerCase()
     return (
         lower.includes('password') ||

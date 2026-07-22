@@ -1,11 +1,13 @@
 import { logger, StdAccountListOutput } from '@sailpoint/connector-sdk'
 import { ConnectorContext } from '../connector-context'
+import { isSensitiveKey } from '../logging'
 
 export class AttributeService {
     constructor(private ctx: ConnectorContext) {}
 
     async setAttribute(account: StdAccountListOutput, attribute: string, value: any) {
-        logger.debug(`Setting attribute ${attribute} to value ${value} for account ${account.uuid}`)
+        const safeValue = isSensitiveKey(attribute) ? '[REDACTED]' : value
+        logger.debug(`Setting attribute ${attribute} to value ${safeValue} for account ${account.uuid}`)
         switch (this.ctx.config.account_type) {
             case 'Profile':
                 if (attribute === 'workflows') {
