@@ -35,7 +35,7 @@ export class AccountService {
                 body.attributes = {}
 
                 const relevantAttrs = schema!.attributes.filter((attr) => {
-                    if (ENTITLEMENT_ATTRIBUTES.includes(attr.name)) return false
+                    if (ENTITLEMENT_ATTRIBUTES.has(attr.name)) return false
                     // ⚡ Bolt: Optimize leaf extraction hot path by replacing array-allocating split().pop() with slice()
                     const leafIdx = attr.name.lastIndexOf('.')
                     const leaf = leafIdx !== -1 ? attr.name.slice(leafIdx + 1) : attr.name
@@ -59,7 +59,7 @@ export class AccountService {
                             const isMulti = attribute.multi ?? Array.isArray(rawValue)
 
                             let finalValue
-                            if (PROFILETYPE_ATTRIBUTES.includes(attributeType?.type)) {
+                            if (PROFILETYPE_ATTRIBUTES.has(attributeType?.type)) {
                                 const uniqueValues = Array.from(new Set(values))
                                 const uniqueProfiles = await Promise.all(
                                     uniqueValues.map((v) =>
@@ -83,7 +83,7 @@ export class AccountService {
                                     )
                                 }
                                 finalValue = profiles.filter((p) => p).map((p) => p.id)
-                            } else if (USERTYPE_ATTRIBUTES.includes(attributeType?.type)) {
+                            } else if (USERTYPE_ATTRIBUTES.has(attributeType?.type)) {
                                 const uniqueUserValues = Array.from(new Set(values))
                                 const uniqueIds = await Promise.all(
                                     uniqueUserValues.map((v) =>
@@ -112,7 +112,7 @@ export class AccountService {
                     )
                 ).filter((r): r is { key: string; finalValue: any } => r != null)
                 for (const { key, finalValue } of attrResults) {
-                    if (PROFILE_ROOTATTRIBUTES.includes(key)) {
+                    if (PROFILE_ROOTATTRIBUTES.has(key)) {
                         body[key] = finalValue
                     } else {
                         body.attributes[key] = finalValue
