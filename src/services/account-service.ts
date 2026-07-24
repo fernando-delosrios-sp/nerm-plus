@@ -55,7 +55,8 @@ export class AccountService {
 
                             const key = leaf
                             const attributeType = await this.ctx.nerm.getAttribute(key)
-                            const values = [rawValue].flat()
+                            // ⚡ Bolt: Avoid allocating intermediary arrays via flat() by using an explicit isArray check and ternary map/array wrap
+                            const values = Array.isArray(rawValue) ? rawValue : [rawValue]
                             const isMulti = attribute.multi ?? Array.isArray(rawValue)
 
                             let finalValue
