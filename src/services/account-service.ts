@@ -277,22 +277,28 @@ export class AccountService {
     }
 
     async changePassword(identity: string, password: string, schema?: AccountSchema): Promise<void> {
-        if (this.ctx.config.account_type === 'NeaccessUser' || this.ctx.config.account_type === 'NeprofileUser') {
-            logger.debug(`Getting user ${identity}`)
-            await this.ctx.nerm.getUser(identity)
-            logger.debug(`Changing password for user ${identity}`)
-            await this.ctx.nerm.setUserAttribute(identity, 'password', password)
-        } else if (this.ctx.config.account_type === 'Profile') {
-            const account = await this.getAccount(identity, schema)
-            const user_id = account.attributes.user_id as string
-            if (user_id) {
-                logger.debug(`Changing password for portal user ${user_id} associated with profile ${identity}`)
-                await this.ctx.nerm.setUserAttribute(user_id, 'password', password)
-            } else {
+        let targetUserId: string
+
+        switch (this.ctx.config.account_type) {
+            case 'NeaccessUser':
+            case 'NeprofileUser':
+                logger.debug(`Getting user ${identity}`)
+                await this.ctx.nerm.getUser(identity)
+                logger.debug(`Changing password for user ${identity}`)
+                targetUserId = identity
+                break
+            case 'Profile':
+                const account = await this.getAccount(identity, schema)
+                targetUserId = account.attributes.user_id as string
+                if (!targetUserId) {
+                    throw new ConnectorError('Password changes are only supported for portal users.')
+                }
+                logger.debug(`Changing password for portal user ${targetUserId} associated with profile ${identity}`)
+                break
+            default:
                 throw new ConnectorError('Password changes are only supported for portal users.')
-            }
-        } else {
-            throw new ConnectorError('Password changes are only supported for portal users.')
         }
+
+        await this.ctx.nerm.setUserAttribute(targetUserId, 'password', password)
     }
 }
