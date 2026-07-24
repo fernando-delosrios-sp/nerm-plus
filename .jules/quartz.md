@@ -97,3 +97,6 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
+## 2024-07-24 - Extract common API calls outside nested branches
+**Learning:** When conditional branches (or switch cases) perform mostly the same action with minor data differences (like setting a password for a resolved user ID), duplicating the identical API call (`setUserAttribute`) inside every branch adds visual noise and buries the actual divergent logic (the ID resolution).
+**Action:** Extract the identical trailing operations to the end of the method block. Resolve only the variable differences (e.g., `targetUserId`) inside the branches. This flattens the code and clearly separates state resolution from state application.
