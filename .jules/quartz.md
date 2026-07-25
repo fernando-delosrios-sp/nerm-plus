@@ -97,3 +97,7 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
+
+## 2024-07-25 - Extract identical logic from conditional branches
+**Learning:** The codebase contains deeply nested `if/else` logic where an identical operation (e.g. `await entitlementService.addType(account, value)`) is called in both branches of an `if/else` block. This is redundant, inflates the size of the block, and makes the code harder to scan.
+**Action:** Extract the identical logic completely out of the conditional block to the parent scope, and keep only the divergent logic within the conditional branches.
