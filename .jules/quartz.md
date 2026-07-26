@@ -97,3 +97,6 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
+## 2024-05-24 - Simplify redundant object lookups
+**Learning:** Redundant array lookups on an object that was already verified earlier in the function create unnecessary noise.
+**Action:** Reuse the verified object reference instead of repeating the lookup logic.
