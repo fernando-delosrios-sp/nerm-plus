@@ -57,7 +57,7 @@ export function createStdAccountCreate(
         }
 
         const entitlementSchemas = input.schema?.attributes.filter(
-            (x) => x.schemaObjectType && !ENTITLEMENT_ATTRIBUTES.includes(x.name)
+            (x) => x.schemaObjectType && !ENTITLEMENT_ATTRIBUTES.has(x.name)
         )
         for (const [key, value] of Object.entries(input.attributes)) {
             const entitlementSchema = entitlementSchemas.find((x) => x.name === key)

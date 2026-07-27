@@ -92,3 +92,6 @@
 
 **Learning:** Using the array spread operator inside `.push()` (e.g., `array.push(...spread)`) within a loop to accumulate dynamically sized arrays causes O(N*M) time complexity and can lead to "Maximum call stack size exceeded" errors if the accumulated arrays are large. This was a significant performance bottleneck in `src/services/push-service.ts`.
 **Action:** Use `Array.prototype.flatMap()` instead to efficiently map and flatten elements without the call stack limits or overhead of the spread operator.
+## 2026-07-27 - [Optimize Membership Lookups]
+**Learning:** In the NERM connector, there are numerous static lists of attributes and statuses (e.g., `PROFILE_ROOTATTRIBUTES`, `USERTYPE_ATTRIBUTES`, `ENTITLEMENT_ATTRIBUTES`) that are frequently checked using `Array.prototype.includes()` inside hot loops like schema mapping, property extraction, and account building. This results in O(N) lookup overhead.
+**Action:** Always define static configuration lists that are used for membership testing as `Set` objects rather than arrays, and use `Set.prototype.has()` instead of `Array.prototype.includes()` to ensure O(1) performance in hot paths.
