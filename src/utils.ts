@@ -137,9 +137,10 @@ export const entity2profile = (entity: SearchDocument, profile_type_id: string, 
     const status = searchDoc?.enabled || !searchDoc?.inactive ? 'Active' : 'Inactive'
 
     const attributes: { [key: string]: string } = {}
-    Object.entries(conf.mapping).forEach(([targetAttr, sourcePath]) => {
-        attributes[targetAttr] = getAttribute(entity, sourcePath)
-    })
+    // ⚡ Bolt: Optimize mapping allocation in hot path by replacing Object.entries(...).forEach with a for-in loop
+    for (const targetAttr in conf.mapping) {
+        attributes[targetAttr] = getAttribute(entity, conf.mapping[targetAttr])
+    }
     attributes[conf.id] = entity.id as string
 
     return {
