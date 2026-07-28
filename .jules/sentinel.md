@@ -50,3 +50,7 @@
 **Vulnerability:** Full URLs (e.g., `https://...` or `/api/...`) containing sensitive query parameters (like `client_secret` or `token`) were not redacted by the logger because the heuristic explicitly ignored strings containing `://` or lacked base domains.
 **Learning:** Only parsing pure query string formats (e.g., `a=1&b=2`) leaves full URLs exposed when they are inadvertently logged in request objects or errors (e.g., `AxiosError.config.url`). Furthermore, valid search parameter strings without an `&` (`?password=1`) may bypass basic match heuristics.
 **Prevention:** Attempt to parse string patterns containing `=` and `&` natively using the `URL` API (handling relative paths and bare query strings gracefully with dummy origins). If successful, extract and sanitize `url.searchParams` before reconstructing the string exactly.
+## 2024-05-18 - Sensitive Data Exposure in Logs (Axios Retry)
+**Vulnerability:** API URLs containing sensitive query parameters could be exposed in plain text within logs when an Axios retry occurred due to rate limiting or network errors.
+**Learning:** The URL of the API request was being interpolated directly into the retry log message string without passing through the application's redaction utility, despite the error object itself being correctly redacted.
+**Prevention:** Always ensure any dynamic input, especially URLs and error payloads that may contain sensitive tokens, is passed through `toLogString` (or equivalent redaction utility) before interpolation into logging statements.
