@@ -92,3 +92,7 @@
 
 **Learning:** Using the array spread operator inside `.push()` (e.g., `array.push(...spread)`) within a loop to accumulate dynamically sized arrays causes O(N*M) time complexity and can lead to "Maximum call stack size exceeded" errors if the accumulated arrays are large. This was a significant performance bottleneck in `src/services/push-service.ts`.
 **Action:** Use `Array.prototype.flatMap()` instead to efficiently map and flatten elements without the call stack limits or overhead of the spread operator.
+## 2024-07-30 - Optimize schema array lookups with Set
+
+**Learning:** Checking for element existence using `Array.prototype.includes()` in filtering loops or hot paths (like in `schema-service`, `account-service`, and `nerm-client`) introduces unnecessary O(N) operations, especially when the lists (like `USERONLY_ATTRIBUTES` or `PROFILE_ROOTATTRIBUTES`) are checked repeatedly.
+**Action:** When validating against static lists of attributes or configurations, use `Set` and `.has()` instead of arrays and `.includes()` to reduce lookup time complexity to O(1) and improve overall throughput.
