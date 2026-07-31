@@ -55,7 +55,8 @@ export class AccountService {
 
                             const key = leaf
                             const attributeType = await this.ctx.nerm.getAttribute(key)
-                            const values = [rawValue].flat()
+                            // ⚡ Bolt: Optimize array allocation overhead by using Array.isArray instead of [rawValue].flat()
+                            const values = Array.isArray(rawValue) ? rawValue : [rawValue]
                             const isMulti = attribute.multi ?? Array.isArray(rawValue)
 
                             let finalValue

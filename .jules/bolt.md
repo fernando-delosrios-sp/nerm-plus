@@ -96,3 +96,6 @@
 
 **Learning:** Checking for element existence using `Array.prototype.includes()` in filtering loops or hot paths (like in `schema-service`, `account-service`, and `nerm-client`) introduces unnecessary O(N) operations, especially when the lists (like `USERONLY_ATTRIBUTES` or `PROFILE_ROOTATTRIBUTES`) are checked repeatedly.
 **Action:** When validating against static lists of attributes or configurations, use `Set` and `.has()` instead of arrays and `.includes()` to reduce lookup time complexity to O(1) and improve overall throughput.
+## 2024-03-24 - Optimize array initialization from unknown values
+**Learning:** Initializing an array from a value that could either be a single object or an array using `[value].flat()` incurs significant garbage collection and array allocation overhead. A microbenchmark showed that mapping over `[value].flat()` takes roughly 6538ms for 1,000,000 iterations on an array vs 335ms for an allocation-free ternary `Array.isArray(value) ? value : [value]`.
+**Action:** When mapping or iterating over a value that could be either a single object or an array, use `Array.isArray(value) ? value : [value]` instead of `[value].flat()` to avoid creating intermediate nested arrays and calling `.flat()`.
