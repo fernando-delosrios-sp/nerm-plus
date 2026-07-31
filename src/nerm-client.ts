@@ -46,12 +46,12 @@ function formatHttpError(err: any): string {
     }
     const pieces: string[] = []
     if (typeof data.error === 'string') {
-        pieces.push(data.error)
+        pieces.push(toLogString(data.error))
     } else if (data.error != null) {
         pieces.push(`error: ${toLogString(data.error)}`)
     }
     if (data.message != null && String(data.message) !== String(data.error)) {
-        pieces.push(String(data.message))
+        pieces.push(toLogString(data.message))
     }
     if (data.errors != null) {
         pieces.push(`errors: ${toLogString(data.errors)}`)
