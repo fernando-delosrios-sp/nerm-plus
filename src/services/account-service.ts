@@ -55,8 +55,10 @@ export class AccountService {
 
                             const key = leaf
                             const attributeType = await this.ctx.nerm.getAttribute(key)
-                            const values = [rawValue].flat()
-                            const isMulti = attribute.multi ?? Array.isArray(rawValue)
+                            // ⚡ Bolt: Optimize array extraction by replacing array-allocating .flat() with allocation-free ternary
+                            const isArray = Array.isArray(rawValue)
+                            const values = isArray ? rawValue : [rawValue]
+                            const isMulti = attribute.multi ?? isArray
 
                             let finalValue
                             if (PROFILETYPE_ATTRIBUTES.has(attributeType?.type)) {
