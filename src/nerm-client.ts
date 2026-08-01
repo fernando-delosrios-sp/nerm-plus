@@ -244,7 +244,7 @@ export class NERMClient {
     }
 
     getJobStatus = async (id: string): Promise<any> => {
-        const url = `/job_status`
+        const url = `/job_status/${encodeURIComponent(String(id))}`
         const type = undefined
 
         return this.getRequest(url, type)
