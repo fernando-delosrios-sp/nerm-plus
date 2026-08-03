@@ -29,7 +29,10 @@ export function createStdEntitlementList(
             }
             case 'workflow':
                 if (ctx.config.workflows) {
-                    const workflows = [ctx.config.workflows].flat()
+                    // ⚡ Bolt: Avoid Array.flat() object allocations by using allocation-free ternary type check
+                    const workflows = Array.isArray(ctx.config.workflows)
+                        ? ctx.config.workflows
+                        : [ctx.config.workflows]
                     for (const workflow of workflows) {
                         const entitlement = new Workflow(workflow)
                         res.send(entitlement)
