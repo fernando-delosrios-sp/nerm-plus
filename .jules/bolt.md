@@ -96,3 +96,7 @@
 
 **Learning:** Checking for element existence using `Array.prototype.includes()` in filtering loops or hot paths (like in `schema-service`, `account-service`, and `nerm-client`) introduces unnecessary O(N) operations, especially when the lists (like `USERONLY_ATTRIBUTES` or `PROFILE_ROOTATTRIBUTES`) are checked repeatedly.
 **Action:** When validating against static lists of attributes or configurations, use `Set` and `.has()` instead of arrays and `.includes()` to reduce lookup time complexity to O(1) and improve overall throughput.
+
+## $(date +%Y-%m-%d) - Array Allocation Overhead in Hot Paths
+**Learning:** Found multiple instances of `[value].flat().map(...)` inside `resolveProfileAttributes`, which is called iteratively for every schema attribute during profile operations. Wrapping a potentially single item into an array, flattening it, and mapping creates two unnecessary temporary arrays per loop, drastically increasing garbage collection overhead in Node.js.
+**Action:** When handling data that could be a single object or an array of objects in high-throughput loops, rely on a pre-computed `isArray` boolean combined with an allocation-free ternary expression like `isArray ? value.map(...) : [value.property]` to avoid temporary array churn.
