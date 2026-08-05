@@ -173,20 +173,12 @@ export class NERMClient {
     }
 
     private async getRequest(url: string, type?: string, params?: any): Promise<any> {
-        const request: AxiosRequestConfig = {
-            method: 'get',
-            url,
-            params,
-        }
-
-        let item: any
         try {
-            const response = await this.client.request(request)
-            item = type ? response.data[type] : response.data
+            const response = await this.client.request({ method: 'get', url, params })
+            return type ? response.data[type] : response.data
         } catch (error) {
             this.logError('getRequest', (error as any).response?.data?.error ?? `${error}`)
-        } finally {
-            return item
+            return undefined
         }
     }
 
@@ -227,19 +219,12 @@ export class NERMClient {
     }
 
     private async deleteRequest(url: string): Promise<any> {
-        const request: AxiosRequestConfig = {
-            method: 'delete',
-            url,
-        }
-
-        let item: any
         try {
-            const response = await this.client.request(request)
-            item = response.data
+            const response = await this.client.request({ method: 'delete', url })
+            return response.data
         } catch (error) {
             this.logError('deleteRequest', (error as any).response?.data?.error ?? `${error}`)
-        } finally {
-            return item
+            return undefined
         }
     }
 
