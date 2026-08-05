@@ -50,3 +50,8 @@
 **Vulnerability:** Full URLs (e.g., `https://...` or `/api/...`) containing sensitive query parameters (like `client_secret` or `token`) were not redacted by the logger because the heuristic explicitly ignored strings containing `://` or lacked base domains.
 **Learning:** Only parsing pure query string formats (e.g., `a=1&b=2`) leaves full URLs exposed when they are inadvertently logged in request objects or errors (e.g., `AxiosError.config.url`). Furthermore, valid search parameter strings without an `&` (`?password=1`) may bypass basic match heuristics.
 **Prevention:** Attempt to parse string patterns containing `=` and `&` natively using the `URL` API (handling relative paths and bare query strings gracefully with dummy origins). If successful, extract and sanitize `url.searchParams` before reconstructing the string exactly.
+
+## 2026-08-05 - Incomplete Endpoint Authorization bypass
+**Vulnerability:** The `getJobStatus` method in `nerm-client.ts` was calling `/job_status` without appending the specific `id`. Depending on the server implementation, hitting a resource base path might return all resources, bypassing single-resource authorization checks, or fail unpredictably.
+**Learning:** Missing ID parameters in endpoint paths not only break functionality but can inadvertently trigger listing endpoints which might lack proper constraints or leak data across tenants/users.
+**Prevention:** Always verify that parameterized API methods properly include and URL-encode their identifiers in the request path to avoid unintended data exposure or broad access patterns.
