@@ -97,3 +97,6 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
+## 2024-05-18 - Simplify fallback lookup and control flow
+**Learning:** In TypeScript, replacing a mutable `let` and `if (!val)` reassignment with a `const` and nullish coalescing operator (`??`) greatly clarifies fallback lookup intent. Furthermore, when the rest of the function logic depends on this resolved value, an early return (`if (!val) return`) flattens nesting and improves scanability for the happy path.
+**Action:** When finding `let x = findA(); if (!x) { x = findB(); }`, merge them into `const x = findA() ?? findB();` and use an early guard clause for unrecoverable falsy states instead of wrapping the function body in an `if (x)` block.
