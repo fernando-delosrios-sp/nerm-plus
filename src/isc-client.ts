@@ -20,6 +20,12 @@ import { Config } from './model/config'
 
 export class ISCClient {
     private config: Configuration
+    // ⚡ Bolt: Cache ISC listSources results.
+    // Impact: Prevents redundant fetching of source configurations during multiple calls.
+    private cachedSources?: any[]
+    // ⚡ Bolt: Cache ISC listSourceSchemas results.
+    // Impact: Avoids identical API requests when retrieving the same schema multiple times.
+    private cachedSourceSchemas: Map<string, Schema[]> = new Map()
 
     constructor(config: Config) {
         const conf: ConfigurationParameters = {
@@ -42,18 +48,22 @@ export class ISCClient {
     }
 
     async listSources() {
+        if (this.cachedSources) return this.cachedSources
         const api = new SourcesApi(this.config)
 
         const response = await Paginator.paginate(api, api.listSources)
 
-        return response.data
+        this.cachedSources = response.data
+        return this.cachedSources
     }
 
     async listSourceSchemas(sourceId: string): Promise<Schema[]> {
+        if (this.cachedSourceSchemas.has(sourceId)) return this.cachedSourceSchemas.get(sourceId)!
         const api = new SourcesApi(this.config)
 
         const response = await api.getSourceSchemas({ sourceId })
 
+        this.cachedSourceSchemas.set(sourceId, response.data)
         return response.data
     }
 

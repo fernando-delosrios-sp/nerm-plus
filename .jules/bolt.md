@@ -96,3 +96,6 @@
 
 **Learning:** Checking for element existence using `Array.prototype.includes()` in filtering loops or hot paths (like in `schema-service`, `account-service`, and `nerm-client`) introduces unnecessary O(N) operations, especially when the lists (like `USERONLY_ATTRIBUTES` or `PROFILE_ROOTATTRIBUTES`) are checked repeatedly.
 **Action:** When validating against static lists of attributes or configurations, use `Set` and `.has()` instead of arrays and `.includes()` to reduce lookup time complexity to O(1) and improve overall throughput.
+## 2024-11-20 - Memoization of ISC Client Queries
+**Learning:** In operations that retrieve multiple schemas or bulk profiles, fetching the same ISC configurations and schemas per entity or reference creates redundant HTTP round-trips to `/sources` and `/source-schemas`, leading to cumulative I/O latency bottlenecks.
+**Action:** Always maintain a scoped request cache (using a simple object property or `Map`) on connector client classes for operations whose data remains immutable within a single execution cycle to prevent N+1 query patterns.
