@@ -97,3 +97,6 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
+## 2025-02-12 - Simplify Boolean Returns
+**Learning:** In TypeScript utilities, explicit `if/else` blocks returning literal boolean or enum-like strings based on a single condition create unnecessary visual noise and branching.
+**Action:** Replace explicit `if/else` returns with a direct ternary operator (e.g., `return condition ? 'A' : 'B'`) or direct boolean evaluation to flatten control flow and improve scanability.
