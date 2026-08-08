@@ -775,7 +775,7 @@ export class NERMClient {
                         if (attr.entitlement) {
                             if (attr.schemaObjectType === referencedProfileType?.name) {
                                 //Is profile entitlement
-                                const ids = [value].flat().map((x) => x.id)
+                                const ids = isArray ? value.map((x: any) => x.id) : [value.id]
                                 if (attr.multi) {
                                     finalValue = ids
                                 } else {
@@ -783,7 +783,7 @@ export class NERMClient {
                                 }
                             } else {
                                 //Is not profile entitlement
-                                const names = [value].flat().map((x) => x.name)
+                                const names = isArray ? value.map((x: any) => x.name) : [value.name]
                                 if (attr.multi) {
                                     finalValue = value
                                 } else {
@@ -791,9 +791,9 @@ export class NERMClient {
                                 }
                             }
                         } else {
-                            let names = [value].flat()
+                            let names = isArray ? value : [value]
                             if (referencedProfileType) {
-                                names = [value].flat().map((x) => x.name)
+                                names = isArray ? value.map((x: any) => x.name) : [value.name]
                             }
                             if (attr.multi) {
                                 finalValue = isArray ? names : names[0]
