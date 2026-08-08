@@ -42,16 +42,14 @@ function formatHttpError(err: any): string {
         return `${prefix}: ${err.message ?? ''}`.trim()
     }
     if (typeof data === 'string') {
-        return `${prefix}: ${data}`
+        return `${prefix}: ${toLogString(data)}`
     }
     const pieces: string[] = []
-    if (typeof data.error === 'string') {
-        pieces.push(data.error)
-    } else if (data.error != null) {
+    if (data.error != null) {
         pieces.push(`error: ${toLogString(data.error)}`)
     }
     if (data.message != null && String(data.message) !== String(data.error)) {
-        pieces.push(String(data.message))
+        pieces.push(`message: ${toLogString(data.message)}`)
     }
     if (data.errors != null) {
         pieces.push(`errors: ${toLogString(data.errors)}`)
