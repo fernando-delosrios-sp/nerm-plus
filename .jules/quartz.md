@@ -97,3 +97,7 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
+
+## 2024-07-02 - Eliminate Redundant Find Operations
+**Learning:** The codebase sometimes performs an array `.find()` lookup to resolve an object, and then redundantly performs the exact same `.find()` lookup again later in the same function to access another property on that object.
+**Action:** Reuse the already-resolved object in the current scope instead of running a redundant array lookup, which improves both readability and removes visual noise.
