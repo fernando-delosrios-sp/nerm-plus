@@ -97,3 +97,6 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
+## 2024-07-17 - Extract identical method invocations from conditionals
+**Learning:** When subsequent state mapping or method invocations (like `addType` in `stdAccountUpdate`) are copy-pasted verbatim into both branches of an `if/else` block, it adds visual noise and obscures the core divergent logic.
+**Action:** Extract the identical logic completely out of the conditional block, running it immediately before or after as appropriate, leaving only the truly divergent logic inside the branches.
