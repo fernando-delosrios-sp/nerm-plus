@@ -775,7 +775,8 @@ export class NERMClient {
                         if (attr.entitlement) {
                             if (attr.schemaObjectType === referencedProfileType?.name) {
                                 //Is profile entitlement
-                                const ids = [value].flat().map((x) => x.id)
+                                // ⚡ Bolt: Replace [value].flat() with Array.isArray() ternary to avoid O(N) allocation overhead inside the hot loop
+                                const ids = Array.isArray(value) ? value.map((x: any) => x.id) : [value.id]
                                 if (attr.multi) {
                                     finalValue = ids
                                 } else {
@@ -783,7 +784,8 @@ export class NERMClient {
                                 }
                             } else {
                                 //Is not profile entitlement
-                                const names = [value].flat().map((x) => x.name)
+                                // ⚡ Bolt: Replace [value].flat() with Array.isArray() ternary to avoid O(N) allocation overhead inside the hot loop
+                                const names = Array.isArray(value) ? value.map((x: any) => x.name) : [value.name]
                                 if (attr.multi) {
                                     finalValue = value
                                 } else {
@@ -793,7 +795,8 @@ export class NERMClient {
                         } else {
                             let names = [value].flat()
                             if (referencedProfileType) {
-                                names = [value].flat().map((x) => x.name)
+                                // ⚡ Bolt: Replace [value].flat() with Array.isArray() ternary to avoid O(N) allocation overhead inside the hot loop
+                                names = Array.isArray(value) ? value.map((x: any) => x.name) : [value.name]
                             }
                             if (attr.multi) {
                                 finalValue = isArray ? names : names[0]
