@@ -658,9 +658,12 @@ export class NERMClient {
 
     async resolveAttributePath(profile: any, path: string): Promise<{ profile: any; path: string }> {
         const dotIndex = path.indexOf('.')
-        const hasChildren = dotIndex !== -1
-        const parent = hasChildren ? path.slice(0, dotIndex) : path
-        const children = hasChildren ? path.slice(dotIndex + 1) : ''
+        if (dotIndex === -1) {
+            return { profile, path }
+        }
+
+        const parent = path.slice(0, dotIndex)
+        const children = path.slice(dotIndex + 1)
         const attributeType = await this.getAttribute(parent)
 
         //Need to check other multi-valued attribute types like tags
@@ -668,13 +671,8 @@ export class NERMClient {
             return { profile, path }
         }
 
-        if (hasChildren) {
-            const referencedProfile = await this.getProfileByNameAndType(parent, attributeType.profile_type_id)
-            const childAttributePath = this.resolveAttributePath(referencedProfile, children)
-            return childAttributePath
-        } else {
-            return { profile, path }
-        }
+        const referencedProfile = await this.getProfileByNameAndType(parent, attributeType.profile_type_id)
+        return this.resolveAttributePath(referencedProfile, children)
     }
 
     async getAttributeRecursively(profile: any, name: string): Promise<any> {
