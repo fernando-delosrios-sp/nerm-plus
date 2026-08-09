@@ -50,3 +50,9 @@
 **Vulnerability:** Full URLs (e.g., `https://...` or `/api/...`) containing sensitive query parameters (like `client_secret` or `token`) were not redacted by the logger because the heuristic explicitly ignored strings containing `://` or lacked base domains.
 **Learning:** Only parsing pure query string formats (e.g., `a=1&b=2`) leaves full URLs exposed when they are inadvertently logged in request objects or errors (e.g., `AxiosError.config.url`). Furthermore, valid search parameter strings without an `&` (`?password=1`) may bypass basic match heuristics.
 **Prevention:** Attempt to parse string patterns containing `=` and `&` natively using the `URL` API (handling relative paths and bare query strings gracefully with dummy origins). If successful, extract and sanitize `url.searchParams` before reconstructing the string exactly.
+
+## 2026-08-09 - Prevent Sensitive Data Leaks by Bypassing Central Error Formatter
+
+**Vulnerability:** Several internal methods in `nerm-client.ts` (`listRequest`, `getRequest`, `deleteRequest`) were bypassing the centralized `formatHttpError` function and passing raw unredacted error response structures directly to the internal logger.
+**Learning:** Having a secure and robust central error redaction utility (like `toLogString` inside `formatHttpError`) is ineffective if internal class methods choose to catch errors and log them inline in an ad-hoc manner, bypassing the sanitization pipeline.
+**Prevention:** Enforce consistent usage of the centralized error formatter (e.g. `formatHttpError`) across all catch blocks within the HTTP client before data is handed to the logger. Avoid ad-hoc, inline error string interpolation in network catch blocks.
