@@ -97,3 +97,7 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
+
+## 2024-10-09 - Flatten Nested Error Logic
+**Learning:** In functions with multiple valid pathways that all share a single generic error fallback state, nesting the error state within `if/else` structures causes redundancy and harms scanability.
+**Action:** Flatten these structures by extracting valid pathways using early `return` statements, and move the generic error throw to the un-nested, top-level scope of the function.
