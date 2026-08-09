@@ -97,3 +97,6 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
+## 2025-02-12 - Defer expensive API calls by flattening switches to early return guard clauses
+**Learning:** In `src/services/entitlement-service.ts`, nested switch statements that fetch expensive resources (like roles) prior to matching conditions can cause unnecessary N+1 performance issues across the connector SDK operations.
+**Action:** Always evaluate local configurations (e.g., `this.ctx.config.account_type`) using early returns before performing remote resource lookups (`await this.ctx.nerm.getRole`) when refactoring nested conditionals for readability.
