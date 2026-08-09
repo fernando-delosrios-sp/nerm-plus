@@ -42,7 +42,7 @@ function formatHttpError(err: any): string {
         return `${prefix}: ${err.message ?? ''}`.trim()
     }
     if (typeof data === 'string') {
-        return `${prefix}: ${data}`
+        return `${prefix}: ${toLogString(data)}`
     }
     const pieces: string[] = []
     if (typeof data.error === 'string') {
