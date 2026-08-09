@@ -85,6 +85,16 @@ const redact = (obj: any, seen: WeakSet<any> = new WeakSet()): any => {
         if (Object.prototype.hasOwnProperty.call(redacted, key)) {
             if (isSensitiveKey(key)) {
                 redacted[key] = '[REDACTED]'
+            } else if ((key === '_header' || key === '_pendingData') && typeof redacted[key] === 'string') {
+                // Redact sensitive headers and URLs in raw HTTP strings (e.g. from AxiosError)
+                redacted[key] = redacted[key].replace(/(Authorization:\s*Bearer\s+)[^\r\n]+/gi, '$1[REDACTED]')
+                // Attempt to redact URL parameters in the HTTP request line (e.g., "GET /api?api_key=secret HTTP/1.1")
+                redacted[key] = redacted[key].replace(
+                    /^(?:[A-Z]+)\s+([^\s]+)\s+HTTP\/1\.[01]/im,
+                    (match: string, path: string) => {
+                        return match.replace(path, redact(path))
+                    }
+                )
             } else if (typeof redacted[key] === 'object' || typeof redacted[key] === 'string') {
                 redacted[key] = redact(redacted[key], seen)
             }
