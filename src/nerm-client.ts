@@ -168,7 +168,8 @@ export class NERMClient {
             }
         } catch (error) {
             const e = error as any
-            this.logError('listRequest', e.response?.data?.error ?? e.message ?? `${e}`)
+            const message = formatHttpError(e)
+            this.logError('listRequest', message)
         }
     }
 
@@ -184,7 +185,9 @@ export class NERMClient {
             const response = await this.client.request(request)
             item = type ? response.data[type] : response.data
         } catch (error) {
-            this.logError('getRequest', (error as any).response?.data?.error ?? `${error}`)
+            const e = error as any
+            const message = formatHttpError(e)
+            this.logError('getRequest', message)
         } finally {
             return item
         }
@@ -237,7 +240,9 @@ export class NERMClient {
             const response = await this.client.request(request)
             item = response.data
         } catch (error) {
-            this.logError('deleteRequest', (error as any).response?.data?.error ?? `${error}`)
+            const e = error as any
+            const message = formatHttpError(e)
+            this.logError('deleteRequest', message)
         } finally {
             return item
         }
