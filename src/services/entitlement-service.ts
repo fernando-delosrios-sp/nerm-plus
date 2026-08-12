@@ -179,10 +179,9 @@ export class EntitlementService {
             throw new ConnectorError(message)
         }
 
-        const { requester_id } = workflow
+        const { requester_id, persistent } = workflow
         await this.runWorkflow(account, workflow_id, requester_id, waitFlag)
 
-        const persistent = this.ctx.config.workflows?.find((x) => x.workflow === workflow_id)?.persistent ?? false
         if (persistent) {
             const current = (account.attributes.workflows as string[]) ?? []
             current.push(workflow_id)
