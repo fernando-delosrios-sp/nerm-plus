@@ -97,3 +97,7 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
+
+## 2024-05-13 - Eliminate duplicate lookups in scope
+**Learning:** Found a pattern where an object was successfully found via `.find()` earlier in a function, but then another `.find()` was executed against the exact same array to retrieve a different property off the same object later in the scope.
+**Action:** Reuse the previously resolved object variable to extract necessary properties via destructuring, which removes redundant array traversal logic and reduces visual noise.
