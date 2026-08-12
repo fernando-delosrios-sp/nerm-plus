@@ -50,3 +50,7 @@
 **Vulnerability:** Full URLs (e.g., `https://...` or `/api/...`) containing sensitive query parameters (like `client_secret` or `token`) were not redacted by the logger because the heuristic explicitly ignored strings containing `://` or lacked base domains.
 **Learning:** Only parsing pure query string formats (e.g., `a=1&b=2`) leaves full URLs exposed when they are inadvertently logged in request objects or errors (e.g., `AxiosError.config.url`). Furthermore, valid search parameter strings without an `&` (`?password=1`) may bypass basic match heuristics.
 **Prevention:** Attempt to parse string patterns containing `=` and `&` natively using the `URL` API (handling relative paths and bare query strings gracefully with dummy origins). If successful, extract and sanitize `url.searchParams` before reconstructing the string exactly.
+## 2024-08-12 - Prevent sensitive data leaks in logs
+**Vulnerability:** Ad-hoc inline error logging in client methods bypassed the central `formatHttpError` formatter, potentially leaking unredacted raw server responses (like full URLs with secret query parameters) into the logs.
+**Learning:** Consistently routing all HTTP errors through a centralized error formatter ensures redaction rules are applied universally before reaching internal loggers.
+**Prevention:** Always use the centralized error formatter (`formatHttpError`) instead of direct string interpolation for HTTP errors in client modules.
