@@ -47,6 +47,12 @@
 **Prevention:** Enforce strict string length checks (e.g., `value.length === 36`) prior to executing regular expressions on specific formats to safely neutralize ReDoS risks and ensure optimal regex engine performance by short-circuiting fast on non-compliant input.
 
 ## 2026-06-23 - Prevent Secrets Leaking in Full URLs in Logs
+
 **Vulnerability:** Full URLs (e.g., `https://...` or `/api/...`) containing sensitive query parameters (like `client_secret` or `token`) were not redacted by the logger because the heuristic explicitly ignored strings containing `://` or lacked base domains.
 **Learning:** Only parsing pure query string formats (e.g., `a=1&b=2`) leaves full URLs exposed when they are inadvertently logged in request objects or errors (e.g., `AxiosError.config.url`). Furthermore, valid search parameter strings without an `&` (`?password=1`) may bypass basic match heuristics.
 **Prevention:** Attempt to parse string patterns containing `=` and `&` natively using the `URL` API (handling relative paths and bare query strings gracefully with dummy origins). If successful, extract and sanitize `url.searchParams` before reconstructing the string exactly.
+
+## 2025-02-14 - Isolated Primitive String Logging Bypass
+**Vulnerability:** Passwords and secrets were logged in plaintext within template literals in the AttributeService (e.g., `Setting attribute ${attribute} to value ${value}`).
+**Learning:** The central redaction utility (`toLogString`) only redacts sensitive values if they are within structured objects, arrays, or URLs where the key context is preserved. Isolated primitive strings lose their key context and bypass redaction when passed directly to `toLogString` or interpolated.
+**Prevention:** When interpolating primitive values associated with keys into logs, explicitly evaluate the key context using `isSensitiveKey(key) ? '[REDACTED]' : toLogString(value)` before interpolation.
