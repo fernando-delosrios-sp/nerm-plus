@@ -1,11 +1,14 @@
 import { logger, StdAccountListOutput } from '@sailpoint/connector-sdk'
 import { ConnectorContext } from '../connector-context'
+import { isSensitiveKey, toLogString } from '../logging'
 
 export class AttributeService {
     constructor(private ctx: ConnectorContext) {}
 
     async setAttribute(account: StdAccountListOutput, attribute: string, value: any) {
-        logger.debug(`Setting attribute ${attribute} to value ${value} for account ${account.uuid}`)
+        logger.debug(
+            `Setting attribute ${attribute} to value ${isSensitiveKey(attribute) ? '[REDACTED]' : toLogString(value)} for account ${account.uuid}`
+        )
         switch (this.ctx.config.account_type) {
             case 'Profile':
                 if (attribute === 'workflows') {
@@ -61,7 +64,7 @@ export class AttributeService {
 
     async profileAttributeOp(account: any, attribute: string, value: string, op: 'add' | 'remove') {
         logger.debug(
-            `Performing ${op} operation on attribute ${attribute} with value ${value} for account ${account.identity}`
+            `Performing ${op} operation on attribute ${attribute} with value ${isSensitiveKey(attribute) ? '[REDACTED]' : toLogString(value)} for account ${account.identity}`
         )
         const profile = await this.ctx.nerm.getProfile(account.identity)
         const currentValue = await this.ctx.nerm.getAttributeRecursively(profile, attribute)
