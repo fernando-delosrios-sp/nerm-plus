@@ -97,3 +97,6 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
+## 2024-08-15 - Replace finally block returns with direct returns
+**Learning:** Returning from a finally block suppresses any errors thrown in the try/catch blocks and introduces mutable state variable holding values across the control flow boundaries. Replacing mutable state and finally block returns with direct return statements inside try and catch blocks improves scanability, simplifies control flow, and prevents suppressing thrown errors.
+**Action:** When acting as the 'Quartz' persona, replace mutable state and finally block returns (e.g., finally { return item; }) with direct return statements inside try and catch blocks to improve scanability, simplify control flow, and prevent suppressing thrown errors.
