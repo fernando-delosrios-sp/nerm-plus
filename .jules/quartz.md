@@ -97,3 +97,6 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
+## 2024-08-16 - Replace mutable state and finally block returns
+**Learning:** Returning values from `finally` blocks suppresses thrown errors and creates unnecessary mutable state (e.g., `let item: any`).
+**Action:** Replace mutable state and `finally` block returns with explicit `return` statements inside `try` and `catch` blocks to improve scanability, simplify control flow, and prevent suppressing errors.
