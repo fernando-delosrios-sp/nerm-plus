@@ -96,3 +96,7 @@
 
 **Learning:** Checking for element existence using `Array.prototype.includes()` in filtering loops or hot paths (like in `schema-service`, `account-service`, and `nerm-client`) introduces unnecessary O(N) operations, especially when the lists (like `USERONLY_ATTRIBUTES` or `PROFILE_ROOTATTRIBUTES`) are checked repeatedly.
 **Action:** When validating against static lists of attributes or configurations, use `Set` and `.has()` instead of arrays and `.includes()` to reduce lookup time complexity to O(1) and improve overall throughput.
+## 2024-08-16 - Optimize flat().map() overhead
+
+**Learning:** In `src/nerm-client.ts`, using `[value].flat().map(...)` to normalize values that could be a single object or an array of objects creates unnecessary temporary arrays, causing allocation and GC overhead in the hot path of attribute resolution.
+**Action:** Use an allocation-free ternary check, e.g., `isArray ? value.map(x => x.id) : [value.id]`, to bypass `.flat()` array creation and improve hot-path throughput.
