@@ -47,6 +47,13 @@
 **Prevention:** Enforce strict string length checks (e.g., `value.length === 36`) prior to executing regular expressions on specific formats to safely neutralize ReDoS risks and ensure optimal regex engine performance by short-circuiting fast on non-compliant input.
 
 ## 2026-06-23 - Prevent Secrets Leaking in Full URLs in Logs
+
 **Vulnerability:** Full URLs (e.g., `https://...` or `/api/...`) containing sensitive query parameters (like `client_secret` or `token`) were not redacted by the logger because the heuristic explicitly ignored strings containing `://` or lacked base domains.
 **Learning:** Only parsing pure query string formats (e.g., `a=1&b=2`) leaves full URLs exposed when they are inadvertently logged in request objects or errors (e.g., `AxiosError.config.url`). Furthermore, valid search parameter strings without an `&` (`?password=1`) may bypass basic match heuristics.
 **Prevention:** Attempt to parse string patterns containing `=` and `&` natively using the `URL` API (handling relative paths and bare query strings gracefully with dummy origins). If successful, extract and sanitize `url.searchParams` before reconstructing the string exactly.
+
+## 2026-06-25 - Prevent Exposing Sensitive Query Parameters in Retried Requests
+
+**Vulnerability:** The logger in `src/axios.ts` directly interpolated `requestConfig.url` into a string when retrying a request via `axios-retry`. Since the original URL might contain sensitive query parameters (like `password`, `token`, `secret`, `api_key`), these parameters were logged in plain text.
+**Learning:** Even when logging request configurations or metadata (like retries), any direct inclusion of original URLs or request data can bypass centralized logging redaction mechanisms if not explicitly passed through them.
+**Prevention:** Always pass interpolated request data, particularly URLs and request configurations, through a central redaction utility (e.g., `toLogString`) before logging them in plain text, especially in custom hooks or retry logic.
