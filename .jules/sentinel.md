@@ -47,6 +47,12 @@
 **Prevention:** Enforce strict string length checks (e.g., `value.length === 36`) prior to executing regular expressions on specific formats to safely neutralize ReDoS risks and ensure optimal regex engine performance by short-circuiting fast on non-compliant input.
 
 ## 2026-06-23 - Prevent Secrets Leaking in Full URLs in Logs
+
 **Vulnerability:** Full URLs (e.g., `https://...` or `/api/...`) containing sensitive query parameters (like `client_secret` or `token`) were not redacted by the logger because the heuristic explicitly ignored strings containing `://` or lacked base domains.
 **Learning:** Only parsing pure query string formats (e.g., `a=1&b=2`) leaves full URLs exposed when they are inadvertently logged in request objects or errors (e.g., `AxiosError.config.url`). Furthermore, valid search parameter strings without an `&` (`?password=1`) may bypass basic match heuristics.
 **Prevention:** Attempt to parse string patterns containing `=` and `&` natively using the `URL` API (handling relative paths and bare query strings gracefully with dummy origins). If successful, extract and sanitize `url.searchParams` before reconstructing the string exactly.
+
+## 2026-05-13 - Inconsistent Error Serialization Bypassing Redaction
+**Vulnerability:** Inline error parsing (e.g. `e.response?.data?.error`) and raw string evaluations in error message constructions skipped the central formatting utility, bypassing security redactions and potentially leaking sensitive tokens/secrets directly into logs.
+**Learning:** Ad-hoc inline error logging often fails to apply consistent data sanitization rules, and using raw object interpolations can expose raw JSON API responses.
+**Prevention:** Route all caught HTTP errors through a centralized error formatter that rigorously applies redaction rules (like `toLogString`) before passing messages to internal loggers.
