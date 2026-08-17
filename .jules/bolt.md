@@ -96,3 +96,6 @@
 
 **Learning:** Checking for element existence using `Array.prototype.includes()` in filtering loops or hot paths (like in `schema-service`, `account-service`, and `nerm-client`) introduces unnecessary O(N) operations, especially when the lists (like `USERONLY_ATTRIBUTES` or `PROFILE_ROOTATTRIBUTES`) are checked repeatedly.
 **Action:** When validating against static lists of attributes or configurations, use `Set` and `.has()` instead of arrays and `.includes()` to reduce lookup time complexity to O(1) and improve overall throughput.
+## 2026-06-30 - Optimize array allocations with ternary evaluation
+**Learning:** During iteration and mapping, intermediate arrays explicitly constructed using `[value]` followed by `.flat().map()` create significant memory allocation overhead and unnecessary garbage collection pressure, particularly when `value` is known to not be an array.
+**Action:** Replace `[value].flat().map(...)` operations with ternary bounds checks `isArray ? value.map(...) : [value]` using an already evaluated `isArray` boolean to prevent allocation-heavy array transformations and reduce performance overhead.
