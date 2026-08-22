@@ -96,3 +96,6 @@
 
 **Learning:** Checking for element existence using `Array.prototype.includes()` in filtering loops or hot paths (like in `schema-service`, `account-service`, and `nerm-client`) introduces unnecessary O(N) operations, especially when the lists (like `USERONLY_ATTRIBUTES` or `PROFILE_ROOTATTRIBUTES`) are checked repeatedly.
 **Action:** When validating against static lists of attributes or configurations, use `Set` and `.has()` instead of arrays and `.includes()` to reduce lookup time complexity to O(1) and improve overall throughput.
+## 2024-05-15 - Cache ISC API Data
+**Learning:** The connector SDK often calls `getSchema` and `discoverSchema` sequentially or repeatedly, which creates N+1 query patterns fetching the same `sources` and `schemas` repeatedly from ISC APIs.
+**Action:** Apply memoization (caching promises) within the client classes (`ISCClient`, `NERMClient`) to store static reference data during a single execution run.
