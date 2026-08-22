@@ -20,6 +20,8 @@ import { Config } from './model/config'
 
 export class ISCClient {
     private config: Configuration
+    private sourcesPromise?: Promise<any[]>
+    private sourceSchemasPromises: Map<string, Promise<Schema[]>> = new Map()
 
     constructor(config: Config) {
         const conf: ConfigurationParameters = {
@@ -41,20 +43,32 @@ export class ISCClient {
         return response.data
     }
 
+    // ⚡ Bolt: Cache listSources results to prevent N+1 queries during schema discovery.
+    // Impact: Saves repeated API calls when discovering or fetching schema, reducing execution time.
     async listSources() {
-        const api = new SourcesApi(this.config)
-
-        const response = await Paginator.paginate(api, api.listSources)
-
-        return response.data
+        if (!this.sourcesPromise) {
+            const fetchSources = async () => {
+                const api = new SourcesApi(this.config)
+                const response = await Paginator.paginate(api, api.listSources)
+                return response.data
+            }
+            this.sourcesPromise = fetchSources()
+        }
+        return this.sourcesPromise
     }
 
+    // ⚡ Bolt: Cache listSourceSchemas results to prevent N+1 queries during schema discovery.
+    // Impact: Saves repeated API calls per source, reducing latency and avoiding rate limits.
     async listSourceSchemas(sourceId: string): Promise<Schema[]> {
-        const api = new SourcesApi(this.config)
-
-        const response = await api.getSourceSchemas({ sourceId })
-
-        return response.data
+        if (!this.sourceSchemasPromises.has(sourceId)) {
+            const fetchSourceSchemas = async () => {
+                const api = new SourcesApi(this.config)
+                const response = await api.getSourceSchemas({ sourceId })
+                return response.data
+            }
+            this.sourceSchemasPromises.set(sourceId, fetchSourceSchemas())
+        }
+        return this.sourceSchemasPromises.get(sourceId)!
     }
 
     async createSchema(schema: Schema, sourceId: string): Promise<Schema> {
