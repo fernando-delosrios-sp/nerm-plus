@@ -41,20 +41,28 @@ export class ISCClient {
         return response.data
     }
 
+    // ⚡ Bolt: Cache sources and schemas to prevent redundant API calls during operations
+    // Impact: Avoids N+1 network requests by reusing the same promise for static data
+    private sourcesPromise?: Promise<any[]>
+    private schemasPromise: Map<string, Promise<Schema[]>> = new Map()
+
     async listSources() {
-        const api = new SourcesApi(this.config)
-
-        const response = await Paginator.paginate(api, api.listSources)
-
-        return response.data
+        if (!this.sourcesPromise) {
+            const api = new SourcesApi(this.config)
+            this.sourcesPromise = Paginator.paginate(api, api.listSources).then((response) => response.data)
+        }
+        return this.sourcesPromise
     }
 
     async listSourceSchemas(sourceId: string): Promise<Schema[]> {
-        const api = new SourcesApi(this.config)
-
-        const response = await api.getSourceSchemas({ sourceId })
-
-        return response.data
+        if (!this.schemasPromise.has(sourceId)) {
+            const api = new SourcesApi(this.config)
+            this.schemasPromise.set(
+                sourceId,
+                api.getSourceSchemas({ sourceId }).then((response) => response.data)
+            )
+        }
+        return this.schemasPromise.get(sourceId)!
     }
 
     async createSchema(schema: Schema, sourceId: string): Promise<Schema> {
