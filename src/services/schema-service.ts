@@ -8,7 +8,18 @@ import { fnLog, toLogString } from '../logging'
 export class SchemaService {
     constructor(private ctx: ConnectorContext) {}
 
-    async getSchema(): Promise<AccountSchema> {
+    // ⚡ Bolt: Memoize getSchema using a cached promise
+    // Impact: Prevents N+1 identical /sources and /schemas API requests during concurrent account resolution loops
+    private schemaPromise?: Promise<AccountSchema>
+
+    getSchema(): Promise<AccountSchema> {
+        if (!this.schemaPromise) {
+            this.schemaPromise = this.fetchSchema()
+        }
+        return this.schemaPromise
+    }
+
+    private async fetchSchema(): Promise<AccountSchema> {
         logger.debug('Getting schema from ISC')
         const sources = await this.ctx.isc.listSources()
         const source = sources.find(
