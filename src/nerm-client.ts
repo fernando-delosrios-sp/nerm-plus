@@ -42,16 +42,16 @@ function formatHttpError(err: any): string {
         return `${prefix}: ${err.message ?? ''}`.trim()
     }
     if (typeof data === 'string') {
-        return `${prefix}: ${data}`
+        return `${prefix}: ${toLogString(data)}`
     }
     const pieces: string[] = []
     if (typeof data.error === 'string') {
-        pieces.push(data.error)
+        pieces.push(toLogString(data.error))
     } else if (data.error != null) {
         pieces.push(`error: ${toLogString(data.error)}`)
     }
     if (data.message != null && String(data.message) !== String(data.error)) {
-        pieces.push(String(data.message))
+        pieces.push(toLogString(String(data.message)))
     }
     if (data.errors != null) {
         pieces.push(`errors: ${toLogString(data.errors)}`)
@@ -167,8 +167,7 @@ export class NERMClient {
                 }
             }
         } catch (error) {
-            const e = error as any
-            this.logError('listRequest', e.response?.data?.error ?? e.message ?? `${e}`)
+            this.logError('listRequest', formatHttpError(error))
         }
     }
 
@@ -184,7 +183,7 @@ export class NERMClient {
             const response = await this.client.request(request)
             item = type ? response.data[type] : response.data
         } catch (error) {
-            this.logError('getRequest', (error as any).response?.data?.error ?? `${error}`)
+            this.logError('getRequest', formatHttpError(error))
         } finally {
             return item
         }
@@ -237,7 +236,7 @@ export class NERMClient {
             const response = await this.client.request(request)
             item = response.data
         } catch (error) {
-            this.logError('deleteRequest', (error as any).response?.data?.error ?? `${error}`)
+            this.logError('deleteRequest', formatHttpError(error))
         } finally {
             return item
         }
