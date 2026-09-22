@@ -105,12 +105,16 @@ export class SchemaService {
                         description: 'Login attribute',
                     }
                     schema.attributes.push(login)
+                    // ⚡ Bolt: Build an index map for O(1) lookups instead of using O(N) findIndex inside the loop
+                    // Impact: Reduces time complexity from O(N*M) to O(N+M) during schema discovery
+                    const attrIndexMap = new Map(schema.attributes.map((x, i) => [x.name, i]))
                     for (const profile of profileEntitlements) {
-                        const previousIndex = schema.attributes.findIndex((x) => x.name === profile.name)
-                        if (previousIndex > -1) {
+                        const previousIndex = attrIndexMap.get(profile.name)
+                        if (previousIndex !== undefined) {
                             schema.attributes[previousIndex] = profile
                         } else {
                             schema.attributes.push(profile)
+                            attrIndexMap.set(profile.name, schema.attributes.length - 1)
                         }
                     }
                 }
