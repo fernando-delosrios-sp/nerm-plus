@@ -97,3 +97,6 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
+## 2024-09-24 - Simplify Fallback Lookups
+**Learning:** Sequential fallback lookups using mutable variables and conditionals (e.g., `let x = a; if (!x) x = b`) add visual noise and obscure the simple fallback intent.
+**Action:** Use a single `const` declaration with the nullish coalescing operator (`const x = a ?? b`) to make the intent obvious and ensure immutability.
