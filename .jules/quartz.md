@@ -97,3 +97,7 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
+
+## 2024-09-26 - Extract repeated source fetching logic
+**Learning:** Functions `getSchema` and `discoverSchema` contained duplicated blocks of code responsible for fetching and validating the connector source, creating redundant boilerplate.
+**Action:** Extracted the identical logic into a dedicated private helper `getConnectorSource()`, improving the scanability of the core functions and encapsulating source retrieval logic.
