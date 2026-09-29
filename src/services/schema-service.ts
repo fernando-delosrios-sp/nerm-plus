@@ -8,8 +8,7 @@ import { fnLog, toLogString } from '../logging'
 export class SchemaService {
     constructor(private ctx: ConnectorContext) {}
 
-    async getSchema(): Promise<AccountSchema> {
-        logger.debug('Getting schema from ISC')
+    private async getSourceAndSchemas() {
         const sources = await this.ctx.isc.listSources()
         const source = sources.find(
             (x) => (x.connectorAttributes as any).spConnectorInstanceId === this.ctx.spConnectorInstanceId
@@ -18,8 +17,13 @@ export class SchemaService {
             const error = `Unable to find source with spConnectorInstanceId "${this.ctx.spConnectorInstanceId}"`
             throw new ConnectorError(error)
         }
-
         const schemas = await this.ctx.isc.listSourceSchemas(source.id!)
+        return { source, schemas }
+    }
+
+    async getSchema(): Promise<AccountSchema> {
+        logger.debug('Getting schema from ISC')
+        const { schemas } = await this.getSourceAndSchemas()
         const accountSchema = schemas.find((x) => x.nativeObjectType === 'User')!
 
         return apiSchema2Schema(accountSchema)
@@ -36,17 +40,7 @@ export class SchemaService {
         logger.debug(fnLog('discoverSchema', 'Discovering account schema'))
         let schema: AccountSchema
         const profileEntitlements: SchemaAttribute[] = []
-        const sources = await this.ctx.isc.listSources()
-        const source = sources.find(
-            (x) => (x.connectorAttributes as any).spConnectorInstanceId === this.ctx.spConnectorInstanceId
-        )!
-
-        if (!source) {
-            const error = `Unable to find source with spConnectorInstanceId "${this.ctx.spConnectorInstanceId}"`
-            throw new ConnectorError(error)
-        }
-
-        const schemas = await this.ctx.isc.listSourceSchemas(source.id!)
+        const { source, schemas } = await this.getSourceAndSchemas()
         if (this.ctx.config.profiles && this.ctx.config.account_type === 'Profile') {
             // ⚡ Bolt: Convert schemaNames array to a Set for O(1) lookups instead of O(N) array.includes() inside the loop
             // Impact: Reduces time complexity from O(N*M) to O(N+M) when discovering schemas
