@@ -179,14 +179,12 @@ export class NERMClient {
             params,
         }
 
-        let item: any
         try {
             const response = await this.client.request(request)
-            item = type ? response.data[type] : response.data
+            return type ? response.data[type] : response.data
         } catch (error) {
             this.logError('getRequest', (error as any).response?.data?.error ?? `${error}`)
-        } finally {
-            return item
+            return undefined
         }
     }
 
@@ -232,14 +230,12 @@ export class NERMClient {
             url,
         }
 
-        let item: any
         try {
             const response = await this.client.request(request)
-            item = response.data
+            return response.data
         } catch (error) {
             this.logError('deleteRequest', (error as any).response?.data?.error ?? `${error}`)
-        } finally {
-            return item
+            return undefined
         }
     }
 
