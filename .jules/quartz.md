@@ -97,3 +97,7 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
+
+## 2024-07-05 - Avoid returning from finally blocks to prevent masking errors
+**Learning:** Using `try/catch/finally` where the `finally` block returns a value (e.g., `finally { return item }`) forces the function to return that value, suppressing any errors that were thrown in the `try` block. This leads to silent failures and makes control flow confusing.
+**Action:** Remove `finally` blocks that just return a mutable variable. Instead, return the value directly at the end of the `try` block, and handle failure fallbacks (like returning `undefined`) explicitly in the `catch` block.
