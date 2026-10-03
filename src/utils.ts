@@ -122,14 +122,25 @@ export const parents2children = (parents: SearchDocument[], type: string): Map<s
 export const getAttribute = (object: { [key: string]: any }, attributePath: string): any => {
     if (!object) return undefined
 
-    // ⚡ Bolt: Optimize deep object extraction hot path by replacing Array.reduce with a for loop
-    const parts = attributePath.split('.')
-    let obj = object
-    for (let i = 0; i < parts.length; i++) {
-        if (obj == null) return undefined
-        obj = obj[parts[i]]
+    // ⚡ Bolt: Optimize deep object extraction hot path by eliminating array-allocating split('.')
+    const firstDot = attributePath.indexOf('.')
+    if (firstDot === -1) {
+        return object[attributePath]
     }
-    return obj
+
+    let obj = object
+    let startIndex = 0
+    let dotIndex = firstDot
+
+    while (dotIndex !== -1) {
+        if (obj == null) return undefined
+        obj = obj[attributePath.slice(startIndex, dotIndex)]
+        startIndex = dotIndex + 1
+        dotIndex = attributePath.indexOf('.', startIndex)
+    }
+
+    if (obj == null) return undefined
+    return obj[attributePath.slice(startIndex)]
 }
 
 export const entity2profile = (entity: SearchDocument, profile_type_id: string, conf: Mapping): any => {
