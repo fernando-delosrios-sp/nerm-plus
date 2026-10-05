@@ -33,6 +33,11 @@ export function createStdAccountUpdate(
             const roles = account.attributes.roles as string[]
             const isProfile = ctx.config.account_type === 'Profile'
             let isUser = types.includes('NeprofileUser') || types.includes('NeaccessUser') || roles.length > 0
+            // ⚡ Bolt: Convert entitlement schemas to Map for O(1) lookups during attribute updates
+            const entitlementSchemas = new Map(
+                input.schema?.attributes?.filter((x) => x.schemaObjectType).map((x) => [x.name, x]) || []
+            )
+
             for (const change of input.changes) {
                 const values = [change.value].flat()
                 for (const value of values) {
@@ -60,9 +65,7 @@ export function createStdAccountUpdate(
                                     }
                                     break
                                 default:
-                                    const entitlementSchema = input.schema?.attributes.find(
-                                        (x) => x.name === change.attribute && x.schemaObjectType
-                                    )
+                                    const entitlementSchema = entitlementSchemas.get(change.attribute)
                                     if (entitlementSchema && isProfile) {
                                         operations.push(entitlementSchema.schemaObjectType as string)
                                         await attributeService.profileAttributeOp(
@@ -89,11 +92,7 @@ export function createStdAccountUpdate(
                                     await entitlementService.removeWorkflow(account, value)
                                     break
                                 default:
-                                    if (
-                                        input.schema?.attributes.find(
-                                            (x) => x.name === change.attribute && x.schemaObjectType
-                                        )
-                                    ) {
+                                    if (entitlementSchemas.has(change.attribute)) {
                                         await attributeService.profileAttributeOp(
                                             account,
                                             change.attribute,

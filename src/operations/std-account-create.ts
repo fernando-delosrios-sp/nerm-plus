@@ -56,11 +56,13 @@ export function createStdAccountCreate(
             }
         }
 
-        const entitlementSchemas = input.schema?.attributes.filter(
-            (x) => x.schemaObjectType && !ENTITLEMENT_ATTRIBUTES.has(x.name)
+        const entitlementSchemas = new Map(
+            input.schema?.attributes
+                ?.filter((x) => x.schemaObjectType && !ENTITLEMENT_ATTRIBUTES.has(x.name))
+                .map((x) => [x.name, x]) || []
         )
         for (const [key, value] of Object.entries(input.attributes)) {
-            const entitlementSchema = entitlementSchemas.find((x) => x.name === key)
+            const entitlementSchema = entitlementSchemas.get(key)
             if (entitlementSchema) {
                 operations.push(entitlementSchema.schemaObjectType!)
                 await attributeService.profileAttributeOp(account, key, value as any, 'add')
