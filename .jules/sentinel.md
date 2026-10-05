@@ -50,3 +50,9 @@
 **Vulnerability:** Full URLs (e.g., `https://...` or `/api/...`) containing sensitive query parameters (like `client_secret` or `token`) were not redacted by the logger because the heuristic explicitly ignored strings containing `://` or lacked base domains.
 **Learning:** Only parsing pure query string formats (e.g., `a=1&b=2`) leaves full URLs exposed when they are inadvertently logged in request objects or errors (e.g., `AxiosError.config.url`). Furthermore, valid search parameter strings without an `&` (`?password=1`) may bypass basic match heuristics.
 **Prevention:** Attempt to parse string patterns containing `=` and `&` natively using the `URL` API (handling relative paths and bare query strings gracefully with dummy origins). If successful, extract and sanitize `url.searchParams` before reconstructing the string exactly.
+
+## 2024-05-27 - Error Serialization Bypassing Redaction Part 2
+
+**Vulnerability:** Even when stringified HTTP error payloads were wrapped in `toLogString` in `formatHttpError`, there were still raw interpolated instances in standard log calls like `e.response?.data?.error` or generic fallback arrays that were missing explicit redaction wrappers.
+**Learning:** Manual interpolation in error handler string construction leaves unprotected gaps. Redaction utilities must wrap all potential stringified structures at the source or the final call.
+**Prevention:** Always wrap dynamically extracted error properties passed to log functions with `toLogString()`, even if they represent fallback strings or basic exception messages.
