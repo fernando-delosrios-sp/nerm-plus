@@ -47,6 +47,13 @@
 **Prevention:** Enforce strict string length checks (e.g., `value.length === 36`) prior to executing regular expressions on specific formats to safely neutralize ReDoS risks and ensure optimal regex engine performance by short-circuiting fast on non-compliant input.
 
 ## 2026-06-23 - Prevent Secrets Leaking in Full URLs in Logs
+
 **Vulnerability:** Full URLs (e.g., `https://...` or `/api/...`) containing sensitive query parameters (like `client_secret` or `token`) were not redacted by the logger because the heuristic explicitly ignored strings containing `://` or lacked base domains.
 **Learning:** Only parsing pure query string formats (e.g., `a=1&b=2`) leaves full URLs exposed when they are inadvertently logged in request objects or errors (e.g., `AxiosError.config.url`). Furthermore, valid search parameter strings without an `&` (`?password=1`) may bypass basic match heuristics.
 **Prevention:** Attempt to parse string patterns containing `=` and `&` natively using the `URL` API (handling relative paths and bare query strings gracefully with dummy origins). If successful, extract and sanitize `url.searchParams` before reconstructing the string exactly.
+
+## 2024-05-18 - Stringified HTTP Error Redaction Bypass
+
+**Vulnerability:** Stringified HTTP error payloads containing sensitive data (e.g. JSON strings with passwords) were directly interpolated in error messages without passing through the `toLogString` redaction function.
+**Learning:** Checking `typeof data.error === 'string'` and appending it raw bypasses the redaction logic which handles stringified JSON. Primitive string properties extracted from HTTP payloads must always be explicitly wrapped in `toLogString` to safely handle potential credential leaks inside embedded stringified objects.
+**Prevention:** Always pass stringified HTTP error payloads (`data.error`, `data.message`, or raw string `data`) through `toLogString` before logging or interpolation, even if they appear to be primitive strings.
