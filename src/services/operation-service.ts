@@ -13,14 +13,13 @@ export class OperationService {
 
     async processOperation(account: StdAccountListOutput, op: string, schema?: AccountSchema) {
         logger.debug(`Processing operation ${op} for account ${account.uuid}`)
-        let operation: any = this.ctx.config.operations?.find((x) => x.operation === op)
-        if (!operation) {
-            operation = this.ctx.config.profiles?.find((x) => x.name === op)
-        }
+        const operation =
+            this.ctx.config.operations?.find((x) => x.operation === op) ??
+            this.ctx.config.profiles?.find((x) => x.name === op)
         if (operation) {
             const response = await this.entitlementService.runWorkflow(
                 account,
-                operation.workflow,
+                operation.workflow!,
                 operation.requester_id,
                 operation.wait
             )
