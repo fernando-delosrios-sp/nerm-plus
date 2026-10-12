@@ -40,12 +40,10 @@ export function createStdAccountUpdate(
                         case 'Add':
                             switch (change.attribute) {
                                 case 'types':
+                                    await entitlementService.addType(account, value)
                                     if (value !== 'Profile') {
-                                        await entitlementService.addType(account, value)
                                         account = await accountService.getAccount(input.identity, input.schema)
                                         isUser = true
-                                    } else {
-                                        await entitlementService.addType(account, value)
                                     }
                                     break
                                 case 'roles':
