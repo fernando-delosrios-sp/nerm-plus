@@ -96,3 +96,8 @@
 
 **Learning:** Checking for element existence using `Array.prototype.includes()` in filtering loops or hot paths (like in `schema-service`, `account-service`, and `nerm-client`) introduces unnecessary O(N) operations, especially when the lists (like `USERONLY_ATTRIBUTES` or `PROFILE_ROOTATTRIBUTES`) are checked repeatedly.
 **Action:** When validating against static lists of attributes or configurations, use `Set` and `.has()` instead of arrays and `.includes()` to reduce lookup time complexity to O(1) and improve overall throughput.
+
+## 2024-08-01 - Avoid Array.concat() in accumulation loops
+
+**Learning:** Using `Array.prototype.concat()` coupled with `.filter()` inside an accumulation loop creates an O(N^2) time complexity issue and causes significant GC churn due to creating intermediate arrays.
+**Action:** Replace `concat()` and `.filter()` in loops with in-place mutation using a `for...of` loop and `.push()` to drastically reduce memory copying, eliminating the overhead of intermediate array allocations.

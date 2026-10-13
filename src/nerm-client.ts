@@ -713,7 +713,12 @@ export class NERMClient {
                             if (childrenProfiles) {
                                 if (Array.isArray(childrenProfiles)) {
                                     isMulti = true
-                                    values = values.concat(childrenProfiles.filter((x) => x != null))
+                                    // ⚡ Bolt: Use for-of and .push() to avoid O(N^2) array allocations and GC churn from .concat() + .filter()
+                                    for (const x of childrenProfiles) {
+                                        if (x != null) {
+                                            values.push(x)
+                                        }
+                                    }
                                 } else {
                                     values.push(childrenProfiles)
                                 }
