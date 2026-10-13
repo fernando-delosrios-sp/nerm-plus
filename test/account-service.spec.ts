@@ -1,4 +1,4 @@
-import { jest, expect, describe, it } from '@jest/globals'
+import { vi } from 'vitest'
 import { AccountSchema, ConnectorError, StdAccountCreateInput } from '@sailpoint/connector-sdk'
 import { AccountService } from '../src/services/account-service'
 import { ConnectorContext } from '../src/connector-context'
@@ -78,10 +78,10 @@ describe('createAccount profile relink', () => {
     it('relinks an existing profile with the same login instead of creating one', async () => {
         const existing = { id: 'profile-1', name: 'Aaron Nichols', status: 'Active', attributes: {} }
         const nerm = {
-            getProfileTypeByName: jest.fn(async () => ({ id: 'type-1' })),
-            findProfileByAttribute: jest.fn(async (_profileTypeId: string, _attribute: string, _value: string) => existing),
-            createProfile: jest.fn(),
-            resolveProfileAttributes: jest.fn(async () => ({ name: 'Aaron Nichols' })),
+            getProfileTypeByName: vi.fn(async () => ({ id: 'type-1' })),
+            findProfileByAttribute: vi.fn(async (_profileTypeId: string, _attribute: string, _value: string) => existing),
+            createProfile: vi.fn(),
+            resolveProfileAttributes: vi.fn(async () => ({ name: 'Aaron Nichols' })),
         }
         const accountService = serviceWith(nerm)
 
@@ -95,11 +95,11 @@ describe('createAccount profile relink', () => {
     it('creates a profile when the login value is not already in use', async () => {
         const created = { id: 'profile-2', name: 'Aaron Nichols', status: 'Active', attributes: {} }
         const nerm = {
-            getProfileTypeByName: jest.fn(async () => ({ id: 'type-1' })),
-            findProfileByAttribute: jest.fn(async () => undefined),
-            getAttribute: jest.fn(async () => undefined),
-            createProfile: jest.fn(async () => created),
-            resolveProfileAttributes: jest.fn(async () => ({ name: 'Aaron Nichols' })),
+            getProfileTypeByName: vi.fn(async () => ({ id: 'type-1' })),
+            findProfileByAttribute: vi.fn(async () => undefined),
+            getAttribute: vi.fn(async () => undefined),
+            createProfile: vi.fn(async () => created),
+            resolveProfileAttributes: vi.fn(async () => ({ name: 'Aaron Nichols' })),
         }
         const accountService = serviceWith(nerm)
 
@@ -112,11 +112,11 @@ describe('createAccount profile relink', () => {
     it('creates a profile when no login attribute is configured', async () => {
         const created = { id: 'profile-3', name: 'Aaron Nichols', status: 'Active', attributes: {} }
         const nerm = {
-            getProfileTypeByName: jest.fn(async () => ({ id: 'type-1' })),
-            findProfileByAttribute: jest.fn(),
-            getAttribute: jest.fn(async () => undefined),
-            createProfile: jest.fn(async () => created),
-            resolveProfileAttributes: jest.fn(async () => ({ name: 'Aaron Nichols' })),
+            getProfileTypeByName: vi.fn(async () => ({ id: 'type-1' })),
+            findProfileByAttribute: vi.fn(),
+            getAttribute: vi.fn(async () => undefined),
+            createProfile: vi.fn(async () => created),
+            resolveProfileAttributes: vi.fn(async () => ({ name: 'Aaron Nichols' })),
         }
         const accountService = serviceWith(nerm, '')
 

@@ -1,20 +1,26 @@
-import { jest, expect, describe, it, beforeEach, afterEach } from '@jest/globals'
+import { vi } from 'vitest'
 import { NERMClient } from '../src/nerm-client'
 import axios from 'axios'
 import nock from 'nock'
 import { logger } from '@sailpoint/connector-sdk'
 
-jest.mock('axios-cache-interceptor', () => ({
-    setupCache: jest.fn().mockImplementation((client: any) => client),
+vi.mock('axios-cache-interceptor', () => ({
+    setupCache: vi.fn().mockImplementation((client: any) => client),
 }))
-jest.mock('axios-request-throttle')
-jest.mock('axios-retry')
-jest.mock('@sailpoint/connector-sdk', () => ({
+vi.mock('axios-request-throttle', () => ({
+    default: { use: vi.fn() },
+}))
+vi.mock('axios-retry', () => ({
+    default: vi.fn(),
+    isNetworkError: vi.fn(),
+    isRetryableError: vi.fn(),
+}))
+vi.mock('@sailpoint/connector-sdk', () => ({
     logger: {
-        debug: jest.fn(),
-        info: jest.fn(),
-        warn: jest.fn(),
-        error: jest.fn(),
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
     },
     ConnectorError: class ConnectorError extends Error {
         constructor(message?: string) {
@@ -38,11 +44,11 @@ describe('NERMClient', () => {
 
     afterEach(() => {
         nock.cleanAll()
-        jest.clearAllMocks()
+        vi.clearAllMocks()
     })
 
     it('should assign baseURL and headers correctly in baseConfig', () => {
-        const axiosSpy = jest.spyOn(axios, 'create')
+        const axiosSpy = vi.spyOn(axios, 'create')
         new NERMClient(mockConfig)
 
         expect(axiosSpy).toHaveBeenCalledWith(
@@ -113,7 +119,7 @@ describe('NERMClient', () => {
         }
 
         beforeEach(() => {
-            jest.spyOn(client, 'getAttribute').mockResolvedValue({
+            vi.spyOn(client, 'getAttribute').mockResolvedValue({
                 id: 'attr-1',
                 type: 'TextFieldAttribute',
                 uid: 'sysconfig_username',
