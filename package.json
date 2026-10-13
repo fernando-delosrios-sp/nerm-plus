@@ -1,6 +1,6 @@
 {
     "name": "nerm-plus",
-    "version": "0.1.14",
+    "version": "0.1.15",
     "main": "dist/index.js",
     "scripts": {
         "clean": "shx rm -rf ./dist",
@@ -15,13 +15,13 @@
     },
     "private": true,
     "dependencies": {
-        "@sailpoint/connector-sdk": "1.2.3",
+        "@sailpoint/connector-sdk": "1.2.7",
         "axios-cache-interceptor": "^1.12.0",
         "axios-request-throttle": "^1.0.0",
         "axios-retry": "^4.5.0",
         "form-data": "^4.0.6",
         "nerm-plus": "file:",
-        "sailpoint-api-client": "1.8.66"
+        "sailpoint-api-client": "2.1.28"
     },
     "devDependencies": {
         "@types/express": "^5.0.6",
@@ -43,5 +43,10 @@
         "tabWidth": 4,
         "semi": false,
         "singleQuote": true
+    },
+    "allowScripts": {
+        "@parcel/watcher@2.6.0": true,
+        "fsevents@2.3.3": true,
+        "unrs-resolver@1.12.2": true
     }
 }

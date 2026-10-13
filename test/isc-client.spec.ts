@@ -3,18 +3,18 @@ import { Config } from '../src/model/config'
 import { Configuration, PublicIdentitiesConfigApi, SourcesApi, SearchApi, Paginator } from 'sailpoint-api-client'
 import axiosThrottle from 'axios-request-throttle'
 import axios from 'axios'
-import { retriesConfig, throttleConfig } from '../src/axios'
+import { throttleConfig } from '../src/axios'
 import { TOKEN_URL_PATH } from '../src/data/constants'
 
 // Create instances to mock methods on
 const mockPublicIdentityConfigApiInstance = {
-    getPublicIdentityConfig: jest.fn().mockResolvedValue({ data: 'mock-public-identity-config' }),
+    getPublicIdentityConfigV1: jest.fn().mockResolvedValue({ data: 'mock-public-identity-config' }),
 }
 
 const mockSourcesApiInstance = {
-    listSources: jest.fn().mockResolvedValue({ data: 'mock-sources' }),
-    getSourceSchemas: jest.fn().mockResolvedValue({ data: ['mock-schema-1', 'mock-schema-2'] }),
-    createSourceSchema: jest.fn().mockResolvedValue({ data: 'mock-created-schema' }),
+    listSourcesV1: jest.fn().mockResolvedValue({ data: 'mock-sources' }),
+    getSourceSchemasV1: jest.fn().mockResolvedValue({ data: ['mock-schema-1', 'mock-schema-2'] }),
+    createSourceSchemaV1: jest.fn().mockResolvedValue({ data: 'mock-created-schema' }),
 }
 
 const mockSearchApiInstance = {}
@@ -50,24 +50,50 @@ describe('ISCClient', () => {
         } as Config
 
         jest.clearAllMocks()
+        const mockHttp = {
+            interceptors: {
+                request: { use: jest.fn() },
+                response: { use: jest.fn() },
+            },
+            post: jest.fn(),
+        }
+        ;(axios.create as jest.Mock).mockReturnValue(mockHttp)
     })
 
     describe('Constructor', () => {
         it('should initialize Configuration with correct parameters and set up axios throttle', () => {
-            const client = new ISCClient(config)
+            new ISCClient(config)
+            const tokenUrl = 'https://test.api.identitynow.com' + TOKEN_URL_PATH
+            const http = (axios.create as jest.Mock).mock.results[0].value
 
             expect(Configuration).toHaveBeenCalledWith({
                 baseurl: config.isc_baseurl,
                 clientId: config.isc_clientId,
                 clientSecret: config.isc_clientSecret,
-                tokenUrl: 'https://test.api.identitynow.com' + TOKEN_URL_PATH,
+                tokenUrl,
+                accessToken: expect.any(Function),
             })
 
-            // Verify properties on the constructed config mock instance
-            const mockConfigInstance = (Configuration as jest.Mock).mock.instances[0]
-            expect(mockConfigInstance.retriesConfig).toBe(retriesConfig)
+            const mockConfigInstance = (Configuration as unknown as jest.Mock).mock.instances[0]
+            expect(mockConfigInstance.axiosInstance).toBe(http)
+            expect(axiosThrottle.use).toHaveBeenCalledWith(http, throttleConfig)
+        })
 
-            expect(axiosThrottle.use).toHaveBeenCalledWith(axios, throttleConfig)
+        it('should fetch and cache the access token without using the SDK form-data path', async () => {
+            new ISCClient(config)
+            const http = (axios.create as jest.Mock).mock.results[0].value
+            const accessToken = (Configuration as unknown as jest.Mock).mock.calls[0][0].accessToken as () => Promise<string>
+            http.post.mockResolvedValue({ data: { access_token: 'token-1', expires_in: 3600 } })
+
+            await expect(accessToken()).resolves.toBe('token-1')
+            await expect(accessToken()).resolves.toBe('token-1')
+
+            expect(http.post).toHaveBeenCalledTimes(1)
+            expect(http.post).toHaveBeenCalledWith(
+                'https://test.api.identitynow.com' + TOKEN_URL_PATH,
+                'grant_type=client_credentials&client_id=test-client-id&client_secret=test-client-secret',
+                { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+            )
         })
     })
 
@@ -83,7 +109,7 @@ describe('ISCClient', () => {
                 const result = await client.getPublicIdentityConfig()
 
                 expect(PublicIdentitiesConfigApi).toHaveBeenCalledTimes(1)
-                expect(mockPublicIdentityConfigApiInstance.getPublicIdentityConfig).toHaveBeenCalledTimes(1)
+                expect(mockPublicIdentityConfigApiInstance.getPublicIdentityConfigV1).toHaveBeenCalledTimes(1)
                 expect(result).toBe('mock-public-identity-config')
             })
         })
@@ -95,7 +121,7 @@ describe('ISCClient', () => {
                 expect(SourcesApi).toHaveBeenCalledTimes(1)
                 expect(Paginator.paginate).toHaveBeenCalledWith(
                     mockSourcesApiInstance,
-                    mockSourcesApiInstance.listSources
+                    mockSourcesApiInstance.listSourcesV1
                 )
                 expect(result).toBeInstanceOf(Array)
                 expect(result[0]).toBe('mock-paginated-source')
@@ -108,7 +134,7 @@ describe('ISCClient', () => {
                 const result = await client.listSourceSchemas(sourceId)
 
                 expect(SourcesApi).toHaveBeenCalledTimes(1)
-                expect(mockSourcesApiInstance.getSourceSchemas).toHaveBeenCalledWith({ sourceId })
+                expect(mockSourcesApiInstance.getSourceSchemasV1).toHaveBeenCalledWith({ sourceId })
                 expect(result).toEqual(['mock-schema-1', 'mock-schema-2'])
             })
         })
@@ -120,7 +146,7 @@ describe('ISCClient', () => {
                 const result = await client.createSchema(schema, sourceId)
 
                 expect(SourcesApi).toHaveBeenCalledTimes(1)
-                expect(mockSourcesApiInstance.createSourceSchema).toHaveBeenCalledWith({
+                expect(mockSourcesApiInstance.createSourceSchemaV1).toHaveBeenCalledWith({
                     schema,
                     sourceId,
                 })

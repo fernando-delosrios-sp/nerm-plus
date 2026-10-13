@@ -1,6 +1,12 @@
 import { AccountSchema, Attributes, SchemaAttribute, StdEntitlementListOutput } from '@sailpoint/connector-sdk'
 import { GenericEntitlement } from './model/entitlement'
-import { Schema as ApiSchema, AttributeDefinition, SearchDocument } from 'sailpoint-api-client'
+import type { AttributeDefinition, Schema as ApiSchema } from 'sailpoint-api-client/sources/api'
+
+/** Search hits are untyped objects in sailpoint-api-client v2. */
+export interface SearchDocument {
+    id?: string
+    [key: string]: any
+}
 import { defaultEntitlementSchema } from './data/schema'
 import { ACCESSTYPE_MAPPING, PARENTCHILD_ATTRIBUTES, TYPES } from './data/constants'
 import { AccountType, Mapping } from './model/config'

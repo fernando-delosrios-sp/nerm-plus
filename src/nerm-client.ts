@@ -1,8 +1,7 @@
 import axios, { AxiosRequestConfig } from 'axios'
-import axiosThrottle from 'axios-request-throttle'
 import axiosRetry from 'axios-retry'
 import { AxiosCacheInstance, setupCache } from 'axios-cache-interceptor'
-import { retriesConfig, throttleConfig } from './axios'
+import { applyThrottle, retriesConfig } from './axios'
 import {
     ACCOUNT_CONCURRENCY,
     BATCH_SIZE,
@@ -25,6 +24,15 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 
 function looksLikeUuid(value: string): boolean {
     return UUID_PATTERN.test(value.trim())
+}
+
+type RecoverableRequest = {
+    source: string
+    message: (errorMessage: string) => string | undefined
+}
+
+function associationAlreadyExists(message: string): boolean {
+    return /association already exists/i.test(message)
 }
 
 /** NERM often returns only `error: "The Profile failed to create/update"`; merge status + full body for debugging. */
@@ -90,7 +98,7 @@ export class NERMClient {
         }
         const client = axios.create(baseConfig)
         axiosRetry(client, retriesConfig)
-        axiosThrottle.use(client, throttleConfig)
+        applyThrottle(client)
         this.client = setupCache(client)
         this.instanceId = config.spConnectorInstanceId
     }
@@ -188,7 +196,7 @@ export class NERMClient {
         return item
     }
 
-    private async createRequest(url: string, type: string, data: any): Promise<any> {
+    private async createRequest(url: string, type: string, data: any, recovery?: RecoverableRequest): Promise<any> {
         const request: AxiosRequestConfig = {
             method: 'post',
             url,
@@ -201,6 +209,11 @@ export class NERMClient {
         } catch (error) {
             const err = error as any
             const message = formatHttpError(err)
+            const warning = recovery?.message(message)
+            if (recovery && warning) {
+                this.logWarn(recovery.source, warning)
+                return undefined
+            }
             this.logError('createRequest', message)
             throw new ConnectorError(message)
         }
@@ -388,6 +401,59 @@ export class NERMClient {
             return undefined
         }
         return this.getProfileByNameAndType(v, profile_type_id)
+    }
+
+    /**
+     * Exact match for one profile of the given type by a profile attribute.
+     * Used to relink an account create to a profile that already has the configured login.
+     */
+    async findProfileByAttribute(profileTypeId: string, attributeUid: string, value: string): Promise<any | undefined> {
+        const attribute = await this.getAttribute(attributeUid)
+        if (!attribute?.id || !attribute.type) {
+            throw new ConnectorError(`Login attribute "${attributeUid}" was not found`)
+        }
+
+        const request: AxiosRequestConfig = {
+            method: 'post',
+            url: '/advanced_search/run',
+            params: { limit: 2 },
+            data: {
+                advanced_search: {
+                    condition_rules_attributes: [
+                        {
+                            type: 'ProfileTypeRule',
+                            comparison_operator: '==',
+                            value: profileTypeId,
+                        },
+                        {
+                            type: 'ProfileAttributeRule',
+                            condition_object_type: attribute.type,
+                            condition_object_id: attribute.id,
+                            comparison_operator: '==',
+                            value,
+                        },
+                    ],
+                },
+            },
+        }
+
+        let profiles: any[]
+        try {
+            const response = await this.client.request(request)
+            profiles = response.data?.profiles ?? []
+        } catch (error) {
+            const message = formatHttpError(error)
+            this.logError('findProfileByAttribute', message)
+            throw new ConnectorError(message)
+        }
+
+        if (profiles.length > 1) {
+            throw new ConnectorError(`Multiple profiles found for ${attributeUid}="${value}"`)
+        }
+        if (profiles.length === 0) {
+            return undefined
+        }
+        return this.getProfile(profiles[0].id)
     }
 
     /**
@@ -885,7 +951,13 @@ export class NERMClient {
             role_id,
         }
 
-        return this.createRequest(url, type, body)
+        return this.createRequest(url, type, body, {
+            source: 'addRole',
+            message: (errorMessage) =>
+                associationAlreadyExists(errorMessage)
+                    ? `Role "${role_id}" is already assigned to user "${user_id}"`
+                    : undefined,
+        })
     }
 
     async removeRole(user_id: string, role_id: any): Promise<void> {

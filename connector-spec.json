@@ -5,7 +5,7 @@
     "showDebugLoggingOption": true,
     "sourceConfigInitialValues": {
         "nerm_admin": "System User",
-        "login_attribute": "login"
+        "login_attribute": "person_id"
     },
     "commands": [
         "std:test-connection",
@@ -103,7 +103,6 @@
                                     "label": "User",
                                     "value": "NeprofileUser"
                                 },
-
                                 {
                                     "label": "Portal user",
                                     "value": "NeaccessUser"
@@ -674,8 +673,8 @@
     "accountCreateTemplate": {
         "fields": [
             {
-                "key": "name",
-                "label": "Name",
+                "key": "person_id",
+                "label": "Person ID",
                 "type": "string",
                 "required": true,
                 "initialValue": {

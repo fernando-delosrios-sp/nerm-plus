@@ -158,7 +158,11 @@ export class AccountService {
                     }
                 }
                 if (type === 'NeaccessUser') {
-                    body.profile_id = body.identity
+                    const profileId = attributes.id
+                    if (!profileId) {
+                        throw new ConnectorError('Cannot create portal user without a profile')
+                    }
+                    body.profile_id = profileId
                 }
                 break
 
@@ -254,8 +258,42 @@ export class AccountService {
         return account!
     }
 
+    private loginValue(attributes: Attributes): string | undefined {
+        const loginAttribute = this.ctx.config.login_attribute
+        if (!loginAttribute) {
+            return undefined
+        }
+        const raw = attributes[loginAttribute]
+        if (raw == null) {
+            return undefined
+        }
+        const value = String(raw).trim()
+        return value || undefined
+    }
+
+    private async findExistingProfile(attributes: Attributes): Promise<any | undefined> {
+        const login = this.loginValue(attributes)
+        if (!login) {
+            return undefined
+        }
+        const profileType = await this.ctx.nerm.getProfileTypeByName(this.ctx.config.profile_name)
+        if (!profileType?.id) {
+            throw new ConnectorError(`Profile type "${this.ctx.config.profile_name}" was not found`)
+        }
+        return this.ctx.nerm.findProfileByAttribute(profileType.id, this.ctx.config.login_attribute, login)
+    }
+
     async createAccount(input: StdAccountCreateInput): Promise<StdAccountListOutput> {
         logger.debug(`Creating account with input: ${toLogString(input)}`)
+        if (this.ctx.config.account_type === 'Profile') {
+            const existing = await this.findExistingProfile(input.attributes)
+            if (existing) {
+                logger.info(
+                    `Relinking existing profile ${existing.id} matched by ${this.ctx.config.login_attribute}`
+                )
+                return this.buildAccount(existing, input.schema)
+            }
+        }
         const body = await this.buildNERMAccountBody(input.attributes, this.ctx.config.account_type, input.schema)
         let rawAccount
         switch (this.ctx.config.account_type) {

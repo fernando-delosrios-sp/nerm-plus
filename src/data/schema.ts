@@ -1,5 +1,5 @@
 import { AccountSchema } from '@sailpoint/connector-sdk'
-import { Schema as ApiSchema } from 'sailpoint-api-client'
+import type { Schema as ApiSchema } from 'sailpoint-api-client/sources/api'
 
 export const defaultAccountSchema: AccountSchema = {
     displayAttribute: 'name',

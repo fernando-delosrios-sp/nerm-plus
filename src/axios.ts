@@ -1,4 +1,5 @@
 import { IAxiosRetryConfig } from 'axios-retry'
+import axiosThrottle from 'axios-request-throttle'
 import { REQUESTSPERSECOND, RETRIES } from './data/constants'
 import { logger } from '@sailpoint/connector-sdk'
 import axiosRetry from 'axios-retry'
@@ -29,3 +30,11 @@ export const retriesConfig: IAxiosRetryConfig = {
 }
 
 export const throttleConfig = { requestsPerSecond: REQUESTSPERSECOND }
+
+/**
+ * axios 1.20 ships separate CJS and ESM types. axios-request-throttle resolves the other copy,
+ * so the instance is asserted at this single boundary.
+ */
+export const applyThrottle = (instance: unknown) => {
+    axiosThrottle.use(instance as never, throttleConfig)
+}
