@@ -62,12 +62,7 @@ function formatHttpError(err: any): string {
     if (pieces.length > 0) {
         return `${prefix}: ${pieces.join(' | ')}`
     }
-    let full: string = toLogString(data)
-    const max = 4000
-    if (full.length > max) {
-        full = full.slice(0, max) + '…'
-    }
-    return `${prefix}: ${full}`
+    return `${prefix}: ${err.message ?? ''}`.trim()
 }
 
 export class NERMClient {
