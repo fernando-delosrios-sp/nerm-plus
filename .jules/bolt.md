@@ -96,3 +96,7 @@
 
 **Learning:** Checking for element existence using `Array.prototype.includes()` in filtering loops or hot paths (like in `schema-service`, `account-service`, and `nerm-client`) introduces unnecessary O(N) operations, especially when the lists (like `USERONLY_ATTRIBUTES` or `PROFILE_ROOTATTRIBUTES`) are checked repeatedly.
 **Action:** When validating against static lists of attributes or configurations, use `Set` and `.has()` instead of arrays and `.includes()` to reduce lookup time complexity to O(1) and improve overall throughput.
+## 2024-05-18 - Eliminating O(N^2) allocations in Array Accumulation
+
+**Learning:** Using `Array.prototype.concat()` chained with `.filter()` inside an accumulation loop generates significant intermediate array creations, memory copying, and GC pressure (acting as an O(N^2) operation under the hood).
+**Action:** Replace `array = array.concat(items.filter(cond))` with an in-place `for...of` loop and `.push()` to dramatically reduce memory allocation overhead in hot loops.
