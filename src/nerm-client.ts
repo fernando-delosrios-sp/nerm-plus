@@ -764,11 +764,12 @@ export class NERMClient {
                     const value = await this.getAttributeRecursively(profile, attr.name!)
                     const isArray = Array.isArray(value)
                     if (value) {
-                        const isObject = isArray ? typeof value[0] === 'object' : typeof value === 'object'
+                        const firstValue = isArray ? value[0] : value
+                        const isObject = typeof firstValue === 'object'
                         let profile_type_id
                         let referencedProfileType
                         if (isObject) {
-                            profile_type_id = isArray ? value[0].profile_type_id : value.profile_type_id
+                            profile_type_id = firstValue.profile_type_id
                             referencedProfileType = profile_type_id
                         }
 

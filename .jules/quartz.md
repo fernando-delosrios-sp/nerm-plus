@@ -97,3 +97,7 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
+
+## 2026-07-02 - Extract repetitive array indexing and ternary logic
+**Learning:** Repetitive array indexing and ternary logic (`isArray ? value[0] : value`) across multiple lines creates visual noise and duplicate operations.
+**Action:** Extract the conditional array indexing into a single, well-named shared variable (e.g., `firstValue`) to eliminate duplicates and improve scanability.
