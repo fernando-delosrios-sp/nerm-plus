@@ -103,7 +103,7 @@
 **Learning:** Checking for element existence using `Array.prototype.includes()` in filtering loops or hot paths (like in `schema-service`, `account-service`, and `nerm-client`) introduces unnecessary O(N) operations, especially when the lists (like `USERONLY_ATTRIBUTES` or `PROFILE_ROOTATTRIBUTES`) are checked repeatedly.
 **Action:** When validating against static lists of attributes or configurations, use `Set` and `.has()` instead of arrays and `.includes()` to reduce lookup time complexity to O(1) and improve overall throughput.
 
-## 2024-06-28 - Optimize array accumulation in loops
+## 2025-02-19 - Avoid redundant array accumulation optimizations
 
-**Learning:** Using `Array.prototype.concat()` combined with `.filter()` inside an accumulation loop (e.g., when merging children arrays) causes O(N^2) array allocations, excessive intermediate object creation, and significant garbage collection pressure.
-**Action:** Replace functional array chaining (`.concat().filter()`) in accumulation loops with in-place mutation using a `for...of` loop and `.push()` to drastically reduce memory copying and overhead.
+**Learning:** Replacing `.concat().filter()` with a `for...of` loop and `.push()` in areas where the lists are extremely small (e.g., child profiles) does not yield measurable performance improvements and can be rejected. Furthermore, altering the `null`/`undefined` filtering semantics during such an optimization can inadvertently introduce behavior changes.
+**Action:** Do not blindly optimize `.concat()` into `.push()` unless the datasets are demonstrably large enough to cause an O(N²) bottleneck. Always ensure any filtering logic exactly matches the original semantics (e.g., preserving `!== undefined` instead of switching to `!= null`).
