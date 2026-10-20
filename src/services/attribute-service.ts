@@ -65,11 +65,18 @@ export class AttributeService {
         )
         const profile = await this.ctx.nerm.getProfile(account.identity)
         const currentValue = await this.ctx.nerm.getAttributeRecursively(profile, attribute)
-        let newValue
+        let newValue: string[] = []
         if (op === 'add') {
-            newValue = [...currentValue.map((x: { id: string }) => x.id), value]
+            for (const x of currentValue) {
+                newValue.push(x.id)
+            }
+            newValue.push(value)
         } else {
-            newValue = currentValue.filter((x: { id: string }) => x.id !== value).map((x: { id: string }) => x.id)
+            for (const x of currentValue) {
+                if (x.id !== value) {
+                    newValue.push(x.id)
+                }
+            }
         }
 
         await this.setAttribute(account, attribute, newValue)
