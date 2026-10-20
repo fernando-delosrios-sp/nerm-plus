@@ -683,7 +683,7 @@ export class NERMClient {
         const parent = hasChildren ? name.slice(0, dotIndex) : name
         const children = hasChildren ? name.slice(dotIndex + 1) : ''
         const attributeType = await this.getAttribute(parent)
-        let isMulti = attributeType ? attributeType.allow_multiple_selections : false
+        let isMulti = Boolean(attributeType?.allow_multiple_selections)
         let values: any | any[] = []
 
         const profileAttribute = this.getProfileAttribute(profile, parent)
@@ -764,12 +764,11 @@ export class NERMClient {
                     const value = await this.getAttributeRecursively(profile, attr.name!)
                     const isArray = Array.isArray(value)
                     if (value) {
-                        const firstValue = isArray ? value[0] : value
-                        const isObject = typeof firstValue === 'object'
+                        const isObject = isArray ? typeof value[0] === 'object' : typeof value === 'object'
                         let profile_type_id
                         let referencedProfileType
                         if (isObject) {
-                            profile_type_id = firstValue.profile_type_id
+                            profile_type_id = isArray ? value[0].profile_type_id : value.profile_type_id
                             referencedProfileType = profile_type_id
                         }
 
