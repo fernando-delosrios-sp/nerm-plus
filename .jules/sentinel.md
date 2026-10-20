@@ -50,9 +50,3 @@
 **Vulnerability:** Full URLs (e.g., `https://...` or `/api/...`) containing sensitive query parameters (like `client_secret` or `token`) were not redacted by the logger because the heuristic explicitly ignored strings containing `://` or lacked base domains.
 **Learning:** Only parsing pure query string formats (e.g., `a=1&b=2`) leaves full URLs exposed when they are inadvertently logged in request objects or errors (e.g., `AxiosError.config.url`). Furthermore, valid search parameter strings without an `&` (`?password=1`) may bypass basic match heuristics.
 **Prevention:** Attempt to parse string patterns containing `=` and `&` natively using the `URL` API (handling relative paths and bare query strings gracefully with dummy origins). If successful, extract and sanitize `url.searchParams` before reconstructing the string exactly.
-
-## 2026-06-25 - Prevent Full HTTP Response Body Logging
-
-**Vulnerability:** The error formatting function `formatHttpError` in `src/nerm-client.ts` was falling back to logging the full HTTP response body if specific error fields weren't found. This drastically increases the risk of leaking sensitive data (e.g., API keys, passwords, PII) present in arbitrary response payloads.
-**Learning:** Logging entire HTTP response bodies as a fallback for missing specific error fields is a security anti-pattern. Centralized error formatters should prioritize targeted error property logging and default to generic messages or request metadata if explicit errors aren't found.
-**Prevention:** Never stringify and log full HTTP response bodies. If specific error fields (e.g., `data.error`, `data.message`) are unavailable, return a safe fallback like the error message or a generic failure indication.
