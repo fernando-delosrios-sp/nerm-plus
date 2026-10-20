@@ -97,6 +97,6 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
-## 2026-06-30 - Extract repetitive array indexing and ternary logic
-**Learning:** Repeating identical ternary operations to handle array vs. scalar values (e.g., `isArray ? value[0] : value`) across multiple lines introduces visual noise and increases the risk of inconsistent logic.
-**Action:** Extract the shared element evaluation into a single, well-named variable (like `const firstValue = isArray ? value[0] : value`) and reuse it.
+## 2024-10-25 - Avoid purely cosmetic variable extractions and boolean casting
+**Learning:** PRs that merely extract repeated inline array logic (`isArray ? value[0] : value`) into local variables or simplify boolean returns via `Boolean()` casts are rejected by maintainers as purely "cosmetic" changes that do not meaningfully improve behavior or address confusion.
+**Action:** Do not propose readability refactors that only perform cosmetic extractions or redundant boolean simplifications. Focus only on structural issues that cause actual maintenance burdens or confusion.
