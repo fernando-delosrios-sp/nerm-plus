@@ -8,8 +8,7 @@ import { fnLog, toLogString } from '../logging'
 export class SchemaService {
     constructor(private ctx: ConnectorContext) {}
 
-    async getSchema(): Promise<AccountSchema> {
-        logger.debug('Getting schema from ISC')
+    private async getSource() {
         const sources = await this.ctx.isc.listSources()
         const source = sources.find(
             (x) => (x.connectorAttributes as any).spConnectorInstanceId === this.ctx.spConnectorInstanceId
@@ -18,6 +17,12 @@ export class SchemaService {
             const error = `Unable to find source with spConnectorInstanceId "${this.ctx.spConnectorInstanceId}"`
             throw new ConnectorError(error)
         }
+        return source
+    }
+
+    async getSchema(): Promise<AccountSchema> {
+        logger.debug('Getting schema from ISC')
+        const source = await this.getSource()
 
         const schemas = await this.ctx.isc.listSourceSchemas(source.id!)
         const accountSchema = schemas.find((x) => x.nativeObjectType === 'User')!
@@ -36,15 +41,7 @@ export class SchemaService {
         logger.debug(fnLog('discoverSchema', 'Discovering account schema'))
         let schema: AccountSchema
         const profileEntitlements: SchemaAttribute[] = []
-        const sources = await this.ctx.isc.listSources()
-        const source = sources.find(
-            (x) => (x.connectorAttributes as any).spConnectorInstanceId === this.ctx.spConnectorInstanceId
-        )!
-
-        if (!source) {
-            const error = `Unable to find source with spConnectorInstanceId "${this.ctx.spConnectorInstanceId}"`
-            throw new ConnectorError(error)
-        }
+        const source = await this.getSource()
 
         const schemas = await this.ctx.isc.listSourceSchemas(source.id!)
         if (this.ctx.config.profiles && this.ctx.config.account_type === 'Profile') {
