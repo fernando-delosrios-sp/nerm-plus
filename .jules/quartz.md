@@ -97,3 +97,7 @@
 ## 2026-06-25 - Simplify redundant boolean logic and ternary operators
 **Learning:** Returning redundant boolean evaluation within a ternary operation (`value === 'Active' ? false : true` or `foo ? true : false`) adds unnecessary clutter.
 **Action:** Use direct boolean checks (like `value !== 'Active'`) or explicit boolean casting (`Boolean(foo)`) to highlight the intent of the check and decrease cognitive load.
+## 2024-10-20 - Extract repeated array indexing into single variable
+
+**Learning:** When dealing with possibly-array values, repeatedly conditionally extracting the first element (e.g. `isArray ? value[0].prop : value.prop` or `isArray ? typeof value[0] : typeof value`) introduces visual noise and duplicates logic.
+**Action:** Extract the conditional array indexing into a single well-named variable (like `const firstValue = isArray ? value[0] : value`) and use it in subsequent checks and assignments.
