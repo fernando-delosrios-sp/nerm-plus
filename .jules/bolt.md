@@ -100,3 +100,12 @@
 
 **Learning:** Using chained array methods (e.g. `.filter().map()`) or spreading mapped arrays (e.g. `[...array.map(), value]`) introduces redundant memory allocations and unnecessary multiple iterations over data sets. In attribute accumulator methods, this can create GC churn and slow down processing.
 **Action:** Replace multiple passes (`.filter().map()`) or spread accumulation with a single manual `.push()` loop over the existing list, checking conditions and accumulating directly to significantly reduce intermediate array creation and optimize allocation.
+
+## 2026-10-20 - Rejected `.filter().map()` refactoring due to readability priority
+
+**Learning:** Although chained array methods (like `.filter().map()`) or spread accumulations (`[...map()]`) create intermediate arrays and iterate multiple times, refactoring them into single-pass `.push()` loops may be rejected in methods like `profileAttributeOp` where the data sizes are small. In these cases, the reviewers prefer the declarative readability of map/filter over micro-optimizations that clutter the code with manual loops.
+**Action:** Do not sacrifice code readability for micro-optimizations on lists known to be small. Before optimizing chained methods with single-pass loops, verify if the collection size is large enough (like batch operations or deeply nested loops) to justify the reduced readability.
+## 2026-10-20 - Eliminate O(N^2) array allocations in accumulation loops
+
+**Learning:** Using `Array.prototype.concat()` chained with `.filter()` inside an accumulation loop creates O(N^2) time complexity and severe memory bloat because each iteration allocates and copies into a new intermediate array.
+**Action:** Replace these chained array allocations in hot loops with in-place mutation using a `for...of` loop and `.push()` to drastically reduce intermediate array creation, memory copying, and GC pressure.

@@ -713,7 +713,11 @@ export class NERMClient {
                             if (childrenProfiles) {
                                 if (Array.isArray(childrenProfiles)) {
                                     isMulti = true
-                                    values = values.concat(childrenProfiles.filter((x) => x != null))
+                                    for (const x of childrenProfiles) {
+                                        if (x != null) {
+                                            values.push(x)
+                                        }
+                                    }
                                 } else {
                                     values.push(childrenProfiles)
                                 }
