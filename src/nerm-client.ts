@@ -713,11 +713,7 @@ export class NERMClient {
                             if (childrenProfiles) {
                                 if (Array.isArray(childrenProfiles)) {
                                     isMulti = true
-                                    // ⚡ Bolt: Eliminate O(N^2) array allocations in loop by replacing .concat() and .filter() with flatMap/push
-                                    // Impact: Reduces time complexity and intermediate array creation
-                                    for (const x of childrenProfiles) {
-                                        if (x != null) values.push(x)
-                                    }
+                                    values = values.concat(childrenProfiles.filter((x) => x != null))
                                 } else {
                                     values.push(childrenProfiles)
                                 }
