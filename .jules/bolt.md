@@ -107,3 +107,8 @@
 
 **Learning:** During concurrent operations like account and entitlement modifications (e.g. `addRole`, `removeRole`, or resolving user ids), redundant API requests stack up for identical roles. `getRole` was not cached, issuing redundant network requests for identical role IDs.
 **Action:** Implemented caching for `getRole` using a Promise map `rolePromises`. This effectively coalesces multiple identical API requests into a single promise execution.
+
+## 2024-05-18 - Avoid O(N^2) array allocations with concat and filter inside loops
+
+**Learning:** Using `Array.prototype.concat()` chained with `.filter()` inside a loop (e.g. `values = values.concat(childrenProfiles.filter(...))`) causes O(N^2) array allocations. This creates significant intermediate array creation, redundant iterations, memory copying, and GC pressure in hot paths.
+**Action:** Replace these chained array operations with a single in-place mutation pass using a `for...of` loop and `.push()` to drastically reduce intermediate array creation and improve loop execution speed.
