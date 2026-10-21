@@ -21,7 +21,7 @@ export const retriesConfig: IAxiosRetryConfig = {
         const logFn = is429 ? logger.warn : logger.error
         logFn.call(
             logger,
-            `axios onRetry: Retrying API [${requestConfig.url}] due to [${
+            `axios onRetry: Retrying API [${toLogString(requestConfig.url)}] due to [${
                 is429 ? '429 rate limit' : toLogString(error)
             }]. Retry number [${retryCount}]`
         )
