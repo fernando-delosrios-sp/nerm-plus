@@ -100,3 +100,7 @@
 ## 2023-10-25 - Replace mutable state and finally block returns
 **Learning:** Returning from a `finally` block is an anti-pattern that suppresses errors thrown within `catch` blocks. Mutable variables assigned within `try`/`catch` blocks just to be returned later add unnecessary visual noise.
 **Action:** When acting as the 'Quartz' persona, replace mutable state and `finally` block returns (e.g., `finally { return item; }`) with direct `return` statements inside `try` and `catch` blocks to improve scanability, simplify control flow, and prevent suppressing thrown errors.
+
+## 2026-06-30 - Extract repetitive array indexing and ternary logic
+**Learning:** Repetitive array indexing and ternary logic (e.g., repeating `isArray ? value[0] : value` across multiple lines) adds visual noise and cognitive load when dealing with types that could be arrays or objects.
+**Action:** Extract the evaluation into a single, well-named shared variable (e.g., `firstValue`) to eliminate duplicate operations and clarify intent.
