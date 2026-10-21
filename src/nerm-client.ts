@@ -717,7 +717,12 @@ export class NERMClient {
                             if (childrenProfiles) {
                                 if (Array.isArray(childrenProfiles)) {
                                     isMulti = true
-                                    values = values.concat(childrenProfiles.filter((x) => x != null))
+                                    // ⚡ Bolt: Avoid O(N^2) array allocations by replacing .concat().filter() with in-place .push()
+                                    for (const profile of childrenProfiles) {
+                                        if (profile != null) {
+                                            values.push(profile)
+                                        }
+                                    }
                                 } else {
                                     values.push(childrenProfiles)
                                 }
