@@ -33,7 +33,7 @@ export function createStdAccountList(
                     if (result.status === 'fulfilled') {
                         res.send(result.value)
                     } else {
-                        logger.error(result.reason)
+                        logger.error(toLogString(result.reason))
                     }
                 }
             }

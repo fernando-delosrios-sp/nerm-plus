@@ -1,4 +1,5 @@
 import { logger, StdAccountListOutput } from '@sailpoint/connector-sdk'
+import { toLogString } from '../logging'
 import { ConnectorContext } from '../connector-context'
 
 export class AttributeService {
@@ -48,7 +49,7 @@ export class AttributeService {
                 try {
                     await this.ctx.nerm.setUserAttribute(user_id, attribute, value)
                 } catch (error) {
-                    logger.error(error)
+                    logger.error(`Error setting user status: ${toLogString(error)}`)
                 }
             }
         } else if (attribute === 'name') {
