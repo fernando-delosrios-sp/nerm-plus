@@ -75,7 +75,7 @@ export class EntitlementService {
         const id = account.attributes.user_id as string
         if (!id) {
             const message = `User not found for "${account.uuid}" profile`
-            logger.error(message)
+            logger.error(toLogString(message))
             return
         }
 
@@ -145,7 +145,7 @@ export class EntitlementService {
         }
         if (!requester_id) {
             const message = `Unable to resolve ${requester} for workflow ${workflow_id}`
-            logger.error(message)
+            logger.error(toLogString(message))
             return
         }
 
