@@ -33,13 +33,13 @@ function looksLikeUuid(value: string): boolean {
 function formatHttpError(err: any): string {
     const res = err.response
     if (!res) {
-        return err.message ?? String(err)
+        return toLogString(err.message ?? String(err))
     }
     const status = res.status
     const data = res.data
     const prefix = status != null ? `HTTP ${status}` : 'Request failed'
     if (data == null || data === '') {
-        return `${prefix}: ${err.message ?? ''}`.trim()
+        return `${prefix}: ${toLogString(err.message ?? '')}`.trim()
     }
     if (typeof data === 'string') {
         return `${prefix}: ${toLogString(data)}`
