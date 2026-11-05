@@ -104,3 +104,7 @@
 ## 2026-06-30 - Extract repetitive array indexing and ternary logic
 **Learning:** Repetitive array indexing and ternary logic (e.g., repeating `isArray ? value[0] : value` across multiple lines) adds visual noise and cognitive load when dealing with types that could be arrays or objects.
 **Action:** Extract the evaluation into a single, well-named shared variable (e.g., `firstValue`) to eliminate duplicate operations and clarify intent.
+## 2024-07-02 - Simplify nested object property assignment using ternary
+
+**Learning:** Declaring intermediate mutable variables (like `let profile_type_id`) that are immediately assigned and reassigned to other intermediate variables adds visual noise and makes the code harder to follow, especially when the final intent is simple property extraction.
+**Action:** Replace verbose variable declarations and `if` blocks for object type checks with a concise ternary expression to extract properties in a single step (e.g., `const ref = typeof val === 'object' ? val.id : undefined`).
