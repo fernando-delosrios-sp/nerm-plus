@@ -774,13 +774,7 @@ export class NERMClient {
                     const isArray = Array.isArray(value)
                     if (value) {
                         const firstValue = isArray ? value[0] : value
-                        const isObject = typeof firstValue === 'object'
-                        let profile_type_id
-                        let referencedProfileType
-                        if (isObject) {
-                            profile_type_id = firstValue.profile_type_id
-                            referencedProfileType = profile_type_id
-                        }
+                        const referencedProfileType = typeof firstValue === 'object' ? firstValue.profile_type_id : undefined
 
                         if (attr.entitlement) {
                             if (attr.schemaObjectType === referencedProfileType?.name) {
