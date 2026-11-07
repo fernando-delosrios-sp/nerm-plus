@@ -54,3 +54,9 @@
 **Vulnerability:** Stringified HTTP error payloads (like `data.error` or `data.message`) were directly interpolated into log messages instead of being explicitly passed through `toLogString()`. This could leak credentials or tokens if raw server responses contain sensitive info within string representations.
 **Learning:** The redaction utility (`toLogString`) is bypassed if strings are concatenated or pushed directly without being processed, as string inputs also need to be checked for embedded sensitive information (like URLs with query parameters or JSON strings).
 **Prevention:** Ensure all properties from external inputs (especially HTTP error responses) are explicitly passed through `toLogString()` rather than being directly interpolated, avoiding potential credential or token leaks from raw server responses.
+
+## 2026-05-13 - Redaction Bypass in Error Fallbacks
+
+**Vulnerability:** Fallback HTTP error message fields like `err.message` or `String(err)` were interpolated directly into error strings without passing through the central redaction utility (`toLogString()`).
+**Learning:** Even simple fallback error strings can contain sensitive data like externally supplied URLs with query parameters. Interpolating these strings unredacted bypasses redaction heuristics.
+**Prevention:** Ensure that all fallback HTTP error message fields (like `err.message` or `String(err)`) are explicitly passed through the centralized redaction utility (e.g., `toLogString()`) before being logged or returned in error structures.
